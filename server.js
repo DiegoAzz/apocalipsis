@@ -94,20 +94,39 @@ app.get('/api/screenshot-url', async (req, res) => {
 
   try {
     const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1280`;
-    const response = await fetch(screenshotUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    let buffer = null;
+
+    // Retry up to 3 times (waiting 1.5s) if WordPress is still generating the preview (8737 byte placeholder)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const response = await fetch(screenshotUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      if (response.ok) {
+        const buf = Buffer.from(await response.arrayBuffer());
+        // 8737 bytes is the exact size of WordPress's "Generating Preview..." placeholder
+        if (buf.length > 9500) {
+          buffer = buf;
+          break;
+        }
       }
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const buffer = Buffer.from(await response.arrayBuffer());
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+
+    if (!buffer) {
+      throw new Error('Screenshot still generating on WordPress mshots');
+    }
+
     res.set('Content-Type', 'image/jpeg');
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Cache-Control', 'public, max-age=3600');
     res.send(buffer);
   } catch (err) {
-    console.error('[SCREENSHOT API ERROR]:', err.message);
-    res.status(500).send('Failed to capture screenshot');
+    console.warn('[SCREENSHOT API]:', err.message, 'Falling back to HTML parser.');
+    res.status(502).send('Screenshot unavailable');
   }
 });
 

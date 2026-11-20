@@ -646,7 +646,7 @@ class LevelEngine {
     this.presetName = 'image';
     this.pageUrl = 'Imagen Personalizada';
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -709,7 +709,7 @@ class LevelEngine {
       };
       img.onerror = (err) => {
         console.error('Error loading image level:', err);
-        resolve();
+        reject(err);
       };
       img.src = imageSource;
     });

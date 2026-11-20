@@ -1100,10 +1100,15 @@ class UIManager {
         } else {
           // Attempt authentic live screenshot capture of the actual webpage first
           try {
-            await this.game.loadUserImage(`/api/screenshot-url?url=${encodeURIComponent(val)}`);
+            const ssRes = await fetch(`/api/screenshot-url?url=${encodeURIComponent(val)}`);
+            if (!ssRes.ok) throw new Error(`Screenshot not ready (${ssRes.status})`);
+            const blob = await ssRes.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            await this.game.loadUserImage(blobUrl);
             this.game.level.pageUrl = val;
             this.setPresetDisplay('custom', val);
           } catch (e) {
+            console.log('[FALLBACK TO HTML PARSER]:', e.message);
             const res = await fetch(`/api/parse-url?url=${encodeURIComponent(val)}`);
             const pageData = await res.json();
             await this.game.loadParsedWebpage(pageData, true);
