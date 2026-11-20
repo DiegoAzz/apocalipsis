@@ -21,6 +21,19 @@ class LevelEngine {
     this.pageUrl = 'https://en.wikipedia.org/wiki/Stick_figure';
   }
 
+  resize(width, height) {
+    this.width = Math.round(width);
+    this.height = Math.round(height);
+    this.cols = Math.ceil(this.width / this.cellSize);
+    this.rows = Math.ceil(this.height / this.cellSize);
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.grid = new Uint8Array(this.cols * this.rows);
+    this.initialSolidCount = 0;
+    this.destroyedCount = 0;
+  }
+
   isSolid(worldX, worldY) {
     if (worldX < 0 || worldX >= this.width || worldY < 0 || worldY >= this.height) {
       return false;
@@ -193,6 +206,7 @@ class LevelEngine {
 
   // Generate Wikipedia Stick Figure Level (Exact Match to screenshot)
   generateWikipedia() {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
     this.presetName = 'wikipedia';
     this.pageUrl = 'https://en.wikipedia.org/wiki/Stick_figure';
     const ctx = this.ctx;
@@ -510,6 +524,7 @@ class LevelEngine {
 
   // Generate Google Search Results Level
   generateGoogle(query = 'how to destroy any website') {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
     this.presetName = 'google';
     this.pageUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     const ctx = this.ctx;
@@ -626,44 +641,44 @@ class LevelEngine {
     this.syncGridFromCanvas();
   }
 
-  // Load ANY User-Uploaded Image to occupy the level and be destroyed
+  // Load ANY User-Uploaded Image to occupy the level and be destroyed seamlessly
   async loadImageAsLevel(imageSource) {
     this.presetName = 'image';
     this.pageUrl = 'Imagen Personalizada';
-    const ctx = this.ctx;
-    ctx.clearRect(0, 0, this.width, this.height);
 
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Dark background border
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(0, 0, this.width, this.height);
+        // Adapt arena dimensions dynamically to match the uploaded image's exact natural aspect ratio!
+        // Base width 1600px ensures sharp pixel resolution without blur or stretching
+        const baseWidth = 1600;
+        const aspect = img.height / img.width;
 
-        // Scale and center image across the level width
-        const padX = 60;
-        const padY = 50;
-        const targetW = this.width - padX * 2;
-        const scale = targetW / img.width;
-        const targetH = Math.min(this.height - padY * 2, img.height * scale);
+        let targetW = baseWidth;
+        let targetH = Math.round(targetW * aspect);
 
-        ctx.drawImage(img, padX, padY, targetW, targetH);
+        // Keep height within comfortable playable range (e.g. min 800px, max 3600px)
+        if (targetH < 850) {
+          targetH = 850;
+        } else if (targetH > 3600) {
+          targetH = 3600;
+        }
 
-        // Frame border around picture
-        ctx.strokeStyle = '#f97316';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(padX, padY, targetW, targetH);
+        this.resize(targetW, targetH);
 
-        // Header banner
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(padX, padY, targetW, 40);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.fillText('🖼️ IMAGEN CARGADA - LISTA PARA SER DESTRUIDA AL 100%', padX + 20, padY + 26);
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.width, this.height);
 
-        // Sync solid collision grid
+        // Draw image directly across 100% of the destructible canvas
+        ctx.drawImage(img, 0, 0, this.width, this.height);
+
+        // Sync solid collision grid so every pixel of the uploaded image is destructible!
         this.syncGridFromCanvas();
+        resolve();
+      };
+      img.onerror = (err) => {
+        console.error('Error loading image level:', err);
         resolve();
       };
       img.src = imageSource;
@@ -672,6 +687,7 @@ class LevelEngine {
 
   // Authentic Real Facebook Page (Matches the iconic Facebook desktop login & landing)
   generateFacebook() {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
     this.presetName = 'facebook';
     this.pageUrl = 'https://www.facebook.com/';
     const ctx = this.ctx;
@@ -817,6 +833,7 @@ class LevelEngine {
 
   // Authentic Real Amazon Page (Matches the iconic Amazon desktop store layout)
   generateAmazon() {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
     this.presetName = 'amazon';
     this.pageUrl = 'https://www.amazon.com/';
     const ctx = this.ctx;
@@ -1222,6 +1239,7 @@ class LevelEngine {
 
   // Generate Custom URL Layout based on any domain or prompt
   generateCustom(urlInput) {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
     this.presetName = 'custom';
     this.pageUrl = urlInput.startsWith('http') ? urlInput : `https://${urlInput}`;
     let domain = 'Website';

@@ -541,8 +541,10 @@ class Player {
   respawn(level) {
     this.isDead = false;
     this.health = this.maxHealth;
-    this.x = 250 + Math.random() * (level.width - 500);
-    this.y = 120;
+    const minX = Math.min(250, level.width * 0.2);
+    const rangeX = Math.max(100, level.width - minX * 2);
+    this.x = minX + Math.random() * rangeX;
+    this.y = Math.min(120, level.height * 0.15);
     this.vx = 0;
     this.vy = 0;
     this.jetpackFuel = this.maxJetpackFuel;
