@@ -219,6 +219,7 @@ class Game {
         e.preventDefault();
         e.stopPropagation();
         window.soundManager.ensureContext();
+        joyZone.classList.add('active');
         if (joyTouchId === null) {
           const touch = e.changedTouches[0];
           joyTouchId = touch.identifier;
@@ -243,6 +244,7 @@ class Game {
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === joyTouchId) {
             joyTouchId = null;
+            joyZone.classList.remove('active');
             if (joyKnob) joyKnob.style.transform = 'translate(0px, 0px)';
             this.input.keys['KeyA'] = false;
             this.input.keys['KeyD'] = false;
