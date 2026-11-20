@@ -717,13 +717,110 @@ class LevelEngine {
 
   // Authentic Real Facebook Page (Matches the iconic Facebook desktop login & landing)
   generateFacebook() {
-    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
+    const isMobile = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));
+    const targetW = isMobile ? 800 : 1500;
+    const screenAspect = (typeof window !== 'undefined' && window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : (16 / 9);
+    const targetH = isMobile ? Math.round(targetW * screenAspect) : 2600;
+
+    if (this.width !== targetW || this.height !== targetH) this.resize(targetW, targetH);
     this.presetName = 'facebook';
     this.pageUrl = 'https://www.facebook.com/';
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // Facebook Light Gray Background
+    if (isMobile) {
+      // Authentic Mobile Facebook Layout (Fills mobile screen crisply, high-DPI text)
+      ctx.fillStyle = '#f0f2f5';
+      ctx.fillRect(0, 0, this.width, this.height);
+
+      // Top Header Bar
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, this.width, 90);
+      ctx.strokeStyle = '#ccd0d5';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 90);
+      ctx.lineTo(this.width, 90);
+      ctx.stroke();
+
+      // Big Facebook Blue Logo
+      ctx.fillStyle = '#1877f2';
+      ctx.font = 'bold 54px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('facebook', this.width / 2, 65);
+
+      // Welcome Card
+      const cardX = 40;
+      const cardW = this.width - 80;
+      let currY = 140;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cardX, currY, cardW, 480);
+      ctx.strokeStyle = '#dddfe2';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(cardX, currY, cardW, 480);
+
+      // Email input
+      ctx.fillStyle = '#f5f6f7';
+      ctx.fillRect(cardX + 30, currY + 40, cardW - 60, 68);
+      ctx.strokeStyle = '#ccd0d5';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(cardX + 30, currY + 40, cardW - 60, 68);
+      ctx.fillStyle = '#8d949e';
+      ctx.font = '22px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Número de celular o correo', cardX + 50, currY + 82);
+
+      // Password input
+      ctx.fillStyle = '#f5f6f7';
+      ctx.fillRect(cardX + 30, currY + 130, cardW - 60, 68);
+      ctx.strokeStyle = '#ccd0d5';
+      ctx.strokeRect(cardX + 30, currY + 130, cardW - 60, 68);
+      ctx.fillStyle = '#8d949e';
+      ctx.fillText('Contraseña', cardX + 50, currY + 172);
+
+      // Big Blue "Iniciar sesión" Button
+      ctx.fillStyle = '#1877f2';
+      ctx.fillRect(cardX + 30, currY + 225, cardW - 60, 68);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Iniciar sesión', this.width / 2, currY + 268);
+
+      // "¿Olvidaste tu contraseña?" link
+      ctx.fillStyle = '#1877f2';
+      ctx.font = '22px sans-serif';
+      ctx.fillText('¿Olvidaste tu contraseña?', this.width / 2, currY + 335);
+
+      // Divider Line
+      ctx.strokeStyle = '#dadde1';
+      ctx.beginPath();
+      ctx.moveTo(cardX + 40, currY + 375);
+      ctx.lineTo(cardX + cardW - 40, currY + 375);
+      ctx.stroke();
+
+      // Green "Crear cuenta nueva" Button
+      ctx.fillStyle = '#42b72a';
+      ctx.fillRect(cardX + 80, currY + 400, cardW - 160, 60);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText('Crear cuenta nueva', this.width / 2, currY + 438);
+
+      // Meta Footer
+      currY += 540;
+      ctx.fillStyle = '#65676b';
+      ctx.font = '18px sans-serif';
+      ctx.fillText('Español · English (US) · Português · Français', this.width / 2, currY);
+      ctx.fillStyle = '#8a8d91';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Meta © 2026 · Edición Móvil Destructible', this.width / 2, currY + 35);
+      ctx.textAlign = 'left';
+
+      this.syncGridFromCanvas();
+      return;
+    }
+
+    // Facebook Light Gray Background (Desktop)
     ctx.fillStyle = '#f0f2f5';
     ctx.fillRect(80, 40, this.width - 160, this.height - 80);
     ctx.strokeStyle = '#ccd0d5';

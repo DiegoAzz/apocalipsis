@@ -82,8 +82,10 @@ class Game {
 
   clampCamera() {
     if (!this.level || !this.camera) return;
-    const halfW = (this.canvas.width / 2) / (this.camera.zoom || 1);
-    const halfH = (this.canvas.height / 2) / (this.camera.zoom || 1);
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const halfW = (screenW / 2) / (this.camera.zoom || 1);
+    const halfH = (screenH / 2) / (this.camera.zoom || 1);
 
     // Horizontal bounds: center if it fits on screen, otherwise clamp within level bounds
     if (this.level.width <= halfW * 2) {
@@ -173,29 +175,28 @@ class Game {
     const btnGrenade = document.getElementById('touch-btn-grenade');
 
     let joyTouchId = null;
+    let joyStartX = 0;
+    let joyStartY = 0;
 
     if (joyZone && joyBase && joyKnob) {
       const handleJoyMove = (touch) => {
-        const rect = joyBase.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const rawDx = touch.clientX - centerX;
-        const rawDy = touch.clientY - centerY;
+        const rawDx = touch.clientX - joyStartX;
+        const rawDy = touch.clientY - joyStartY;
         const dist = Math.hypot(rawDx, rawDy);
-        const maxDist = 36;
+        const maxDist = 45;
         const angle = Math.atan2(rawDy, rawDx);
         const clampedDist = Math.min(dist, maxDist);
 
         const dx = Math.cos(angle) * clampedDist;
         const dy = Math.sin(angle) * clampedDist;
 
-        joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+        if (joyKnob) joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
 
         // Horizontal movement
-        if (dx < -10) {
+        if (dx < -12) {
           this.input.keys['KeyA'] = true;
           this.input.keys['KeyD'] = false;
-        } else if (dx > 10) {
+        } else if (dx > 12) {
           this.input.keys['KeyD'] = true;
           this.input.keys['KeyA'] = false;
         } else {
@@ -216,16 +217,20 @@ class Game {
 
       joyZone.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         window.soundManager.ensureContext();
         if (joyTouchId === null) {
           const touch = e.changedTouches[0];
           joyTouchId = touch.identifier;
+          joyStartX = touch.clientX;
+          joyStartY = touch.clientY;
           handleJoyMove(touch);
         }
       }, { passive: false });
 
       joyZone.addEventListener('touchmove', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === joyTouchId) {
             handleJoyMove(e.changedTouches[i]);
@@ -238,7 +243,7 @@ class Game {
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === joyTouchId) {
             joyTouchId = null;
-            joyKnob.style.transform = 'translate(0px, 0px)';
+            if (joyKnob) joyKnob.style.transform = 'translate(0px, 0px)';
             this.input.keys['KeyA'] = false;
             this.input.keys['KeyD'] = false;
             this.input.keys['Space'] = false;
@@ -274,9 +279,12 @@ class Game {
       }, { passive: false });
     }
 
-    // Direct Canvas Touch to Aim & Shoot Continuously
+    // Direct Canvas Touch to Aim & Shoot Continuously (Reserved right/general area)
     const activeShootTouches = new Set();
-    const isOverJoystick = (clientX, clientY) => {
+    let initialPinchDist = null;
+    let initialZoom = 1.0;
+
+    const isOverReservedJoystick = (clientX, clientY) => {
       const joyZone = document.getElementById('touch-joystick-zone');
       if (!joyZone) return false;
       const rect = joyZone.getBoundingClientRect();
@@ -286,9 +294,21 @@ class Game {
 
     this.canvas.addEventListener('touchstart', (e) => {
       window.soundManager.ensureContext();
+
+      // 2-Finger Pinch to Zoom
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDist = Math.hypot(dx, dy);
+        initialZoom = this.camera.zoom;
+        this.input.isMouseDown = false;
+        activeShootTouches.clear();
+        return;
+      }
+
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (!isOverJoystick(touch.clientX, touch.clientY)) {
+        if (!isOverReservedJoystick(touch.clientX, touch.clientY)) {
           activeShootTouches.add(touch.identifier);
           this.updateTouchAim(touch);
           this.input.isMouseDown = true;
@@ -297,6 +317,17 @@ class Game {
     }, { passive: true });
 
     this.canvas.addEventListener('touchmove', (e) => {
+      // 2-Finger Pinch Zooming
+      if (e.touches.length === 2 && initialPinchDist) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const factor = dist / initialPinchDist;
+        this.camera.zoom = Math.max(0.2, Math.min(3.0, initialZoom * factor));
+        this.clampCamera();
+        return;
+      }
+
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
         if (activeShootTouches.has(touch.identifier)) {
@@ -310,14 +341,16 @@ class Game {
       for (let i = 0; i < e.changedTouches.length; i++) {
         activeShootTouches.delete(e.changedTouches[i].identifier);
       }
+      if (e.touches && e.touches.length < 2) {
+        initialPinchDist = null;
+      }
       if (activeShootTouches.size === 0 || (e.touches && e.touches.length === 0)) {
         activeShootTouches.clear();
         this.input.isMouseDown = false;
       } else if (e.touches && e.touches.length > 0) {
-        // If another finger is still held down, aim and continue shooting towards it
         for (let i = 0; i < e.touches.length; i++) {
           const t = e.touches[i];
-          if (!isOverJoystick(t.clientX, t.clientY)) {
+          if (!isOverReservedJoystick(t.clientX, t.clientY)) {
             this.updateTouchAim(t);
             this.input.isMouseDown = true;
             break;
@@ -332,13 +365,15 @@ class Game {
   updateTouchAim(touch) {
     this.input.screenMouseX = touch.clientX;
     this.input.screenMouseY = touch.clientY;
-    this.input.mouseX = (touch.clientX - this.canvas.width / 2) / this.camera.zoom + this.camera.x;
-    this.input.mouseY = (touch.clientY - this.canvas.height / 2) / this.camera.zoom + this.camera.y;
+    this.input.mouseX = (touch.clientX - window.innerWidth / 2) / this.camera.zoom + this.camera.x;
+    this.input.mouseY = (touch.clientY - window.innerHeight / 2) / this.camera.zoom + this.camera.y;
   }
 
   resizeCanvas() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    this.dpr = dpr;
+    this.canvas.width = Math.round(window.innerWidth * dpr);
+    this.canvas.height = Math.round(window.innerHeight * dpr);
     this.adaptZoomForCurrentMap();
   }
 
@@ -880,15 +915,22 @@ class Game {
 
   render() {
     const ctx = this.ctx;
+    const dpr = this.dpr || 1;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     const shake = this.physics.getShakeOffset();
 
     ctx.save();
-    ctx.translate(this.canvas.width / 2 + shake.x, this.canvas.height / 2 + shake.y);
+    ctx.translate(window.innerWidth / 2 + shake.x, window.innerHeight / 2 + shake.y);
     ctx.scale(this.camera.zoom, this.camera.zoom);
     ctx.rotate(shake.rot);
     ctx.translate(-this.camera.x, -this.camera.y);
@@ -919,6 +961,8 @@ class Game {
     // 6. Draw Minimap & HUD Crosshair
     this.renderMinimap(ctx);
     this.renderCrosshair(ctx);
+
+    ctx.restore();
   }
 
   renderMinimap(ctx) {
