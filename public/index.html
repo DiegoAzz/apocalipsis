@@ -48,6 +48,7 @@
         </div>
         <button class="btn btn-mode" id="btn-mode-solo">👤 Modo Solo</button>
         <button class="btn btn-mode active" id="btn-mode-multi">🌐 Online</button>
+        <button class="btn btn-sm btn-live" id="btn-toggle-live" title="Modo Live: ralentiza la acción a cámara lenta (0.35x) para streaming y directos (Pulsa L)">🔴 Modo Live</button>
         <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
         <button class="btn btn-sm" id="btn-center-camera" title="Centrar cámara en tu personaje (o pulsa C)">🎯 Centrar</button>
         <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
@@ -58,6 +59,9 @@
       </div>
     </div>
   </header>
+
+  <!-- Distintivo de Modo Live / Slow-Mo -->
+  <div id="live-overlay-badge"><span class="live-pulse-dot">🔴</span> LIVE SLOW-MO (0.35X)</div>
 
   <!-- Barra de Progreso de Destrucción (Estilo Sprite Fusion) -->
   <div id="destruction-meter-container">

@@ -138,6 +138,58 @@ body, html {
   border: 1px solid var(--orange);
 }
 
+.btn-live {
+  background: #18181b;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-live:hover {
+  background: #450a0a;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+
+.btn-live.active {
+  background: #991b1b;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+  animation: livePulse 1.4s infinite alternate;
+}
+
+@keyframes livePulse {
+  0% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+  100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.95); }
+}
+
+#live-overlay-badge {
+  display: none;
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background: rgba(153, 27, 27, 0.88);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  border: 1px solid #f87171;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 999;
+  align-items: center;
+  gap: 6px;
+}
+
+#live-overlay-badge.active {
+  display: flex;
+}
+
 .btn-color {
   background: #18181b;
   border: 1px solid #3f3f46;

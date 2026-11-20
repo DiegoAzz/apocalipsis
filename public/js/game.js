@@ -42,9 +42,42 @@ class Game {
     };
 
     this.lastTime = performance.now();
+    this.timeScale = 1.0;
+    this.isLiveMode = false;
     this.ui = new UIManager(this);
 
     this.init();
+  }
+
+  toggleLiveMode() {
+    this.isLiveMode = !this.isLiveMode;
+    this.timeScale = this.isLiveMode ? 0.35 : 1.0;
+
+    const btnLive = document.getElementById('btn-toggle-live');
+    const badge = document.getElementById('live-overlay-badge');
+
+    if (btnLive) {
+      if (this.isLiveMode) {
+        btnLive.classList.add('active');
+        btnLive.textContent = '🔴 LIVE (0.35x)';
+      } else {
+        btnLive.classList.remove('active');
+        btnLive.textContent = '🔴 Modo Live';
+      }
+    }
+
+    if (badge) {
+      if (this.isLiveMode) badge.classList.add('active');
+      else badge.classList.remove('active');
+    }
+
+    if (this.ui) {
+      this.ui.appendChatMessage({
+        sender: 'SISTEMA',
+        color: this.isLiveMode ? '#ef4444' : '#22c55e',
+        text: this.isLiveMode ? '🔴 ¡Modo Live activado! Cámara lenta cinematográfica (0.35x)' : '⚡ Modo normal restaurado (1.0x)'
+      });
+    }
   }
 
   snapCameraToPlayer() {
@@ -317,6 +350,10 @@ class Game {
 
       if (e.code === 'KeyC') {
         this.snapCameraToPlayer();
+      }
+
+      if (e.code === 'KeyL') {
+        this.toggleLiveMode();
       }
 
       // Weapon Hotkeys 1-9
@@ -678,8 +715,9 @@ class Game {
   }
 
   gameLoop(timestamp) {
-    const dt = Math.min(0.1, (timestamp - this.lastTime) / 1000);
+    const rawDt = Math.min(0.1, (timestamp - this.lastTime) / 1000);
     this.lastTime = timestamp;
+    const dt = rawDt * this.timeScale;
 
     this.update(dt);
     this.render();
@@ -1193,6 +1231,14 @@ class UIManager {
     if (btnCenter) {
       btnCenter.addEventListener('click', () => {
         this.game.snapCameraToPlayer();
+      });
+    }
+
+    // Live Mode Slow-Mo Button
+    const btnLive = document.getElementById('btn-toggle-live');
+    if (btnLive) {
+      btnLive.addEventListener('click', () => {
+        this.game.toggleLiveMode();
       });
     }
 
