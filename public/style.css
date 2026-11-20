@@ -1044,6 +1044,80 @@ body.touch-active #mobile-controls {
   }
 }
 
+/* Optimización para Celular en Horizontal (Modo Paisaje / Landscape para TikTok Live 16:9) */
+@media (max-height: 540px) and (orientation: landscape) {
+  #top-nav {
+    height: 38px;
+    padding: 0 8px;
+    gap: 6px;
+  }
+  .brand-title {
+    display: none;
+  }
+  #webpage-url-input {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  #btn-destroy-url {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  .btn-mobile-chat-toggle {
+    top: 42px;
+    left: 8px;
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  #hud-stats {
+    top: 42px;
+    left: 85px;
+    transform: scale(0.72);
+  }
+  #touch-joystick-zone {
+    bottom: 8px;
+    left: 10px;
+    width: 82px;
+    height: 82px;
+  }
+  #touch-joystick-base {
+    width: 74px;
+    height: 74px;
+  }
+  #touch-joystick-knob {
+    width: 34px;
+    height: 34px;
+    top: 20px;
+    left: 20px;
+  }
+  #touch-buttons-zone {
+    bottom: 8px;
+    right: 10px;
+    gap: 8px;
+  }
+  .touch-action-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 8px;
+  }
+  .hud-bottom-wrap {
+    bottom: 2px;
+  }
+  .hud-weapons {
+    padding: 2px 4px;
+    gap: 3px;
+  }
+  .slot {
+    min-width: 36px;
+    width: 36px;
+    height: 30px;
+  }
+  .wname-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-bottom: 2px;
+  }
+}
+
 /* Modal Invitar Amigo */
 #share-modal {
   display: none;
