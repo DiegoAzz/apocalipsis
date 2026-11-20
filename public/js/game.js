@@ -931,9 +931,16 @@ class UIManager {
       });
     }
 
-    // Share Room Button
+    // Share Room Modal Events
     const shareBtn = document.getElementById('btn-share-room');
-    if (shareBtn) {
+    const shareModal = document.getElementById('share-modal');
+    const closeShare = document.getElementById('btn-close-share');
+    const copyShareUrlBtn = document.getElementById('btn-copy-share-url');
+    const shareRoomInput = document.getElementById('share-room-input');
+    const shareRoomCode = document.getElementById('share-room-code');
+    const whatsappBtn = document.getElementById('btn-whatsapp-share');
+
+    if (shareBtn && shareModal) {
       shareBtn.addEventListener('click', () => {
         let currentRoom = this.multiplayer.roomId;
         if (this.isSoloMode || !currentRoom || currentRoom === 'solo') {
@@ -943,17 +950,46 @@ class UIManager {
           const btnSolo = document.getElementById('btn-mode-solo');
           if (btnMulti) btnMulti.classList.add('active');
           if (btnSolo) btnSolo.classList.remove('active');
-          document.getElementById('chat-container').style.display = 'flex';
+          const chatCont = document.getElementById('chat-container');
+          if (chatCont) chatCont.style.display = 'flex';
           this.multiplayer.init(currentRoom, this.localPlayer.name, this.localPlayer.color);
         }
 
         const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
-        navigator.clipboard.writeText(shareUrl).then(() => {
-          shareBtn.textContent = '✅ ¡Copiado!';
-          setTimeout(() => { shareBtn.textContent = '🔗 Invitar Amigo'; }, 3000);
-        }).catch(() => {
-          prompt('Copia este enlace para jugar con tu amigo:', shareUrl);
-        });
+        if (shareRoomInput) shareRoomInput.value = shareUrl;
+        if (shareRoomCode) shareRoomCode.textContent = currentRoom.toUpperCase();
+
+        if (whatsappBtn) {
+          whatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('¡Entra a destruir esta web conmigo en tiempo real! ' + shareUrl)}`;
+        }
+
+        shareModal.style.display = 'flex';
+
+        // Auto copy
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(shareUrl).then(() => {
+            if (copyShareUrlBtn) copyShareUrlBtn.textContent = '✅ ¡Copiado!';
+            setTimeout(() => { if (copyShareUrlBtn) copyShareUrlBtn.textContent = '📋 Copiar Enlace'; }, 3000);
+          }).catch(() => {});
+        }
+      });
+    }
+
+    if (closeShare && shareModal) {
+      closeShare.addEventListener('click', () => { shareModal.style.display = 'none'; });
+    }
+
+    if (copyShareUrlBtn && shareRoomInput) {
+      copyShareUrlBtn.addEventListener('click', () => {
+        shareRoomInput.select();
+        shareRoomInput.setSelectionRange(0, 99999);
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(shareRoomInput.value);
+        } else {
+          document.execCommand('copy');
+        }
+        copyShareUrlBtn.textContent = '✅ ¡Copiado con Éxito!';
+        setTimeout(() => { copyShareUrlBtn.textContent = '📋 Copiar Enlace'; }, 3000);
       });
     }
 

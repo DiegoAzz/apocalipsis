@@ -709,6 +709,74 @@ body.touch-active #mobile-controls {
   }
 }
 
+/* Modal Invitar Amigo */
+#share-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 310;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-url-box {
+  display: flex;
+  gap: 8px;
+  background: #000000;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  padding: 6px;
+  margin: 16px 0;
+}
+
+#share-room-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: monospace;
+  outline: none;
+  padding: 4px 8px;
+}
+
+.btn-whatsapp {
+  background: #25d366 !important;
+  color: #ffffff !important;
+  text-decoration: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 0 #128c7e !important;
+  cursor: pointer;
+}
+
+.share-actions-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.room-code-tag {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.room-code-tag strong {
+  color: var(--orange);
+  letter-spacing: 1px;
+}
+
 #scoreboard-modal {
   display: none;
   position: absolute;

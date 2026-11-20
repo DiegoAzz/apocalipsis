@@ -200,7 +200,7 @@
           <div class="guide-box">
             <h3>🏃 MOVIMIENTO Y JETPACK</h3>
             <ul>
-              <li><strong>A / D:</strong> Correr a izquierda y derecha.</li>
+              <li><strong>A / D (o Joystick en móvil):</strong> Correr a izquierda y derecha.</li>
               <li><strong>Espacio (un toque):</strong> Salto normal.</li>
               <li><strong>Espacio (doble toque en el aire):</strong> Voltereta acrobática (somersault).</li>
               <li><strong>Espacio (mantener presionado):</strong> Enciende el <strong>Jetpack</strong> para volar libremente por toda la pantalla.</li>
@@ -210,32 +210,58 @@
           <div class="guide-box">
             <h3>💥 DESTRUCCIÓN Y DISPARO</h3>
             <ul>
-              <li><strong>Ratón:</strong> Mueve el cursor para apuntar el arma 360°.</li>
-              <li><strong>Clic Izquierdo:</strong> Dispara el arma seleccionada (abre cráteres y arranca letras).</li>
-              <li><strong>Clic Derecho:</strong> Lanza una granada que rebota en los textos y explota.</li>
-              <li><strong>Teclas 1 al 9 o Rueda:</strong> Cambia al Lanzacohetes, Railgun, Lanzallamas, etc.</li>
+              <li><strong>Ratón / Dedo en móvil:</strong> Apunta y <strong>deja presionado</strong> para disparar ráfagas automáticas sin parar.</li>
+              <li><strong>Clic Derecho / Botón Granada:</strong> Lanza granadas que rebotan en los textos y explotan.</li>
+              <li><strong>Teclas 1 al 9 o Toque en armas:</strong> Cambia al Lanzacohetes, Railgun, Lanzallamas, etc.</li>
             </ul>
           </div>
 
           <div class="guide-box">
-            <h3>🌐 CUALQUIER PÁGINA WEB</h3>
+            <h3>🌐 CUALQUIER PÁGINA WEB O IMAGEN</h3>
             <ul>
-              <li>En la barra superior, pega cualquier enlace (ej. <code>wikipedia.org</code>, <code>marca.com</code>, <code>bbc.com</code>) y pulsa <strong>⚡ DESTRUIR</strong>.</li>
-              <li>El motor descargará la página real, sus titulares, noticias e imágenes, y los convertirá en bloques que puedes volar por los aires.</li>
+              <li>Pega cualquier URL en la barra superior (ej. <code>facebook.com</code>, <code>wikipedia.org</code>) y pulsa <strong>⚡ DESTRUIR</strong>.</li>
+              <li>O pulsa <strong>🖼️ Subir Imagen</strong> para poner cualquier foto o meme en pantalla completa y destruirla.</li>
             </ul>
           </div>
 
           <div class="guide-box">
             <h3>👥 SOLITARIO VS MULTIJUGADOR</h3>
             <ul>
-              <li><strong>Modo Solo (por defecto):</strong> Estás tú solo para destruir la web en paz y sin que nadie te moleste.</li>
-              <li><strong>Modo Online:</strong> Puedes entrar a la arena compartida y luchar contra amigos u otros jugadores.</li>
-              <li><strong>+ Añadir Bot:</strong> Puedes spawnear rivales controlados por IA cuando quieras.</li>
+              <li><strong>Modo Solo:</strong> Estás tú solo para destruir la web en paz.</li>
+              <li><strong>Modo Online / Invitar Amigo:</strong> Comparte el enlace de sala y luchen en tiempo real.</li>
             </ul>
           </div>
         </div>
 
         <button class="btn btn-primary btn-block" id="btn-start-playing">¡ENTENDIDO, A DESTRUIR!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Invitar a un Amigo / Compartir Sala -->
+  <div id="share-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>🔗 INVITAR A UN AMIGO A TU SALA</h2>
+        <button class="close-btn" id="btn-close-share">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="desc">Comparte este enlace para que tu amigo entre a la <strong>misma página web</strong> y jueguen juntos en tiempo real:</p>
+        
+        <div class="share-url-box">
+          <input type="text" id="share-room-input" readonly value="">
+          <button class="btn btn-primary" id="btn-copy-share-url">📋 Copiar Enlace</button>
+        </div>
+
+        <div class="share-actions-row">
+          <a class="btn btn-whatsapp" id="btn-whatsapp-share" target="_blank" href="#">
+            <span>💬 Compartir por WhatsApp</span>
+          </a>
+        </div>
+
+        <div class="room-code-tag">
+          <span>Código de sala: <strong id="share-room-code">LOBBY</strong></span>
+        </div>
       </div>
     </div>
   </div>
