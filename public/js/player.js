@@ -156,6 +156,7 @@ class Player {
     if (this.grenadeCooldown > 0) this.grenadeCooldown -= dt;
     if (this.muzzleFlash > 0) this.muzzleFlash -= dt;
     if (this.hurtTimer > 0) this.hurtTimer -= dt;
+    if (this.spawnBeaconTimer > 0) this.spawnBeaconTimer -= dt;
 
     if (input) {
       this.aimX = input.mouseX;
@@ -511,10 +512,6 @@ class Player {
         this.y = newY;
       }
       this.onGround = false;
-    }
-
-    if (this.spawnBeaconTimer > 0) {
-      this.spawnBeaconTimer -= dt;
     }
 
     if (this.y > level.height + 40) {
