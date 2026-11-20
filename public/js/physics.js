@@ -1,4 +1,4 @@
-// Projectile, Debris Particle, and Explosion Physics Engine
+// Projectile, Debris Particle, and Advanced Visual Effects Physics Engine
 class PhysicsEngine {
   constructor(level) {
     this.level = level;
@@ -15,14 +15,15 @@ class PhysicsEngine {
   getShakeOffset() {
     if (this.trauma <= 0.001) return { x: 0, y: 0, rot: 0 };
     const shake = this.trauma * this.trauma;
-    const maxOffset = 18;
-    const maxRot = 0.03;
+    const maxOffset = 22;
+    const maxRot = 0.04;
     const ox = (Math.random() * 2 - 1) * maxOffset * shake;
     const oy = (Math.random() * 2 - 1) * maxOffset * shake;
     const rot = (Math.random() * 2 - 1) * maxRot * shake;
     return { x: ox, y: oy, rot };
   }
 
+  // Debris chunks blasted out of carved terrain
   spawnDebris(debrisList) {
     if (!debrisList || !debrisList.length) return;
     for (const d of debrisList) {
@@ -30,17 +31,39 @@ class PhysicsEngine {
         type: 'debris',
         x: d.x,
         y: d.y,
-        vx: d.vx,
-        vy: d.vy,
-        color: d.color || '#444444',
-        size: d.size || 3,
+        vx: d.vx * (1.2 + Math.random() * 0.8),
+        vy: d.vy * (1.2 + Math.random() * 0.8),
+        color: d.color || '#3f3f46',
+        size: d.size || Math.floor(Math.random() * 3 + 2),
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 12,
         life: 1.0,
         decay: 0.008 + Math.random() * 0.015
       });
     }
   }
 
-  spawnShockwave(x, y, maxRadius = 50, color = 'rgba(249, 115, 22, 0.7)') {
+  // Glowing sparks that bounce off terrain
+  spawnSparks(x, y, count = 12, color = '#fef08a', minSpd = 4, maxSpd = 12, baseAngle = null, spread = Math.PI * 2) {
+    for (let i = 0; i < count; i++) {
+      const angle = (baseAngle !== null) ? (baseAngle + (Math.random() - 0.5) * spread) : (Math.random() * Math.PI * 2);
+      const spd = minSpd + Math.random() * (maxSpd - minSpd);
+      this.particles.push({
+        type: 'spark',
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        color,
+        size: 1.5 + Math.random() * 1.5,
+        life: 1.0,
+        decay: 0.025 + Math.random() * 0.035
+      });
+    }
+  }
+
+  // Double glowing shockwave ring
+  spawnShockwave(x, y, maxRadius = 50, color = 'rgba(249, 115, 22, 0.85)') {
     this.shockwaves.push({
       x,
       y,
@@ -48,12 +71,71 @@ class PhysicsEngine {
       maxRadius,
       color,
       life: 1.0,
-      decay: 0.04
+      decay: 0.035
+    });
+    // Inner high-energy ring
+    this.shockwaves.push({
+      x,
+      y,
+      radius: 2,
+      maxRadius: maxRadius * 0.7,
+      color: '#ffffff',
+      life: 1.0,
+      decay: 0.05
     });
   }
 
+  // Fireball burst with smoke clouds
+  spawnExplosionBurst(x, y, radius = 40, color = '#f97316') {
+    // 1. Fiery core puffs
+    const fireCount = Math.floor(radius / 4);
+    for (let i = 0; i < fireCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * radius * 0.6;
+      const speed = 1.5 + Math.random() * 3.5;
+      this.particles.push({
+        type: 'fire',
+        x: x + Math.cos(angle) * dist,
+        y: y + Math.sin(angle) * dist,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.2,
+        color: ['#ffffff', '#fde047', '#f97316', '#ef4444'][Math.floor(Math.random() * 4)],
+        size: 6 + Math.random() * (radius * 0.35),
+        maxSize: 12 + Math.random() * (radius * 0.5),
+        life: 1.0,
+        decay: 0.03 + Math.random() * 0.025
+      });
+    }
+
+    // 2. Thick expanding smoke puffs
+    const smokeCount = Math.floor(radius / 5);
+    for (let i = 0; i < smokeCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 2.5;
+      this.particles.push({
+        type: 'smoke',
+        x: x + (Math.random() - 0.5) * radius * 0.4,
+        y: y + (Math.random() - 0.5) * radius * 0.4,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.5,
+        color: Math.random() > 0.5 ? 'rgba(75, 85, 99, 0.7)' : 'rgba(31, 41, 55, 0.8)',
+        size: 8 + Math.random() * 8,
+        life: 1.0,
+        decay: 0.018 + Math.random() * 0.015
+      });
+    }
+
+    // 3. Shrapnel sparks
+    this.spawnSparks(x, y, 22, '#fde047', 6, 18);
+  }
+
+  // Gun muzzle smoke & sparks
   spawnMuzzleSmoke(x, y, angle) {
-    for (let i = 0; i < 4; i++) {
+    // Muzzle sparks
+    this.spawnSparks(x, y, 6, '#fef08a', 4, 12, angle, 0.45);
+
+    // Muzzle smoke puffs
+    for (let i = 0; i < 3; i++) {
       const spread = (Math.random() - 0.5) * 0.4;
       const speed = 2 + Math.random() * 3;
       this.particles.push({
@@ -62,27 +144,45 @@ class PhysicsEngine {
         y,
         vx: Math.cos(angle + spread) * speed,
         vy: Math.sin(angle + spread) * speed,
-        color: 'rgba(200, 200, 200, 0.6)',
+        color: 'rgba(212, 212, 216, 0.6)',
         size: 3 + Math.random() * 4,
         life: 1.0,
-        decay: 0.04 + Math.random() * 0.03
+        decay: 0.045 + Math.random() * 0.03
       });
     }
   }
 
+  // Jetpack twin fire exhaust
   spawnJetpackFlame(x, y, facing) {
-    for (let i = 0; i < 2; i++) {
-      const spread = (Math.random() - 0.5) * 0.5;
+    for (let i = 0; i < 3; i++) {
       this.particles.push({
         type: 'flame',
-        x: x + (Math.random() - 0.5) * 6,
-        y: y + 22,
-        vx: (Math.random() - 0.5) * 1.5 - facing * 0.5,
-        vy: 3 + Math.random() * 3,
+        x: x + (Math.random() - 0.5) * 6 - facing * 4,
+        y: y + 20,
+        vx: (Math.random() - 0.5) * 1.5 - facing * 0.8,
+        vy: 4 + Math.random() * 4,
         color: Math.random() > 0.4 ? '#f97316' : '#fde047',
-        size: 3 + Math.random() * 3,
+        size: 3 + Math.random() * 4,
         life: 1.0,
-        decay: 0.08
+        decay: 0.09
+      });
+    }
+  }
+
+  // Hit impact blood / spark splatter
+  spawnHitSparks(x, y, color = '#ef4444') {
+    this.spawnSparks(x, y, 10, color, 3, 9);
+    for (let i = 0; i < 4; i++) {
+      this.particles.push({
+        type: 'hit_spark',
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6 - 2,
+        color: '#dc2626',
+        size: 2.5 + Math.random() * 2,
+        life: 1.0,
+        decay: 0.04
       });
     }
   }
@@ -99,14 +199,14 @@ class PhysicsEngine {
     // Update Shockwaves
     for (let i = this.shockwaves.length - 1; i >= 0; i--) {
       const sw = this.shockwaves[i];
-      sw.radius += (sw.maxRadius - sw.radius) * 0.25;
+      sw.radius += (sw.maxRadius - sw.radius) * 0.28;
       sw.life -= sw.decay;
       if (sw.life <= 0) {
         this.shockwaves.splice(i, 1);
       }
     }
 
-    // Update Particles (Debris & Smoke)
+    // Update Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= p.decay;
@@ -116,21 +216,42 @@ class PhysicsEngine {
       }
 
       if (p.type === 'debris') {
-        p.vy += 0.35; // gravity
+        p.vy += 0.42; // gravity
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot * dt;
+
+        // Bounce off solid terrain
+        if (this.level.isSolid(p.x, p.y)) {
+          p.vy = -p.vy * 0.45;
+          p.vx = p.vx * 0.65;
+          p.y -= 2;
+        }
+      } else if (p.type === 'spark') {
+        p.vy += 0.32; // slight gravity
         p.x += p.vx;
         p.y += p.vy;
 
         // Bounce off solid terrain
         if (this.level.isSolid(p.x, p.y)) {
-          p.vy = -p.vy * 0.45;
+          p.vy = -p.vy * 0.6;
           p.vx = p.vx * 0.7;
-          p.y -= 2;
         }
+      } else if (p.type === 'fire') {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.94;
+        p.vy *= 0.94;
+        if (p.size < p.maxSize) p.size += 0.4;
+      } else if (p.type === 'hit_spark') {
+        p.vy += 0.38;
+        p.x += p.vx;
+        p.y += p.vy;
       } else {
         // Smoke / flame
         p.x += p.vx;
         p.y += p.vy;
-        p.size += 0.15;
+        p.size += 0.18;
       }
     }
 
@@ -138,29 +259,32 @@ class PhysicsEngine {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
 
-      // Grenade physics
+      // Grenade physics with physical spin
       if (p.type === 'grenade') {
         p.timer -= dt;
-        p.vy += 0.45; // gravity
-        p.vx *= 0.985; // drag
+        p.vy += 0.48; // gravity
+        p.vx *= 0.985;
+        p.rotation = (p.rotation || 0) + p.vx * 0.08;
 
         const nextX = p.x + p.vx;
         const nextY = p.y + p.vy;
 
         if (this.level.isSolid(nextX, p.y)) {
-          p.vx = -p.vx * 0.6;
+          p.vx = -p.vx * 0.65;
+          this.spawnSparks(p.x, p.y, 3, '#fde047', 2, 5);
         } else {
           p.x = nextX;
         }
 
         if (this.level.isSolid(p.x, nextY)) {
-          p.vy = -p.vy * 0.6;
-          p.vx *= 0.8;
+          p.vy = -p.vy * 0.65;
+          p.vx *= 0.82;
+          this.spawnSparks(p.x, p.y, 3, '#fde047', 2, 5);
         } else {
           p.y = nextY;
         }
 
-        // Check enemy direct hit or timer expiration
+        // Direct hit on enemy operative
         let enemyHit = false;
         for (const t of targets) {
           if (t.id === p.ownerId || t.health <= 0) continue;
@@ -171,8 +295,7 @@ class PhysicsEngine {
         }
 
         if (p.timer <= 0 || enemyHit) {
-          // Detonate!
-          this.detonateExplosion(p.x, p.y, p.radius || 52, p.damage || 85, p.ownerId, 'grenade', onTerrainDamage, onTargetHit, targets);
+          this.detonateExplosion(p.x, p.y, p.radius || 54, p.damage || 90, p.ownerId, 'grenade', onTerrainDamage, onTargetHit, targets);
           this.projectiles.splice(i, 1);
           continue;
         }
@@ -181,29 +304,29 @@ class PhysicsEngine {
 
       // Parachute Bomb (Too Much)
       if (p.type === 'too_much') {
-        p.vy = Math.min(2.5, p.vy + 0.08); // slow fall with parachute
+        p.vy = Math.min(2.5, p.vy + 0.08);
         p.x += p.vx;
         p.y += p.vy;
 
-        // When close to ground or after timer, split into 8 cluster bombs
         p.timer -= dt;
         if (p.timer <= 0 || this.level.isSolid(p.x, p.y + 15)) {
+          // Split into 8 cluster grenades
           for (let k = 0; k < 8; k++) {
             const angle = (k / 8) * Math.PI * 2;
-            const speed = 4 + Math.random() * 3;
+            const speed = 4 + Math.random() * 3.5;
             this.projectiles.push({
               type: 'grenade',
               x: p.x,
               y: p.y - 10,
               vx: Math.cos(angle) * speed,
-              vy: Math.sin(angle) * speed - 2,
-              timer: 0.4 + Math.random() * 0.5,
-              radius: 40,
-              damage: 50,
+              vy: Math.sin(angle) * speed - 2.5,
+              timer: 0.35 + Math.random() * 0.5,
+              radius: 42,
+              damage: 55,
               ownerId: p.ownerId
             });
           }
-          this.detonateExplosion(p.x, p.y, 35, 40, p.ownerId, 'too_much', onTerrainDamage, onTargetHit, targets);
+          this.detonateExplosion(p.x, p.y, 40, 45, p.ownerId, 'too_much', onTerrainDamage, onTargetHit, targets);
           this.projectiles.splice(i, 1);
           continue;
         }
@@ -213,27 +336,28 @@ class PhysicsEngine {
       // Magic Wand Pillar of Light
       if (p.type === 'magic_wand') {
         p.life -= dt;
-        // Carve full vertical pillar
         const x = p.targetX;
-        for (let py = 0; py < this.level.height; py += 30) {
+        for (let py = 0; py < this.level.height; py += 28) {
           const debris = this.level.carveHole(x, py, 32, 'wand');
           this.spawnDebris(debris);
         }
-        this.spawnShockwave(x, p.targetY, 120, 'rgba(168, 85, 247, 0.9)');
-        this.addTrauma(0.6);
+        this.spawnShockwave(x, p.targetY, 130, '#a855f7');
+        this.spawnSparks(x, p.targetY, 30, '#e879f9', 6, 20);
+        this.addTrauma(0.65);
         window.soundManager.playExplosion();
 
         if (onTerrainDamage) {
-          for (let py = 0; py < this.level.height; py += 30) {
+          for (let py = 0; py < this.level.height; py += 28) {
             onTerrainDamage(x, py, 32, 'wand');
           }
         }
 
-        // Damage all targets in column
+        // Damage column
         for (const t of targets) {
           if (t.health <= 0) continue;
-          if (Math.abs(t.x - x) < 45) {
-            if (onTargetHit) onTargetHit(t.id, 120, 'wand', p.ownerId);
+          if (Math.abs(t.x - x) < 48) {
+            if (onTargetHit) onTargetHit(t.id, 125, 'wand', p.ownerId);
+            this.spawnHitSparks(t.x, t.y, '#e879f9');
           }
         }
         this.projectiles.splice(i, 1);
@@ -243,60 +367,77 @@ class PhysicsEngine {
       // Neutron Star (Pulsar Jets)
       if (p.type === 'neutron') {
         p.timer -= dt;
-        p.rotation = (p.rotation || 0) + 0.18;
+        p.rotation = (p.rotation || 0) + 0.22;
 
-        // Emit twin pulsar laser jets
         for (const dir of [0, Math.PI]) {
           const beamAngle = p.rotation + dir;
-          const bx2 = p.x + Math.cos(beamAngle) * 350;
-          const by2 = p.y + Math.sin(beamAngle) * 350;
-          this.level.carveLine(p.x, p.y, bx2, by2, 12);
+          const bx2 = p.x + Math.cos(beamAngle) * 360;
+          const by2 = p.y + Math.sin(beamAngle) * 360;
+          this.level.carveLine(p.x, p.y, bx2, by2, 14);
           if (onTerrainDamage) onTerrainDamage(p.x, p.y, 16, 'neutron');
 
-          // Damage targets along beam
+          // Plasma sparks along beam
+          if (Math.random() < 0.4) {
+            this.spawnSparks(p.x + Math.cos(beamAngle) * (Math.random() * 300), p.y + Math.sin(beamAngle) * (Math.random() * 300), 2, '#38bdf8', 2, 6);
+          }
+
           for (const t of targets) {
             if (t.health <= 0) continue;
             const dist = Math.hypot(t.x - p.x, t.y - p.y);
-            if (dist < 350) {
+            if (dist < 360) {
               const angDiff = Math.abs(Math.atan2(t.y - p.y, t.x - p.x) - beamAngle);
-              if (angDiff < 0.12 && onTargetHit) {
-                onTargetHit(t.id, 25 * dt * 60, 'neutron', p.ownerId);
+              if (angDiff < 0.14 && onTargetHit) {
+                onTargetHit(t.id, 28 * dt * 60, 'neutron', p.ownerId);
+                this.spawnHitSparks(t.x, t.y, '#38bdf8');
               }
             }
           }
         }
 
         if (p.timer <= 0) {
-          this.detonateExplosion(p.x, p.y, 60, 90, p.ownerId, 'neutron', onTerrainDamage, onTargetHit, targets);
+          this.detonateExplosion(p.x, p.y, 65, 95, p.ownerId, 'neutron', onTerrainDamage, onTargetHit, targets);
           this.projectiles.splice(i, 1);
         }
         continue;
       }
 
-      // Standard bullet / shotgun pellet / rocket / flame
+      // Standard bullets, rockets, flames
       p.life -= dt;
       if (p.life <= 0) {
         this.projectiles.splice(i, 1);
         continue;
       }
 
+      // Rocket missile exhaust trail
       if (p.type === 'rocket') {
         p.vy += 0.08;
-        // Emit smoke & flame trail
+        // Flame exhaust
+        this.particles.push({
+          type: 'flame',
+          x: p.x - p.vx * 0.4,
+          y: p.y - p.vy * 0.4,
+          vx: (Math.random() - 0.5) * 1.0,
+          vy: (Math.random() - 0.5) * 1.0,
+          color: Math.random() > 0.3 ? '#f97316' : '#fef08a',
+          size: 4 + Math.random() * 3,
+          life: 0.3,
+          decay: 0.08
+        });
+        // Smoke trail
         this.particles.push({
           type: 'smoke',
-          x: p.x - p.vx * 0.5,
-          y: p.y - p.vy * 0.5,
-          vx: (Math.random() - 0.5) * 0.8,
-          vy: (Math.random() - 0.5) * 0.8,
-          color: 'rgba(220, 220, 220, 0.7)',
-          size: 4 + Math.random() * 3,
-          life: 0.6,
+          x: p.x - p.vx * 0.8,
+          y: p.y - p.vy * 0.8,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          color: 'rgba(212, 212, 216, 0.7)',
+          size: 5 + Math.random() * 4,
+          life: 0.7,
           decay: 0.03
         });
       }
 
-      // Step movement with raycast checking for solid hit
+      // Step raycast movement
       const speed = Math.hypot(p.vx, p.vy);
       const steps = Math.max(1, Math.ceil(speed / 4));
       const stepX = p.vx / steps;
@@ -308,19 +449,21 @@ class PhysicsEngine {
         p.x += stepX;
         p.y += stepY;
 
-        // Check Target Hit
+        // Target hit check
         for (const t of targets) {
           if (t.id === p.ownerId || t.health <= 0) continue;
-          const hitRadius = p.type === 'flame' ? 22 : 18;
-          if (Math.hypot(t.x - p.x, t.y - (p.y - 10)) < hitRadius) {
+          const hitRadius = p.type === 'flame' ? 24 : 18;
+          if (Math.hypot(t.x - p.x, t.y - (t.y - 12)) < hitRadius || Math.hypot(t.x - p.x, t.y - p.y) < hitRadius) {
             hit = true;
+            this.spawnHitSparks(p.x, p.y);
             if (p.type === 'rocket') {
-              this.detonateExplosion(p.x, p.y, 48, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
+              this.detonateExplosion(p.x, p.y, 50, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
             } else {
               if (onTargetHit) onTargetHit(t.id, p.damage, p.weapon, p.ownerId);
-              const debris = this.level.carveHole(p.x, p.y, p.radius || 8, p.weapon);
+              const debris = this.level.carveHole(p.x, p.y, p.radius || 9, p.weapon);
               this.spawnDebris(debris);
-              if (onTerrainDamage) onTerrainDamage(p.x, p.y, p.radius || 8, p.weapon);
+              this.spawnSparks(p.x, p.y, 6, '#fde047', 3, 8);
+              if (onTerrainDamage) onTerrainDamage(p.x, p.y, p.radius || 9, p.weapon);
             }
             break;
           }
@@ -328,15 +471,16 @@ class PhysicsEngine {
 
         if (hit) break;
 
-        // Check Terrain Hit
+        // Terrain hit check
         if (this.level.isSolid(p.x, p.y)) {
           hit = true;
           if (p.type === 'rocket') {
-            this.detonateExplosion(p.x, p.y, 48, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
+            this.detonateExplosion(p.x, p.y, 50, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
           } else {
             const r = p.radius || (p.type === 'flame' ? 14 : 9);
             const debris = this.level.carveHole(p.x, p.y, r, p.weapon);
             this.spawnDebris(debris);
+            this.spawnSparks(p.x, p.y, 8, '#fde047', 4, 10);
             if (onTerrainDamage) onTerrainDamage(p.x, p.y, r, p.weapon);
           }
           break;
@@ -354,9 +498,10 @@ class PhysicsEngine {
     const debris = this.level.carveHole(x, y, radius, weapon);
     this.spawnDebris(debris);
 
-    // 2. Visual shockwave & camera trauma
-    this.spawnShockwave(x, y, radius * 1.5, weapon === 'neutron' ? '#38bdf8' : '#f97316');
-    this.addTrauma(Math.min(0.8, radius / 55));
+    // 2. Layered Visual Fireball & Shockwaves
+    this.spawnExplosionBurst(x, y, radius, weapon === 'neutron' ? '#38bdf8' : '#f97316');
+    this.spawnShockwave(x, y, radius * 1.6, weapon === 'neutron' ? '#38bdf8' : '#f97316');
+    this.addTrauma(Math.min(0.85, radius / 45));
     window.soundManager.playExplosion();
 
     // 3. Notify server of terrain damage
@@ -368,58 +513,115 @@ class PhysicsEngine {
     for (const t of targets) {
       if (t.health <= 0) continue;
       const dist = Math.hypot(t.x - x, t.y - y);
-      if (dist < radius * 1.2) {
-        const falloff = 1 - (dist / (radius * 1.2));
+      if (dist < radius * 1.25) {
+        const falloff = 1 - (dist / (radius * 1.25));
         const dmg = Math.round(damage * Math.max(0.3, falloff));
         if (onTargetHit) {
           onTargetHit(t.id, dmg, weapon, attackerId);
         }
+        this.spawnHitSparks(t.x, t.y);
       }
     }
   }
 
   // Render all active projectiles, particles, and shockwaves
   render(ctx) {
-    // Render Shockwaves
+    // 1. Render Shockwaves with neon glow
     for (const sw of this.shockwaves) {
       ctx.save();
       ctx.strokeStyle = sw.color;
-      ctx.lineWidth = 3 * sw.life;
+      ctx.lineWidth = 3.5 * sw.life;
       ctx.globalAlpha = sw.life;
+      ctx.shadowColor = sw.color;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
 
-    // Render Particles
+    // 2. Render Particles
     for (const p of this.particles) {
       ctx.save();
-      ctx.fillStyle = p.color;
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+
+      if (p.type === 'debris') {
+        // Rotating square voxel chunks
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot || 0);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      } else if (p.type === 'spark' || p.type === 'hit_spark') {
+        // Glowing incandescent streak in velocity direction
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.vx * 1.4, p.y - p.vy * 1.4);
+        ctx.stroke();
+      } else if (p.type === 'fire') {
+        // Multi-layered hot fireball
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'laser') {
+        // Railgun intense beam
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 6 * p.life;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.moveTo(p.x1, p.y1);
+        ctx.lineTo(p.x2, p.y2);
+        ctx.stroke();
+
+        // Inner pure white beam
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2 * p.life;
+        ctx.beginPath();
+        ctx.moveTo(p.x1, p.y1);
+        ctx.lineTo(p.x2, p.y2);
+        ctx.stroke();
+      } else {
+        // Smoke or flame puff
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 
-    // Render Projectiles
+    // 3. Render Projectiles
     for (const p of this.projectiles) {
       ctx.save();
       if (p.type === 'grenade') {
-        // Render bouncing grenade
-        ctx.fillStyle = '#22c55e';
-        ctx.strokeStyle = '#14532d';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        // Rotating Grenade with flashing LED
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation || 0);
 
-        // Flashing pin / fuse
-        ctx.fillStyle = (Math.sin(Date.now() * 0.02) > 0) ? '#ef4444' : '#ffffff';
+        const sp = window.SPRITES && window.SPRITES.weapons && window.SPRITES.weapons['Grenade'];
+        if (window.spriteSheetImg && window.spriteSheetImg.complete && sp) {
+          ctx.drawImage(window.spriteSheetImg, sp.x, sp.y, sp.w, sp.h, -9, -9, 18, 18);
+        } else {
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(0, 0, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Flashing fuse LED
+        const blink = Math.sin(Date.now() * 0.02) > 0;
+        ctx.fillStyle = blink ? '#ef4444' : '#ffffff';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = blink ? 8 : 2;
         ctx.beginPath();
-        ctx.arc(p.x, p.y - 7, 2.5, 0, Math.PI * 2);
+        ctx.arc(0, -7, 2.5, 0, Math.PI * 2);
         ctx.fill();
       } else if (p.type === 'too_much') {
         // Parachute Bomb
@@ -428,7 +630,6 @@ class PhysicsEngine {
         ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // Parachute canopy
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -441,42 +642,72 @@ class PhysicsEngine {
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
       } else if (p.type === 'neutron') {
-        // Pulsar Star
+        // Pulsar Star with Accretion Glow
         ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 18;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
         ctx.fill();
+
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.stroke();
       } else if (p.type === 'rocket') {
-        // Rocket missile
+        // Rocket missile oriented in flight direction
         const angle = Math.atan2(p.vy, p.vx);
         ctx.translate(p.x, p.y);
         ctx.rotate(angle);
 
-        ctx.fillStyle = '#64748b';
-        ctx.fillRect(-10, -3, 14, 6);
-        ctx.fillStyle = '#ef4444';
+        const sp = window.SPRITES && window.SPRITES.weapons && window.SPRITES.weapons['Rocket Launcher'];
+        if (window.spriteSheetImg && window.spriteSheetImg.complete && sp) {
+          ctx.drawImage(window.spriteSheetImg, sp.x, sp.y, sp.w, sp.h, -16, -6, 32, 12);
+        } else {
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-12, -4, 18, 8);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.moveTo(6, -4);
+          ctx.lineTo(14, 0);
+          ctx.lineTo(6, 4);
+          ctx.fill();
+        }
+
+        // Blazing Thruster Jet
+        ctx.fillStyle = '#fde047';
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.moveTo(4, -3);
-        ctx.lineTo(10, 0);
-        ctx.lineTo(4, 3);
+        ctx.moveTo(-16, -3);
+        ctx.lineTo(-24 - Math.random() * 8, 0);
+        ctx.lineTo(-16, 3);
         ctx.fill();
       } else if (p.type === 'flame') {
-        ctx.fillStyle = Math.random() > 0.5 ? '#f97316' : '#eab308';
+        // Expanding flame tongue
+        const flameColor = Math.random() > 0.4 ? '#f97316' : '#fde047';
+        ctx.fillStyle = flameColor;
+        ctx.shadowColor = flameColor;
+        ctx.shadowBlur = 10;
         ctx.globalAlpha = p.life;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius || 8, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.radius || 10, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Standard bullet tracer
+        // Glowing Bullet Tracer
         ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 6;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x - p.vx * 0.35, p.y - p.vy * 0.35);
+        ctx.lineTo(p.x - p.vx * 0.45, p.y - p.vy * 0.45);
         ctx.stroke();
+
+        // Bullet core head
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
     }

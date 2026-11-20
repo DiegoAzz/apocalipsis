@@ -512,17 +512,24 @@ class Player {
     }
   }
 
-  takeDamage(amount, weapon, attackerId) {
+  takeDamage(amount, weapon, attackerId, physics) {
     if (this.isDead) return;
     this.health = Math.max(0, this.health - amount);
     this.hurtTimer = 0.25;
     window.soundManager.playHit();
+
+    if (physics) {
+      physics.spawnHitSparks(this.x, this.y - 12);
+    }
 
     if (this.health <= 0) {
       this.isDead = true;
       this.deaths++;
       this.respawnTimer = 2.5;
       window.soundManager.playDeath();
+      if (physics) {
+        physics.spawnSparks(this.x, this.y - 12, 16, '#ef4444', 3, 10);
+      }
     }
   }
 

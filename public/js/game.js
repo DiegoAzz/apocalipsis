@@ -487,6 +487,8 @@ class Game {
     const originX = data.originX;
     const originY = data.originY;
 
+    this.physics.spawnMuzzleSmoke(originX, originY, angle);
+
     if (w.name === 'Pistol') {
       window.soundManager.playPistol();
       this.physics.addProjectile({
@@ -555,6 +557,16 @@ class Game {
       const endY = originY + Math.sin(angle) * maxDist;
       this.level.carveLine(originX, originY, endX, endY, 18);
       this.physics.spawnShockwave(originX, originY, 40, '#38bdf8');
+      this.physics.particles.push({
+        type: 'laser',
+        x1: originX,
+        y1: originY,
+        x2: endX,
+        y2: endY,
+        color: '#38bdf8',
+        life: 1.0,
+        decay: 0.08
+      });
     } else if (w.name === 'Flamethrower') {
       window.soundManager.playFlamethrower();
       const spread = (Math.random() - 0.5) * 0.22;
@@ -647,7 +659,7 @@ class Game {
           this.multiplayer.emitPlayerHit(targetId, damage, weapon, attackerId);
         } else {
           const t = this.findTargetById(targetId);
-          if (t) t.takeDamage(damage, weapon, attackerId);
+          if (t) t.takeDamage(damage, weapon, attackerId, this.physics);
         }
       }
     );
