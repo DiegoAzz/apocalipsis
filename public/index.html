@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Destroy Any Website - Destruye cualquier página web</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Barra Superior de Navegación & Selector de URL -->
+  <header id="top-nav">
+    <div class="brand">
+      <span class="bolt">⚡</span>
+      <span class="brand-title">DESTROY ANY WEBSITE</span>
+    </div>
+
+    <!-- Buscador / Input de URL -->
+    <div class="url-control-group">
+      <input type="text" id="webpage-url-input" placeholder="Escribe cualquier URL (ej: wikipedia.org, marca.com, bbc.com)..." value="https://en.wikipedia.org/wiki/Stick_figure">
+      <button class="btn btn-primary" id="btn-destroy-url">
+        <span>⚡ DESTRUIR</span>
+      </button>
+    </div>
+
+    <!-- Páginas Rápidas & Subir Imagen -->
+    <div class="preset-group">
+      <button class="preset-pill active" data-preset="wikipedia">📄 Wikipedia</button>
+      <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
+      <button class="preset-pill" data-preset="google">🔍 Google</button>
+      <button class="preset-pill" data-preset="hackernews">💻 Hacker News</button>
+      <input type="file" id="image-upload-input" accept="image/*" style="display: none">
+      <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
+    </div>
+
+    <!-- Controles de Modo & Sonido -->
+    <div class="status-badges">
+      <button class="btn btn-mode active" id="btn-mode-solo">👤 Modo Solo</button>
+      <button class="btn btn-mode" id="btn-mode-multi">🌐 Online</button>
+      <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
+      <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
+      <button class="btn btn-sm" id="btn-toggle-sound">🔊 Sonido</button>
+      <button class="btn btn-sm btn-help" id="btn-help">❓ ¿Cómo jugar?</button>
+    </div>
+  </header>
+
+  <!-- Barra de Progreso de Destrucción (Estilo Sprite Fusion) -->
+  <div id="destruction-meter-container">
+    <div id="destruction-bar-fill"></div>
+    <span id="destruction-percent-text">0.0% DESTRUIDO</span>
+  </div>
+
+  <!-- Canvas Principal del Videojuego -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Notificaciones de Bajas (Kill Feed) -->
+  <div id="kill-feed"></div>
+
+  <!-- Chat Integrado (Solo Multijugador) -->
+  <div id="chat-container">
+    <div id="chat-log"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Pulsa Enter para chatear..." maxlength="120">
+    </div>
+  </div>
+
+  <!-- HUD Lateral Izquierdo: Vida & Jetpack -->
+  <div id="hud-stats">
+    <div class="status-card">
+      <div class="status-row">
+        <span class="lbl">VIDA</span>
+        <div class="meter-outer">
+          <div id="hud-hp-bar"></div>
+        </div>
+        <span class="val" id="hud-hp-text">100 HP</span>
+      </div>
+      <div class="status-row">
+        <span class="lbl">JET</span>
+        <div class="meter-outer fuel">
+          <div id="hud-fuel-bar"></div>
+        </div>
+        <span class="val" id="hud-fuel-text">100% JET</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA DE ARMAS INFERIOR EXACTA A SPRITE FUSION -->
+  <div class="hud-bottom-wrap">
+    <!-- Etiqueta Flotante con el Nombre del Arma Activa -->
+    <div class="wname-tag" id="wname-tag">
+      <span id="wname-text">Pistol</span>
+      <span class="ammo-tag" id="wname-ammo">∞</span>
+    </div>
+
+    <!-- Slots de Armas 1 al 9 + Granada -->
+    <div class="hud-weapons" id="hud-weapons">
+      <!-- 1: Pistola -->
+      <div class="slot active" data-slot="0">
+        <kbd class="key">1</kbd>
+        <canvas class="slot-icon" id="icon-0" width="48" height="32"></canvas>
+        <span class="slot-lbl">Pistol</span>
+      </div>
+      <!-- 2: SMG -->
+      <div class="slot" data-slot="1">
+        <kbd class="key">2</kbd>
+        <canvas class="slot-icon" id="icon-1" width="48" height="32"></canvas>
+        <span class="slot-lbl">SMG</span>
+      </div>
+      <!-- 3: Escopeta -->
+      <div class="slot" data-slot="2">
+        <kbd class="key">3</kbd>
+        <canvas class="slot-icon" id="icon-2" width="48" height="32"></canvas>
+        <span class="slot-lbl">Shotgun</span>
+      </div>
+      <!-- 4: Lanzacohetes -->
+      <div class="slot" data-slot="3">
+        <kbd class="key">4</kbd>
+        <canvas class="slot-icon" id="icon-3" width="48" height="32"></canvas>
+        <span class="slot-lbl">Rocket</span>
+      </div>
+      <!-- 5: Railgun -->
+      <div class="slot" data-slot="4">
+        <kbd class="key">5</kbd>
+        <canvas class="slot-icon" id="icon-4" width="48" height="32"></canvas>
+        <span class="slot-lbl">Railgun</span>
+      </div>
+      <!-- 6: Lanzallamas -->
+      <div class="slot" data-slot="5">
+        <kbd class="key">6</kbd>
+        <canvas class="slot-icon" id="icon-5" width="48" height="32"></canvas>
+        <span class="slot-lbl">Flame</span>
+      </div>
+      <!-- 7: Too Much (Racimo) -->
+      <div class="slot" data-slot="6">
+        <kbd class="key">7</kbd>
+        <canvas class="slot-icon" id="icon-6" width="48" height="32"></canvas>
+        <span class="slot-lbl">Cluster</span>
+      </div>
+      <!-- 8: Varita Mágica -->
+      <div class="slot" data-slot="7">
+        <kbd class="key">8</kbd>
+        <canvas class="slot-icon" id="icon-7" width="48" height="32"></canvas>
+        <span class="slot-lbl">Wand</span>
+      </div>
+      <!-- 9: Estrella Neutrones -->
+      <div class="slot" data-slot="8">
+        <kbd class="key">9</kbd>
+        <canvas class="slot-icon" id="icon-8" width="48" height="32"></canvas>
+        <span class="slot-lbl">Neutron</span>
+      </div>
+      <!-- Alt: Granada (Clic Derecho) -->
+      <div class="slot alt" data-slot="alt">
+        <kbd class="key">R-CLICK</kbd>
+        <canvas class="slot-icon" id="icon-alt" width="48" height="32"></canvas>
+        <span class="slot-lbl">Grenade</span>
+      </div>
+    </div>
+
+    <!-- Barra de Teclas y Controles (Estilo Sprite Fusion) -->
+    <div class="hud-hint">
+      <div class="keys-row">
+        <span><kbd>A</kbd><kbd>D</kbd> Correr</span>
+        <span><kbd>ESPACIO</kbd> Salto · Doble toque: Voltereta · Mantener: <strong>Volar con Jetpack</strong></span>
+        <span><kbd>CLIC IZQ</kbd> Disparar</span>
+        <span><kbd>CLIC DER</kbd> Granada</span>
+        <span><kbd>1-9 / Rueda</kbd> Armas</span>
+        <span><kbd>TAB</kbd> Marcador</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Guía "¿Cómo se juega?" -->
+  <div id="help-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>⚡ GUÍA RÁPIDA: ¿CÓMO SE JUEGA?</h2>
+        <button class="close-btn" id="btn-close-help">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="desc">Este juego convierte <strong>cualquier página web real</strong> en un escenario de plataformas 2D totalmente destructible. El objetivo es desintegrar el contenido de la página con tu arsenal.</p>
+        
+        <div class="guide-grid">
+          <div class="guide-box">
+            <h3>🏃 MOVIMIENTO Y JETPACK</h3>
+            <ul>
+              <li><strong>A / D:</strong> Correr a izquierda y derecha.</li>
+              <li><strong>Espacio (un toque):</strong> Salto normal.</li>
+              <li><strong>Espacio (doble toque en el aire):</strong> Voltereta acrobática (somersault).</li>
+              <li><strong>Espacio (mantener presionado):</strong> Enciende el <strong>Jetpack</strong> para volar libremente por toda la pantalla.</li>
+            </ul>
+          </div>
+
+          <div class="guide-box">
+            <h3>💥 DESTRUCCIÓN Y DISPARO</h3>
+            <ul>
+              <li><strong>Ratón:</strong> Mueve el cursor para apuntar el arma 360°.</li>
+              <li><strong>Clic Izquierdo:</strong> Dispara el arma seleccionada (abre cráteres y arranca letras).</li>
+              <li><strong>Clic Derecho:</strong> Lanza una granada que rebota en los textos y explota.</li>
+              <li><strong>Teclas 1 al 9 o Rueda:</strong> Cambia al Lanzacohetes, Railgun, Lanzallamas, etc.</li>
+            </ul>
+          </div>
+
+          <div class="guide-box">
+            <h3>🌐 CUALQUIER PÁGINA WEB</h3>
+            <ul>
+              <li>En la barra superior, pega cualquier enlace (ej. <code>wikipedia.org</code>, <code>marca.com</code>, <code>bbc.com</code>) y pulsa <strong>⚡ DESTRUIR</strong>.</li>
+              <li>El motor descargará la página real, sus titulares, noticias e imágenes, y los convertirá en bloques que puedes volar por los aires.</li>
+            </ul>
+          </div>
+
+          <div class="guide-box">
+            <h3>👥 SOLITARIO VS MULTIJUGADOR</h3>
+            <ul>
+              <li><strong>Modo Solo (por defecto):</strong> Estás tú solo para destruir la web en paz y sin que nadie te moleste.</li>
+              <li><strong>Modo Online:</strong> Puedes entrar a la arena compartida y luchar contra amigos u otros jugadores.</li>
+              <li><strong>+ Añadir Bot:</strong> Puedes spawnear rivales controlados por IA cuando quieras.</li>
+            </ul>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="btn-start-playing">¡ENTENDIDO, A DESTRUIR!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scoreboard Modal (Tab) -->
+  <div id="scoreboard-modal">
+    <div class="scoreboard-content">
+      <div class="scoreboard-head">
+        <h2>ESTADÍSTICAS Y BAJAS</h2>
+        <span class="sub">Mantén pulsado TAB para ver</span>
+      </div>
+      <table class="scoreboard-table">
+        <thead>
+          <tr>
+            <th>OPERATIVO</th>
+            <th>BAJAS</th>
+            <th>MUERTES</th>
+            <th>DAÑO</th>
+            <th>PUNTOS</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboard-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/levelGenerator.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/bot.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
