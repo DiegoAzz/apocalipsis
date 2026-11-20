@@ -506,21 +506,21 @@ class Game {
     const fitZoomX = (screenW * 0.94) / this.level.width;
     const fitZoomY = (screenH * 0.88) / this.level.height;
 
-    if (this.level.height > this.level.width * 1.3) {
-      // Mobile vertical screenshot
-      if (screenW <= 900) {
-        // On phone: zoom so the mobile screenshot exactly fits the phone screen width!
-        this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomX));
-      } else {
-        // On PC: zoom so the mobile screenshot fits nicely vertically in view
-        this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY));
-      }
+    if (screenW <= 900) {
+      // On phone: zoom so the image fills 100% of the mobile screen edge-to-edge!
+      this.camera.zoom = screenW / this.level.width;
+      this.camera.x = this.level.width / 2;
+      this.camera.y = this.level.height / 2;
+    } else if (this.level.height > this.level.width * 1.3) {
+      // On PC viewing a vertical mobile image: fit height nicely
+      this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY));
+      this.snapCameraToPlayer();
     } else {
       // Desktop screenshot or photo
       this.camera.zoom = Math.min(1.0, Math.max(0.35, Math.min(fitZoomX, fitZoomY)));
+      this.snapCameraToPlayer();
     }
 
-    this.snapCameraToPlayer();
     if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
     this.ui.setPresetDisplay('image', 'Imagen Personalizada');

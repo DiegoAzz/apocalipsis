@@ -650,25 +650,32 @@ class LevelEngine {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Adapt arena dimensions dynamically to match the uploaded image's exact natural aspect ratio!
-        const aspect = img.height / img.width;
-
+        // Adapt arena dimensions dynamically to match the mobile screen or desktop!
+        const isMobileScreen = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));
         let targetW, targetH;
-        if (aspect >= 1.35) {
-          // Mobile vertical screenshot: use authentic phone layout scale (e.g. 750-800px width)
-          targetW = Math.min(800, Math.max(500, img.width));
-          targetH = Math.round(targetW * aspect);
-          if (targetH > 2400) {
-            targetH = 2400;
-            targetW = Math.round(targetH / aspect);
-          }
+
+        if (isMobileScreen) {
+          // On mobile: take the exact aspect ratio and dimensions of the mobile phone!
+          const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : 2.0;
+          targetW = 800; // Crisp base width
+          targetH = Math.round(targetW * Math.max(1.5, Math.min(2.4, screenAspect)));
         } else {
-          // Desktop / Landscape / Square image
-          targetW = Math.min(1350, Math.max(800, img.width));
-          targetH = Math.round(targetW * aspect);
-          if (targetH > 2400) {
-            targetH = 2400;
-            targetW = Math.round(targetH / aspect);
+          // Desktop / PC
+          const aspect = img.height / img.width;
+          if (aspect >= 1.35) {
+            targetW = Math.min(800, Math.max(500, img.width));
+            targetH = Math.round(targetW * aspect);
+            if (targetH > 2400) {
+              targetH = 2400;
+              targetW = Math.round(targetH / aspect);
+            }
+          } else {
+            targetW = Math.min(1350, Math.max(800, img.width));
+            targetH = Math.round(targetW * aspect);
+            if (targetH > 2400) {
+              targetH = 2400;
+              targetW = Math.round(targetH / aspect);
+            }
           }
         }
 
@@ -677,8 +684,24 @@ class LevelEngine {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.width, this.height);
 
-        // Draw image directly across 100% of the destructible canvas
-        ctx.drawImage(img, 0, 0, this.width, this.height);
+        // Draw image covering 100% of the mobile screen without distortion
+        const imgRatio = img.width / img.height;
+        const canvasRatio = this.width / this.height;
+        let sWidth, sHeight, sx, sy;
+
+        if (imgRatio > canvasRatio) {
+          sHeight = img.height;
+          sWidth = img.height * canvasRatio;
+          sx = (img.width - sWidth) / 2;
+          sy = 0;
+        } else {
+          sWidth = img.width;
+          sHeight = img.width / canvasRatio;
+          sx = 0;
+          sy = (img.height - sHeight) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, this.width, this.height);
 
         // Sync solid collision grid so every pixel of the uploaded image is destructible!
         this.syncGridFromCanvas();
