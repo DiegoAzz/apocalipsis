@@ -311,12 +311,33 @@ io.on('connection', (socket) => {
     io.to(targetRoomId).emit('chat-message', joinMsg);
   });
 
+  socket.on('change-name', ({ name }) => {
+    if (!currentRoomId) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+    const player = room.players.get(playerId);
+    if (player && name) {
+      const cleanName = String(name).trim().slice(0, 16) || 'Operativo';
+      const oldName = player.name;
+      player.name = cleanName;
+      // Broadcast to ALL players in this room so both PC and Mobile update in real-time
+      io.to(currentRoomId).emit('player-renamed', {
+        id: playerId,
+        name: cleanName,
+        oldName
+      });
+    }
+  });
+
   socket.on('player-update', (data) => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.get(playerId);
     if (player) {
+      if (data.name && data.name !== player.name) {
+        player.name = String(data.name).trim().slice(0, 16);
+      }
       Object.assign(player, data, { id: playerId });
       socket.to(currentRoomId).emit('player-moved', player);
     }

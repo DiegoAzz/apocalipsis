@@ -100,9 +100,24 @@ class MultiplayerManager {
       this.game.ui.updatePlayerCount(this.remotePlayers.size + 1);
     });
 
+    this.socket.on('player-renamed', ({ id, name, oldName }) => {
+      const p = this.remotePlayers.get(id);
+      if (p) {
+        p.name = name;
+      }
+      if (this.game.ui) {
+        this.game.ui.appendChatMessage({
+          sender: 'SISTEMA',
+          color: '#38bdf8',
+          text: `👤 ${oldName} ahora es ${name}`
+        });
+      }
+    });
+
     this.socket.on('player-moved', (data) => {
       const p = this.remotePlayers.get(data.id);
       if (p) {
+        if (data.name && data.name !== p.name) p.name = data.name;
         // Smooth target lerp
         p.targetX = data.x;
         p.targetY = data.y;
@@ -213,6 +228,7 @@ class MultiplayerManager {
     this.lastEmitTime = now;
 
     this.socket.emit('player-update', {
+      name: player.name,
       x: Math.round(player.x),
       y: Math.round(player.y),
       vx: Math.round(player.vx * 10) / 10,
@@ -227,6 +243,12 @@ class MultiplayerManager {
       isFlipping: player.isFlipping,
       flipAngle: Math.round(player.flipAngle * 100) / 100
     });
+  }
+
+  emitChangeName(newName) {
+    if (this.connected && this.socket) {
+      this.socket.emit('change-name', { name: newName });
+    }
   }
 
   emitShoot(shootData) {

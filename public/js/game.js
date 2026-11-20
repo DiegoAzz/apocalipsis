@@ -7,12 +7,13 @@ class Game {
     this.level = new LevelEngine(1500, 2600, 5);
     this.physics = new PhysicsEngine(this.level);
 
-    this.localPlayer = new Player('local', 'Operative', '#f97316', true);
+    const savedName = (typeof localStorage !== 'undefined' && localStorage.getItem('destroy_player_name')) || 'Operativo';
+    this.localPlayer = new Player('local', savedName, '#f97316', true);
     this.bots = [];
     this.multiplayer = new MultiplayerManager(this);
 
-    // Solo Mode is DEFAULT: No bots or random players unless requested!
-    this.isSoloMode = true;
+    // Online Multiplayer is DEFAULT: shared real-time battlefield!
+    this.isSoloMode = false;
 
     // Camera State
     this.camera = {
@@ -73,18 +74,29 @@ class Game {
       }
     }
 
-    // Check if user entered via a shared room link (?room=...)
+    // Auto-connect to Online Multiplayer (room parameter or default 'lobby')
     const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-    if (roomParam && roomParam !== 'solo') {
+    const roomParam = urlParams.get('room') || 'lobby';
+    const soloParam = urlParams.get('solo');
+
+    if (soloParam === '1' || soloParam === 'true') {
+      this.isSoloMode = true;
+      const btnMulti = document.getElementById('btn-mode-multi');
+      const btnSolo = document.getElementById('btn-mode-solo');
+      if (btnMulti) btnMulti.classList.remove('active');
+      if (btnSolo) btnSolo.classList.add('active');
+      const chatCont = document.getElementById('chat-container');
+      if (chatCont) chatCont.style.display = 'none';
+    } else {
       this.isSoloMode = false;
       const btnMulti = document.getElementById('btn-mode-multi');
       const btnSolo = document.getElementById('btn-mode-solo');
       if (btnMulti) btnMulti.classList.add('active');
       if (btnSolo) btnSolo.classList.remove('active');
       const chatCont = document.getElementById('chat-container');
-      if (chatCont) chatCont.style.display = 'flex';
+      if (chatCont && window.innerWidth > 900) chatCont.style.display = 'flex';
 
+      // Connect to online room in real time with the custom player nickname!
       this.multiplayer.init(roomParam, this.localPlayer.name, this.localPlayer.color);
     }
 
@@ -450,6 +462,27 @@ class Game {
   async loadUserImage(imageSource) {
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
+
+    // Auto-fit camera zoom so the image looks natural, proportional and NOT gigantic!
+    const screenW = this.canvas.width || window.innerWidth;
+    const screenH = this.canvas.height || window.innerHeight;
+    const fitZoomX = (screenW * 0.94) / this.level.width;
+    const fitZoomY = (screenH * 0.88) / this.level.height;
+
+    if (this.level.height > this.level.width * 1.3) {
+      // Mobile vertical screenshot
+      if (screenW <= 900) {
+        // On phone: zoom so the mobile screenshot exactly fits the phone screen width!
+        this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomX));
+      } else {
+        // On PC: zoom so the mobile screenshot fits nicely vertically in view
+        this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY));
+      }
+    } else {
+      // Desktop screenshot or photo
+      this.camera.zoom = Math.min(1.0, Math.max(0.35, Math.min(fitZoomX, fitZoomY)));
+    }
+
     this.snapCameraToPlayer();
     if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
@@ -1139,16 +1172,20 @@ class UIManager {
         this.game.localPlayer.name = savedName;
         nameInput.value = savedName;
       }
-      nameInput.addEventListener('input', (e) => {
-        const clean = e.target.value.replace(/[^a-zA-Z0-9_ -]/g, '').slice(0, 15);
+      const handleNameChange = (val) => {
+        const clean = val.replace(/[^a-zA-Z0-9_ -]/g, '').slice(0, 15);
         if (clean) {
           this.game.localPlayer.name = clean;
           localStorage.setItem('destroy_player_name', clean);
           if (!this.game.isSoloMode && this.game.multiplayer) {
+            this.game.multiplayer.emitChangeName(clean);
             this.game.multiplayer.emitPlayerUpdate(this.game.localPlayer);
           }
         }
-      });
+      };
+
+      nameInput.addEventListener('input', (e) => handleNameChange(e.target.value));
+      nameInput.addEventListener('change', (e) => handleNameChange(e.target.value));
     }
 
     // Centering Camera Button

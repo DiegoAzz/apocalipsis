@@ -651,18 +651,25 @@ class LevelEngine {
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         // Adapt arena dimensions dynamically to match the uploaded image's exact natural aspect ratio!
-        // Base width 1600px ensures sharp pixel resolution without blur or stretching
-        const baseWidth = 1600;
         const aspect = img.height / img.width;
 
-        let targetW = baseWidth;
-        let targetH = Math.round(targetW * aspect);
-
-        // Keep height within comfortable playable range (e.g. min 800px, max 3600px)
-        if (targetH < 850) {
-          targetH = 850;
-        } else if (targetH > 3600) {
-          targetH = 3600;
+        let targetW, targetH;
+        if (aspect >= 1.35) {
+          // Mobile vertical screenshot: use authentic phone layout scale (e.g. 750-800px width)
+          targetW = Math.min(800, Math.max(500, img.width));
+          targetH = Math.round(targetW * aspect);
+          if (targetH > 2400) {
+            targetH = 2400;
+            targetW = Math.round(targetH / aspect);
+          }
+        } else {
+          // Desktop / Landscape / Square image
+          targetW = Math.min(1350, Math.max(800, img.width));
+          targetH = Math.round(targetW * aspect);
+          if (targetH > 2400) {
+            targetH = 2400;
+            targetW = Math.round(targetH / aspect);
+          }
         }
 
         this.resize(targetW, targetH);
