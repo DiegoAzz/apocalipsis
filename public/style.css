@@ -507,33 +507,89 @@ body, html {
   position: absolute;
   bottom: 82px;
   left: 20px;
-  width: 280px;
+  width: 290px;
   z-index: 80;
   display: none; /* Oculto en modo solo */
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(30, 41, 59, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chat-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+}
+
+.chat-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.chat-close-btn:hover {
+  color: #ef4444;
 }
 
 #chat-log {
-  max-height: 120px;
+  max-height: 130px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: rgba(10, 10, 14, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-size: 11px;
 }
 
+.chat-input-row {
+  display: flex;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .chat-input-row input {
-  width: 100%;
-  background: #000000;
-  border: 1px solid #3f3f46;
+  flex: 1;
+  background: #090d16;
+  border: none;
   color: #ffffff;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 12px;
   outline: none;
+}
+
+.chat-send-btn {
+  background: #0284c7;
+  border: none;
+  color: #ffffff;
+  padding: 0 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.chat-send-btn:hover {
+  background: #0369a1;
+}
+
+/* Botón flotante para abrir el Chat en móvil (oculto en desktop) */
+.btn-mobile-chat-toggle {
+  display: none;
 }
 
 /* Modal de Ayuda */
@@ -857,10 +913,64 @@ body.touch-active #mobile-controls {
     z-index: 90;
   }
 
-  /* Avisos y Chat desactivados en móvil para que no tapen la pantalla */
-  #chat-container,
+  /* Kill feed desactivado en móvil */
   #kill-feed {
     display: none !important;
+  }
+
+  /* Botón flotante para abrir Chat en Móvil */
+  .btn-mobile-chat-toggle {
+    display: inline-flex !important;
+    position: fixed;
+    top: 52px;
+    left: 8px;
+    z-index: 105;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid #38bdf8;
+    color: #e0f2fe;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  .chat-unread-badge {
+    display: none;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 999px;
+    font-weight: 900;
+  }
+
+  .chat-unread-badge.has-unread {
+    display: inline-block;
+  }
+
+  /* Chat móvil: Oculto por defecto, se abre sobre la pantalla al presionar el botón */
+  #chat-container {
+    display: none !important;
+    position: fixed !important;
+    top: 90px !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-width: 380px !important;
+    max-height: 280px !important;
+    z-index: 9999 !important;
+    border: 1px solid #38bdf8 !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
+  }
+
+  #chat-container.open-mobile {
+    display: flex !important;
   }
 
   /* Joystick Virtual ajustado */

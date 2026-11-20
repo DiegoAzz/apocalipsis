@@ -111,6 +111,7 @@ class Player {
     this.walkCycle = 0;
     this.muzzleFlash = 0;
     this.hurtTimer = 0;
+    this.spawnBeaconTimer = 5.0;
   }
 
   getCurrentWeapon() {
@@ -512,42 +513,34 @@ class Player {
       this.onGround = false;
     }
 
-    if (this.y > level.height + 60) {
-      this.takeDamage(100, 'void', null);
+    if (this.spawnBeaconTimer > 0) {
+      this.spawnBeaconTimer -= dt;
+    }
+
+    if (this.y > level.height + 40) {
+      // Re-enter smoothly from the top without dying
+      this.x = Math.max(100, Math.min(level.width - 100, this.x));
+      this.y = 120;
+      this.vy = 0;
+      this.vx = 0;
+      this.spawnBeaconTimer = 3.0;
     }
   }
 
   takeDamage(amount, weapon, attackerId, physics) {
-    if (this.isDead) return;
-    this.health = Math.max(0, this.health - amount);
-    this.hurtTimer = 0.25;
-    window.soundManager.playHit();
-
-    if (physics) {
-      physics.spawnHitSparks(this.x, this.y - 12);
-    }
-
-    if (this.health <= 0) {
-      this.isDead = true;
-      this.deaths++;
-      this.respawnTimer = 2.5;
-      window.soundManager.playDeath();
-      if (physics) {
-        physics.spawnSparks(this.x, this.y - 12, 16, '#ef4444', 3, 10);
-      }
-    }
+    // Co-op mode: players are invulnerable companions destroying websites together!
+    return;
   }
 
   respawn(level) {
     this.isDead = false;
     this.health = this.maxHealth;
-    const minX = Math.min(250, level.width * 0.2);
-    const rangeX = Math.max(100, level.width - minX * 2);
-    this.x = minX + Math.random() * rangeX;
-    this.y = Math.min(120, level.height * 0.15);
+    this.x = Math.round(level.width / 2);
+    this.y = 160;
     this.vx = 0;
     this.vy = 0;
     this.jetpackFuel = this.maxJetpackFuel;
+    this.spawnBeaconTimer = 5.0;
   }
 
   // RENDER FUTURISTIC OPERATIVE SPRITE
@@ -566,6 +559,29 @@ class Player {
 
     if (this.isFlipping) {
       ctx.rotate(this.flipAngle);
+    }
+
+    // High-Visibility Player Beacon on Spawn / Respawn
+    if (this.isLocal && this.spawnBeaconTimer > 0) {
+      const pulse = Math.sin(Date.now() / 130);
+      const alpha = Math.min(1.0, this.spawnBeaconTimer);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(0, -62 + pulse * 6);
+
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.95)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('▼ TÚ ESTÁS AQUÍ ▼', 0, 0);
+
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 18, 16 + pulse * 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
     // Name tag with distinct Multiplayer Player Color

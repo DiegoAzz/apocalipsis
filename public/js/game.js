@@ -793,20 +793,19 @@ class Game {
       }
     );
 
-    // 5. Update Camera
+    // 5. Update Camera (Always centered smoothly on player)
     if (!this.camera.isPanning) {
       this.camera.targetX = this.localPlayer.x;
       this.camera.targetY = this.localPlayer.y;
 
-      const lerpSpeed = 0.12;
+      const lerpSpeed = 0.22;
       this.camera.x += (this.camera.targetX - this.camera.x) * lerpSpeed;
       this.camera.y += (this.camera.targetY - this.camera.y) * lerpSpeed;
     }
 
-    const halfW = (this.canvas.width / 2) / this.camera.zoom;
-    const halfH = (this.canvas.height / 2) / this.camera.zoom;
-    this.camera.x = Math.max(halfW, Math.min(this.level.width - halfW, this.camera.x));
-    this.camera.y = Math.max(halfH, Math.min(this.level.height - halfH, this.camera.y));
+    const pad = 250;
+    this.camera.x = Math.max(-pad, Math.min(this.level.width + pad, this.camera.x));
+    this.camera.y = Math.max(-pad, Math.min(this.level.height + pad, this.camera.y));
 
     // Update UI HUD
     this.ui.updateHUD(this.localPlayer);
@@ -938,6 +937,12 @@ class UIManager {
     this.killFeed = document.getElementById('kill-feed');
     this.chatLog = document.getElementById('chat-log');
     this.chatInput = document.getElementById('chat-input');
+    this.mobileChatToggle = document.getElementById('btn-mobile-chat-toggle');
+    this.mobileChatClose = document.getElementById('btn-close-chat');
+    this.chatContainer = document.getElementById('chat-container');
+    this.unreadBadge = document.getElementById('chat-unread-badge');
+    this.btnSendChat = document.getElementById('btn-send-chat');
+    this.unreadCount = 0;
     this.scoreboard = document.getElementById('scoreboard-modal');
     this.urlInput = document.getElementById('webpage-url-input');
     this.helpModal = document.getElementById('help-modal');
@@ -1019,7 +1024,29 @@ class UIManager {
         if (file) {
           const reader = new FileReader();
           reader.onload = async (ev) => {
-            await this.game.loadUserImage(ev.target.result);
+            const dataUrl = ev.target.result;
+            await this.game.loadUserImage(dataUrl);
+
+            // Sync image to multiplayer room so all friends joining receive the picture!
+            try {
+              let currentRoom = this.game.multiplayer.roomId || 'lobby';
+              if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
+                currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
+                this.game.isSoloMode = false;
+                this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+              }
+
+              const res = await fetch('/api/upload-room-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomId: currentRoom, imageBase64: dataUrl })
+              });
+              const resData = await res.json();
+              console.log('[ROOM IMAGE SYNCED]:', resData);
+              this.setPresetDisplay('image', 'Imagen Personalizada');
+            } catch (err) {
+              console.error('Failed to sync room image:', err);
+            }
           };
           reader.readAsDataURL(file);
         }
@@ -1234,6 +1261,33 @@ class UIManager {
       });
     }
 
+    // Mobile Chat Toggle Button
+    if (this.mobileChatToggle && this.chatContainer) {
+      this.mobileChatToggle.addEventListener('click', () => {
+        this.chatContainer.classList.toggle('open-mobile');
+        if (this.chatContainer.classList.contains('open-mobile')) {
+          this.unreadCount = 0;
+          if (this.unreadBadge) {
+            this.unreadBadge.textContent = '0';
+            this.unreadBadge.classList.remove('has-unread');
+          }
+          if (this.chatInput) this.chatInput.focus();
+        }
+      });
+    }
+
+    if (this.mobileChatClose && this.chatContainer) {
+      this.mobileChatClose.addEventListener('click', () => {
+        this.chatContainer.classList.remove('open-mobile');
+      });
+    }
+
+    if (this.btnSendChat) {
+      this.btnSendChat.addEventListener('click', () => {
+        this.sendChat();
+      });
+    }
+
     // Live Mode Slow-Mo Button
     const btnLive = document.getElementById('btn-toggle-live');
     if (btnLive) {
@@ -1392,6 +1446,17 @@ class UIManager {
     div.innerHTML = `<span style="color: ${msg.color || '#f97316'}; font-weight: bold;">${msg.sender}:</span> <span>${msg.text}</span>`;
     this.chatLog.appendChild(div);
     this.chatLog.scrollTop = this.chatLog.scrollHeight;
+
+    // Mobile unread counter badge
+    if (!this.chatContainer || !this.chatContainer.classList.contains('open-mobile')) {
+      if (window.innerWidth <= 900) {
+        this.unreadCount = (this.unreadCount || 0) + 1;
+        if (this.unreadBadge) {
+          this.unreadBadge.textContent = this.unreadCount;
+          this.unreadBadge.classList.add('has-unread');
+        }
+      }
+    }
   }
 
   showScoreboard(show) {

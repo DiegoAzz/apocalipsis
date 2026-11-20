@@ -92,11 +92,23 @@
   <!-- Notificaciones de Bajas (Kill Feed) -->
   <div id="kill-feed"></div>
 
-  <!-- Chat Integrado (Solo Multijugador) -->
+  <!-- Botón flotante para abrir Chat en Móvil -->
+  <button id="btn-mobile-chat-toggle" class="btn-mobile-chat-toggle" title="Abrir Chat Multijugador">
+    <span class="chat-toggle-icon">💬</span>
+    <span class="chat-toggle-text">Chat</span>
+    <span id="chat-unread-badge" class="chat-unread-badge">0</span>
+  </button>
+
+  <!-- Chat Integrado (Multijugador) -->
   <div id="chat-container">
+    <div class="chat-header">
+      <span class="chat-title">💬 Chat en Vivo</span>
+      <button class="chat-close-btn" id="btn-close-chat" title="Cerrar Chat">✕</button>
+    </div>
     <div id="chat-log"></div>
     <div class="chat-input-row">
-      <input type="text" id="chat-input" placeholder="Pulsa Enter para chatear..." maxlength="120">
+      <input type="text" id="chat-input" placeholder="Escribe un mensaje..." maxlength="120">
+      <button class="chat-send-btn" id="btn-send-chat" title="Enviar">➤</button>
     </div>
   </div>
 

@@ -15,7 +15,53 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
+
+// Store custom room images in memory so any player joining a room sees the uploaded picture
+const roomImages = new Map();
+
+// Upload room image for shared multiplayer obliteration
+app.post('/api/upload-room-image', (req, res) => {
+  const { roomId, imageBase64 } = req.body;
+  if (!roomId || !imageBase64) return res.status(400).json({ error: 'Missing roomId or image' });
+
+  const targetRoomId = (roomId || 'lobby').trim().toLowerCase();
+  const room = getOrCreateRoom(targetRoomId);
+
+  const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (matches && matches.length === 3) {
+    const mimeType = matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+    roomImages.set(targetRoomId, { mimeType, buffer });
+  } else {
+    roomImages.set(targetRoomId, { mimeType: 'image/jpeg', buffer: Buffer.from(imageBase64, 'base64') });
+  }
+
+  const imageUrl = `/api/room-image/${targetRoomId}?t=${Date.now()}`;
+  room.preset = 'image';
+  room.url = imageUrl;
+  room.craters = [];
+
+  io.to(targetRoomId).emit('map-changed', {
+    preset: 'image',
+    url: imageUrl
+  });
+
+  res.json({ success: true, url: imageUrl });
+});
+
+// Serve room custom image
+app.get('/api/room-image/:roomId', (req, res) => {
+  const targetRoomId = (req.params.roomId || 'lobby').trim().toLowerCase();
+  const data = roomImages.get(targetRoomId);
+  if (!data) return res.status(404).send('No image for this room');
+
+  res.set('Content-Type', data.mimeType || 'image/jpeg');
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.send(data.buffer);
+});
 
 // Proxy image endpoint to prevent canvas cross-origin taint
 app.get('/api/proxy-image', async (req, res) => {
@@ -378,43 +424,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('player-hit', ({ targetId, damage, weapon, attackerId }) => {
-    if (!currentRoomId) return;
-    const room = rooms.get(currentRoomId);
-    if (!room) return;
-
-    let target = room.players.get(targetId) || room.bots.get(targetId);
-    let attacker = room.players.get(attackerId || playerId) || room.bots.get(attackerId || playerId);
-
-    if (target) {
-      target.health = Math.max(0, target.health - damage);
-      if (attacker) {
-        attacker.damageDealt = (attacker.damageDealt || 0) + damage;
-        attacker.score = (attacker.score || 0) + damage * 2;
-      }
-
-      io.to(currentRoomId).emit('player-health-update', {
-        targetId,
-        health: target.health,
-        damage,
-        attackerId: attacker ? attacker.id : null
-      });
-
-      if (target.health <= 0) {
-        target.deaths = (target.deaths || 0) + 1;
-        if (attacker && attacker.id !== target.id) {
-          attacker.kills = (attacker.kills || 0) + 1;
-          attacker.score = (attacker.score || 0) + 250;
-        }
-
-        io.to(currentRoomId).emit('player-killed', {
-          targetId: target.id,
-          targetName: target.name,
-          attackerId: attacker ? attacker.id : null,
-          attackerName: attacker ? attacker.name : 'The Void',
-          weapon: weapon || 'weapon'
-        });
-      }
-    }
+    // Mode: Cooperative Website Destruction - No damage between players!
+    return;
   });
 
   socket.on('player-respawn', ({ x, y }) => {
