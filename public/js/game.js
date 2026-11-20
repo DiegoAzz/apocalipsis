@@ -85,6 +85,12 @@ class Game {
         return;
       }
 
+      if (e.code === 'KeyF' || e.code === 'KeyJ') {
+        this.input.isMouseDown = false;
+      }
+      if (e.code === 'KeyG' || e.code === 'KeyK') {
+        this.input.isRightMouseDown = false;
+      }
       if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
         if (!this.input.keys[e.code]) {
           this.input.justPressedJump = true;
@@ -92,6 +98,16 @@ class Game {
       }
 
       this.input.keys[e.code] = true;
+
+      // Shoot keys: KeyF or KeyJ in addition to Mouse Click
+      if (e.code === 'KeyF' || e.code === 'KeyJ') {
+        window.soundManager.ensureContext();
+        this.input.isMouseDown = true;
+      }
+      if (e.code === 'KeyG' || e.code === 'KeyK') {
+        window.soundManager.ensureContext();
+        this.input.isRightMouseDown = true;
+      }
 
       // Weapon Hotkeys 1-9
       const keyNum = parseInt(e.key);
@@ -106,6 +122,12 @@ class Game {
         this.ui.showScoreboard(false);
       }
       this.input.keys[e.code] = false;
+      if (e.code === 'KeyF' || e.code === 'KeyJ') {
+        this.input.isMouseDown = false;
+      }
+      if (e.code === 'KeyG' || e.code === 'KeyK') {
+        this.input.isRightMouseDown = false;
+      }
       if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
         this.input.justPressedJump = false;
       }
