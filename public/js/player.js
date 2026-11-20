@@ -48,17 +48,17 @@ class Player {
     this.isDead = false;
     this.respawnTimer = 0;
 
-    // Weapons definition: ALL WEAPONS HAVE INFINITE AMMO FOR UNLIMITED DESTRUCTION!
+    // Weapons definition: ALL WEAPONS ARE FULL-AUTO (HOLD MOUSE TO FIRE CONTINUOUSLY!)
     this.weapons = [
-      { name: 'Pistol', key: '1', fireRate: 0.18, damage: 18, radius: 8, ammo: Infinity, maxAmmo: Infinity, auto: false },
-      { name: 'SMG', key: '2', fireRate: 0.08, damage: 9, radius: 9, ammo: Infinity, maxAmmo: Infinity, auto: true },
-      { name: 'Shotgun', key: '3', fireRate: 0.60, damage: 14, radius: 12, ammo: Infinity, maxAmmo: Infinity, auto: false, pellets: 6 },
-      { name: 'Rocket Launcher', key: '4', fireRate: 0.75, damage: 85, radius: 48, ammo: Infinity, maxAmmo: Infinity, auto: false },
-      { name: 'Railgun', key: '5', fireRate: 0.95, damage: 100, radius: 16, ammo: Infinity, maxAmmo: Infinity, auto: false },
-      { name: 'Flamethrower', key: '6', fireRate: 0.05, damage: 4, radius: 14, ammo: Infinity, maxAmmo: Infinity, auto: true },
-      { name: 'Too Much', key: '7', fireRate: 1.6, damage: 50, radius: 40, ammo: Infinity, maxAmmo: Infinity, auto: false },
-      { name: 'The Magic Wand', key: '8', fireRate: 1.8, damage: 120, radius: 36, ammo: Infinity, maxAmmo: Infinity, auto: false },
-      { name: 'PSR B0531+21', key: '9', fireRate: 2.2, damage: 90, radius: 60, ammo: Infinity, maxAmmo: Infinity, auto: false }
+      { name: 'Pistol', key: '1', fireRate: 0.13, damage: 18, radius: 9, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'SMG', key: '2', fireRate: 0.06, damage: 10, radius: 10, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'Shotgun', key: '3', fireRate: 0.42, damage: 15, radius: 14, ammo: Infinity, maxAmmo: Infinity, auto: true, pellets: 7 },
+      { name: 'Rocket Launcher', key: '4', fireRate: 0.42, damage: 85, radius: 48, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'Railgun', key: '5', fireRate: 0.55, damage: 100, radius: 18, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'Flamethrower', key: '6', fireRate: 0.04, damage: 5, radius: 15, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'Too Much', key: '7', fireRate: 0.95, damage: 55, radius: 42, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'The Magic Wand', key: '8', fireRate: 1.1, damage: 130, radius: 38, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'PSR B0531+21', key: '9', fireRate: 1.4, damage: 95, radius: 62, ammo: Infinity, maxAmmo: Infinity, auto: true }
     ];
     this.currentWeaponIndex = 0;
     this.fireCooldown = 0;
@@ -365,7 +365,7 @@ class Player {
 
   tryGrenade(physics, onGrenade) {
     if (this.grenadeCooldown > 0 || this.isDead) return;
-    this.grenadeCooldown = 1.0;
+    this.grenadeCooldown = 0.55;
 
     const shoulderX = this.x;
     const shoulderY = this.y - 12;

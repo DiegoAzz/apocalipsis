@@ -53,6 +53,21 @@ class Game {
     // Draw authentic pixel-art icons on all bottom weapon slots
     this.drawWeaponIcons();
 
+    // Check if user entered via a shared room link (?room=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam && roomParam !== 'solo') {
+      this.isSoloMode = false;
+      const btnMulti = document.getElementById('btn-mode-multi');
+      const btnSolo = document.getElementById('btn-mode-solo');
+      if (btnMulti) btnMulti.classList.add('active');
+      if (btnSolo) btnSolo.classList.remove('active');
+      const chatCont = document.getElementById('chat-container');
+      if (chatCont) chatCont.style.display = 'flex';
+
+      this.multiplayer.init(roomParam, this.localPlayer.name, this.localPlayer.color);
+    }
+
     // Start Game Loop
     requestAnimationFrame((t) => this.gameLoop(t));
   }
@@ -754,6 +769,32 @@ class UIManager {
           };
           reader.readAsDataURL(file);
         }
+      });
+    }
+
+    // Share Room Button
+    const shareBtn = document.getElementById('btn-share-room');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        let currentRoom = this.multiplayer.roomId;
+        if (this.isSoloMode || !currentRoom || currentRoom === 'solo') {
+          currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
+          this.isSoloMode = false;
+          const btnMulti = document.getElementById('btn-mode-multi');
+          const btnSolo = document.getElementById('btn-mode-solo');
+          if (btnMulti) btnMulti.classList.add('active');
+          if (btnSolo) btnSolo.classList.remove('active');
+          document.getElementById('chat-container').style.display = 'flex';
+          this.multiplayer.init(currentRoom, this.localPlayer.name, this.localPlayer.color);
+        }
+
+        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          shareBtn.textContent = '✅ ¡Copiado!';
+          setTimeout(() => { shareBtn.textContent = '🔗 Invitar Amigo'; }, 3000);
+        }).catch(() => {
+          prompt('Copia este enlace para jugar con tu amigo:', shareUrl);
+        });
       });
     }
 
