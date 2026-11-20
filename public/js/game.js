@@ -275,16 +275,23 @@ class Game {
     }
 
     // Direct Canvas Touch to Aim & Shoot Continuously
-    let shootTouchId = null;
+    const activeShootTouches = new Set();
+    const isOverJoystick = (clientX, clientY) => {
+      const joyZone = document.getElementById('touch-joystick-zone');
+      if (!joyZone) return false;
+      const rect = joyZone.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right &&
+             clientY >= rect.top && clientY <= rect.bottom;
+    };
+
     this.canvas.addEventListener('touchstart', (e) => {
       window.soundManager.ensureContext();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (touch.clientX > 140 && shootTouchId === null) {
-          shootTouchId = touch.identifier;
+        if (!isOverJoystick(touch.clientX, touch.clientY)) {
+          activeShootTouches.add(touch.identifier);
           this.updateTouchAim(touch);
           this.input.isMouseDown = true;
-          break;
         }
       }
     }, { passive: true });
@@ -292,24 +299,34 @@ class Game {
     this.canvas.addEventListener('touchmove', (e) => {
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (touch.identifier === shootTouchId) {
+        if (activeShootTouches.has(touch.identifier)) {
           this.updateTouchAim(touch);
-          break;
+          this.input.isMouseDown = true;
         }
       }
     }, { passive: true });
 
     const handleShootEnd = (e) => {
       for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === shootTouchId) {
-          shootTouchId = null;
-          this.input.isMouseDown = false;
-          break;
+        activeShootTouches.delete(e.changedTouches[i].identifier);
+      }
+      if (activeShootTouches.size === 0 || (e.touches && e.touches.length === 0)) {
+        activeShootTouches.clear();
+        this.input.isMouseDown = false;
+      } else if (e.touches && e.touches.length > 0) {
+        // If another finger is still held down, aim and continue shooting towards it
+        for (let i = 0; i < e.touches.length; i++) {
+          const t = e.touches[i];
+          if (!isOverJoystick(t.clientX, t.clientY)) {
+            this.updateTouchAim(t);
+            this.input.isMouseDown = true;
+            break;
+          }
         }
       }
     };
-    this.canvas.addEventListener('touchend', handleShootEnd);
-    this.canvas.addEventListener('touchcancel', handleShootEnd);
+    this.canvas.addEventListener('touchend', handleShootEnd, { passive: true });
+    this.canvas.addEventListener('touchcancel', handleShootEnd, { passive: true });
   }
 
   updateTouchAim(touch) {
@@ -569,6 +586,9 @@ class Game {
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
     this.adaptZoomForCurrentMap();
+
+    // Auto-hide the top UI bars on image load so the image is 100% visible and clean
+    document.body.classList.add('ui-hidden');
 
     if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
@@ -1398,19 +1418,40 @@ class UIManager {
       });
     }
 
-    // Hotbar click selection
+    // Hide / Show UI Controls (To clear entire top area for TikTok Live & gameplay)
+    const btnHideUI = document.getElementById('btn-hide-ui');
+    const btnShowUI = document.getElementById('btn-show-ui');
+    if (btnHideUI) {
+      btnHideUI.addEventListener('click', () => {
+        document.body.classList.add('ui-hidden');
+      });
+    }
+    if (btnShowUI) {
+      btnShowUI.addEventListener('click', () => {
+        document.body.classList.remove('ui-hidden');
+      });
+    }
+
+    // Hotbar Instant Selection on Touch (No delay, immediate weapon switch)
     document.querySelectorAll('.slot').forEach((slot) => {
-      slot.addEventListener('click', () => {
+      const selectSlot = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         const slotVal = slot.getAttribute('data-slot');
         if (slotVal === 'alt') {
-          // Trigger grenade
           this.game.localPlayer.tryGrenade(this.game.physics);
         } else {
           const idx = parseInt(slotVal);
           this.game.localPlayer.selectWeapon(idx);
           this.updateActiveWeapon(idx);
         }
-      });
+      };
+
+      slot.addEventListener('pointerdown', selectSlot);
+      slot.addEventListener('touchstart', selectSlot, { passive: false });
+      slot.addEventListener('click', selectSlot);
     });
   }
 

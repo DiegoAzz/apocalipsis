@@ -250,6 +250,83 @@ body, html {
   border-bottom: 2px solid #272727;
   z-index: 90;
   overflow: hidden;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Transiciones suaves para la barra superior */
+#top-nav {
+  transition: transform 0.3s ease;
+}
+
+/* Botón Ocultar Interfaz en la barra superior */
+.btn-hide-ui {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #cbd5e1;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-hide-ui:hover {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: #f97316;
+  color: #f97316;
+}
+
+/* Botón Flotante para Restaurar Interfaz cuando está oculta */
+.btn-show-ui-pill {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.6);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+  transition: transform 0.2s ease, background 0.2s ease;
+  touch-action: manipulation;
+}
+.btn-show-ui-pill:hover, .btn-show-ui-pill:active {
+  background: rgba(234, 88, 12, 0.95);
+  color: #ffffff;
+  transform: translateX(-50%) scale(1.05);
+}
+
+/* Cuando la interfaz está oculta */
+body.ui-hidden #top-nav {
+  transform: translateY(-100%);
+}
+body.ui-hidden #destruction-meter-container {
+  transform: translateY(-200px);
+  opacity: 0;
+  pointer-events: none;
+}
+body.ui-hidden #hud-stats {
+  transform: translateY(-200px);
+  opacity: 0;
+  pointer-events: none;
+}
+body.ui-hidden .btn-mobile-chat-toggle {
+  transform: translateY(-200px);
+  opacity: 0;
+  pointer-events: none;
+}
+body.ui-hidden .btn-show-ui-pill {
+  display: inline-flex;
 }
 
 #destruction-bar-fill {
@@ -405,6 +482,9 @@ body, html {
   box-shadow: var(--shadow-button);
   cursor: pointer;
   transition: transform 0.1s ease, background 0.1s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .slot:hover {
@@ -904,14 +984,9 @@ body.touch-active #mobile-controls {
     font-size: 11px;
   }
 
-  /* HUD STATS (Vida & Jetpack): Arriba a la izquierda, libre del joystick */
+  /* HUD STATS (Vida & Jetpack): Oculto en móvil ya que los personajes no mueren y estorba en la pantalla */
   #hud-stats {
-    top: 76px;
-    left: 8px;
-    bottom: auto;
-    transform: scale(0.82);
-    transform-origin: top left;
-    z-index: 90;
+    display: none !important;
   }
 
   /* Kill feed desactivado en móvil */
