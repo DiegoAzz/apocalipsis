@@ -942,17 +942,17 @@ class UIManager {
 
     if (shareBtn && shareModal) {
       shareBtn.addEventListener('click', () => {
-        let currentRoom = this.multiplayer.roomId;
-        if (this.isSoloMode || !currentRoom || currentRoom === 'solo') {
+        let currentRoom = this.game.multiplayer.roomId;
+        if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
           currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
-          this.isSoloMode = false;
+          this.game.isSoloMode = false;
           const btnMulti = document.getElementById('btn-mode-multi');
           const btnSolo = document.getElementById('btn-mode-solo');
           if (btnMulti) btnMulti.classList.add('active');
           if (btnSolo) btnSolo.classList.remove('active');
           const chatCont = document.getElementById('chat-container');
           if (chatCont) chatCont.style.display = 'flex';
-          this.multiplayer.init(currentRoom, this.localPlayer.name, this.localPlayer.color);
+          this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
         }
 
         const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
