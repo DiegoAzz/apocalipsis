@@ -1,4 +1,46 @@
-// Player and Stickman Character Controller
+// Player and Futuristic Operative Character Controller with Spritesheet Support
+const spriteSheetImg = new Image();
+spriteSheetImg.src = 'assets/spritesheet.png';
+
+// Sprite Bounding Boxes from the uploaded Futuristic Pack
+const SPRITES = {
+  weapons: {
+    'Pistol': { x: 48, y: 72, w: 112, h: 90 },
+    'SMG': { x: 176, y: 70, w: 205, h: 92 },
+    'Shotgun': { x: 411, y: 72, w: 240, h: 90 },
+    'Rocket Launcher': { x: 671, y: 72, w: 309, h: 90 },
+    'Railgun': { x: 40, y: 185, w: 336, h: 82 },
+    'Flamethrower': { x: 410, y: 186, w: 271, h: 81 },
+    'Misile': { x: 714, y: 185, w: 256, h: 82 },
+    'Too Much': { x: 41, y: 290, w: 218, h: 87 },
+    'The Magic Wand': { x: 288, y: 296, w: 248, h: 81 },
+    'PSR B0531+21': { x: 588, y: 290, w: 235, h: 87 },
+    'Grenade': { x: 842, y: 290, w: 114, h: 87 }
+  },
+  hero: {
+    idle: [
+      { x: 45, y: 500, w: 66, h: 81 },
+      { x: 123, y: 500, w: 76, h: 81 },
+      { x: 224, y: 500, w: 67, h: 82 }
+    ],
+    run: [
+      { x: 335, y: 500, w: 91, h: 82 },
+      { x: 430, y: 500, w: 96, h: 82 },
+      { x: 535, y: 500, w: 98, h: 81 }
+    ],
+    jump: { x: 713, y: 500, w: 58, h: 82 },
+    jetpack: { x: 775, y: 480, w: 95, h: 102 },
+    landing: { x: 879, y: 500, w: 92, h: 82 },
+    shoot: [
+      { x: 42, y: 613, w: 94, h: 99 },
+      { x: 161, y: 616, w: 105, h: 96 },
+      { x: 275, y: 613, w: 141, h: 99 }
+    ],
+    damage: { x: 500, y: 616, w: 96, h: 96 },
+    fall: { x: 617, y: 656, w: 105, h: 56 }
+  }
+};
+
 class Player {
   constructor(id, name, color = '#f97316', isLocal = true) {
     this.id = id;
@@ -11,19 +53,19 @@ class Player {
     this.y = 150;
     this.vx = 0;
     this.vy = 0;
-    this.width = 24;
-    this.height = 42;
+    this.width = 28;
+    this.height = 48;
 
     this.onGround = false;
-    this.onWall = 0; // -1 left, 1 right, 0 none
+    this.onWall = 0;
     this.facing = 1; // 1 right, -1 left
     this.aimAngle = 0;
     this.aimX = 0;
     this.aimY = 0;
 
     // Movement attributes
-    this.speed = 5.2;
-    this.accel = 0.8;
+    this.speed = 5.5;
+    this.accel = 0.85;
     this.friction = 0.82;
     this.gravity = 0.48;
     this.jumpForce = -10.5;
@@ -35,8 +77,8 @@ class Player {
     this.jetpackActive = false;
     this.jetpackFuel = 100;
     this.maxJetpackFuel = 100;
-    this.fuelRechargeRate = 45; // per sec
-    this.fuelBurnRate = 32;     // per sec
+    this.fuelRechargeRate = 45;
+    this.fuelBurnRate = 32;
 
     // Health & Score
     this.health = 100;
@@ -48,7 +90,7 @@ class Player {
     this.isDead = false;
     this.respawnTimer = 0;
 
-    // Weapons definition: ALL WEAPONS ARE FULL-AUTO (HOLD MOUSE TO FIRE CONTINUOUSLY!)
+    // All weapons are FULL-AUTO with INFINITE AMMO
     this.weapons = [
       { name: 'Pistol', key: '1', fireRate: 0.13, damage: 18, radius: 9, ammo: Infinity, maxAmmo: Infinity, auto: true },
       { name: 'SMG', key: '2', fireRate: 0.06, damage: 10, radius: 10, ammo: Infinity, maxAmmo: Infinity, auto: true },
@@ -64,9 +106,11 @@ class Player {
     this.fireCooldown = 0;
     this.grenadeCooldown = 0;
 
-    // Animation frames
+    // Animation state
+    this.animTimer = 0;
     this.walkCycle = 0;
     this.muzzleFlash = 0;
+    this.hurtTimer = 0;
   }
 
   getCurrentWeapon() {
@@ -79,7 +123,24 @@ class Player {
     }
   }
 
-  // Update input & physics for local player
+  // Returns Hue shift degrees based on player color for Multiplayer
+  getHueShift() {
+    const colorMap = {
+      '#f97316': 0,    // Orange (Default)
+      '#38bdf8': 185,  // Cyan / Electric Blue
+      '#3b82f6': 210,  // Cobalt Blue
+      '#22c55e': 95,   // Neon Green
+      '#10b981': 115,  // Emerald
+      '#a855f7': 260,  // Purple
+      '#8b5cf6': 240,  // Violet
+      '#ec4899': 315,  // Hot Pink
+      '#ef4444': 345,  // Crimson Red
+      '#eab308': 45,   // Golden Yellow
+      '#06b6d4': 175   // Teal
+    };
+    return colorMap[this.color] || 0;
+  }
+
   update(dt, input, level, physics, onShoot, onGrenade) {
     if (this.isDead) {
       this.respawnTimer -= dt;
@@ -89,12 +150,12 @@ class Player {
       return;
     }
 
-    // Cooldown timers
+    this.animTimer += dt;
     if (this.fireCooldown > 0) this.fireCooldown -= dt;
     if (this.grenadeCooldown > 0) this.grenadeCooldown -= dt;
     if (this.muzzleFlash > 0) this.muzzleFlash -= dt;
+    if (this.hurtTimer > 0) this.hurtTimer -= dt;
 
-    // Aim calculations
     if (input) {
       this.aimX = input.mouseX;
       this.aimY = input.mouseY;
@@ -124,20 +185,17 @@ class Player {
 
     if (justPressedJump) {
       if (this.onGround) {
-        // Normal jump
         this.vy = this.jumpForce;
         this.onGround = false;
         this.canDoubleJump = true;
         window.soundManager.playJump();
       } else if (this.onWall !== 0) {
-        // Wall jump
         this.vy = this.jumpForce * 0.9;
         this.vx = -this.onWall * this.speed * 1.1;
         this.onWall = 0;
         this.isFlipping = true;
         window.soundManager.playJump();
       } else if (this.canDoubleJump) {
-        // Double jump somersault flip
         this.vy = this.jumpForce * 0.9;
         this.canDoubleJump = false;
         this.isFlipping = true;
@@ -146,7 +204,7 @@ class Player {
       }
     }
 
-    // Jetpack thrust (Hold Space or W while airborne)
+    // Jetpack thrust
     if (wantsJump && !this.onGround && this.jetpackFuel > 0) {
       this.jetpackActive = true;
       this.vy = Math.max(-6.5, this.vy - 0.85);
@@ -155,7 +213,6 @@ class Player {
       window.soundManager.playJetpack();
     } else {
       this.jetpackActive = false;
-      // Recharge fuel when grounded or not flying
       if (this.onGround) {
         this.jetpackFuel = Math.min(this.maxJetpackFuel, this.jetpackFuel + this.fuelRechargeRate * dt);
       } else {
@@ -163,17 +220,13 @@ class Player {
       }
     }
 
-    // Gravity
     this.vy += this.gravity;
-    // Wall slide damping
     if (this.onWall !== 0 && this.vy > 1.5) {
       this.vy = 1.5;
     }
 
-    // Perform Collision Detection against Destructible Terrain
     this.moveWithCollision(level);
 
-    // Somersault flip rotation update
     if (this.isFlipping) {
       this.flipAngle += this.facing * 18 * dt;
       if (Math.abs(this.flipAngle) >= Math.PI * 2) {
@@ -182,7 +235,7 @@ class Player {
       }
     }
 
-    // Shooting handling
+    // Continuous Auto-Fire while holding
     if (input && input.isMouseDown) {
       this.tryShoot(physics, onShoot);
     }
@@ -204,11 +257,10 @@ class Player {
     const originX = shoulderX + Math.cos(this.aimAngle) * gunLength;
     const originY = shoulderY + Math.sin(this.aimAngle) * gunLength;
 
-    // Recoil kickback
+    // Recoil
     this.vx -= Math.cos(this.aimAngle) * (w.name === 'Shotgun' ? 3.5 : 0.8);
     this.vy -= Math.sin(this.aimAngle) * (w.name === 'Shotgun' ? 2.5 : 0.4);
 
-    // Muzzle smoke & sound
     physics.spawnMuzzleSmoke(originX, originY, this.aimAngle);
 
     if (w.name === 'Pistol') {
@@ -274,17 +326,14 @@ class Player {
       });
     } else if (w.name === 'Railgun') {
       window.soundManager.playRailgun();
-      // Raycast instant beam
       const maxDist = 1800;
       const endX = originX + Math.cos(this.aimAngle) * maxDist;
       const endY = originY + Math.sin(this.aimAngle) * maxDist;
 
-      // Carve trench line
       physics.level.carveLine(originX, originY, endX, endY, 18);
       physics.spawnShockwave(originX, originY, 40, '#38bdf8');
       physics.addTrauma(0.5);
 
-      // Spawn visual laser beam
       physics.particles.push({
         type: 'laser',
         x1: originX,
@@ -323,7 +372,7 @@ class Player {
         vy: Math.sin(this.aimAngle) * 6 - 2,
         timer: 1.5,
         radius: 40,
-        damage: 50,
+        damage: 55,
         life: 5.0
       });
     } else if (w.name === 'The Magic Wand') {
@@ -399,9 +448,8 @@ class Player {
 
   moveWithCollision(level) {
     const hw = 10;
-    const hh = 20;
+    const hh = 22;
 
-    // Horizontal Movement & Collision
     const newX = this.x + this.vx;
     const sideCheck = this.vx > 0 ? hw : -hw;
 
@@ -421,12 +469,10 @@ class Player {
       this.vx = 0;
     }
 
-    // Vertical Movement & Collision
     const newY = this.y + this.vy;
     let colV = false;
 
     if (this.vy > 0) {
-      // Moving Down (Checking feet)
       for (let dx = -hw + 4; dx <= hw - 4; dx += 6) {
         if (level.isSolid(this.x + dx, newY + hh)) {
           colV = true;
@@ -439,7 +485,6 @@ class Player {
         this.isFlipping = false;
         this.flipAngle = 0;
         this.vy = 0;
-        // Align to ground
         while (level.isSolid(this.x, this.y + hh)) {
           this.y -= 1;
         }
@@ -448,7 +493,6 @@ class Player {
         this.y = newY;
       }
     } else if (this.vy < 0) {
-      // Moving Up (Checking head)
       for (let dx = -hw + 4; dx <= hw - 4; dx += 6) {
         if (level.isSolid(this.x + dx, newY - hh)) {
           colV = true;
@@ -463,7 +507,6 @@ class Player {
       this.onGround = false;
     }
 
-    // Level bottom pit check (fall death)
     if (this.y > level.height + 60) {
       this.takeDamage(100, 'void', null);
     }
@@ -472,6 +515,7 @@ class Player {
   takeDamage(amount, weapon, attackerId) {
     if (this.isDead) return;
     this.health = Math.max(0, this.health - amount);
+    this.hurtTimer = 0.25;
     window.soundManager.playHit();
 
     if (this.health <= 0) {
@@ -492,191 +536,169 @@ class Player {
     this.jetpackFuel = this.maxJetpackFuel;
   }
 
-  // Render Stickman Character with Weapon and Jetpack
+  // RENDER FUTURISTIC OPERATIVE SPRITE
   render(ctx) {
-    if (this.isDead) return;
+    if (this.isDead) {
+      // Draw fallen/knocked down operative sprite
+      this.drawHeroSprite(ctx, SPRITES.hero.fall, 0, 10, 48, 26);
+      return;
+    }
 
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Somersault flip rotation
     if (this.isFlipping) {
       ctx.rotate(this.flipAngle);
     }
 
-    // Name tag & Health bar above head
-    ctx.fillStyle = '#ffffff';
+    // Name tag with distinct Multiplayer Player Color
+    ctx.fillStyle = this.color || '#ffffff';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(this.name, 0, -32);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(this.name, 0, -36);
+    ctx.shadowBlur = 0;
 
     // Mini Health Bar
     const barW = 34;
     const barH = 4;
     ctx.fillStyle = '#374151';
-    ctx.fillRect(-barW / 2, -28, barW, barH);
-    ctx.fillStyle = this.health > 40 ? '#22c55e' : '#ef4444';
-    ctx.fillRect(-barW / 2, -28, (this.health / this.maxHealth) * barW, barH);
+    ctx.fillRect(-barW / 2, -32, barW, barH);
+    ctx.fillStyle = this.health > 40 ? (this.color || '#22c55e') : '#ef4444';
+    ctx.fillRect(-barW / 2, -32, (this.health / this.maxHealth) * barW, barH);
 
-    // Jetpack Fuel Bar (below health)
+    // Jetpack Fuel Bar (Local player)
     if (this.isLocal) {
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(-barW / 2, -23, barW, 2.5);
+      ctx.fillRect(-barW / 2, -26, barW, 2.5);
       ctx.fillStyle = '#f97316';
-      ctx.fillRect(-barW / 2, -23, (this.jetpackFuel / this.maxJetpackFuel) * barW, 2.5);
+      ctx.fillRect(-barW / 2, -26, (this.jetpackFuel / this.maxJetpackFuel) * barW, 2.5);
     }
 
-    // Stickman Body Constants
-    const headRadius = 8;
-    const headY = -12;
-    const neckY = -4;
-    const pelvisY = 8;
-    const legLength = 12;
+    // Select Hero Sprite based on action
+    let heroSprite = SPRITES.hero.idle[0];
+    let drawW = 34;
+    let drawH = 42;
+    let offY = -22;
 
-    // Jetpack on back
-    ctx.fillStyle = '#475569';
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 1.5;
-    const jpX = this.facing === 1 ? -9 : 3;
-    ctx.fillRect(jpX, -3, 6, 12);
-    ctx.strokeRect(jpX, -3, 6, 12);
-
-    // Thruster nozzle
-    ctx.fillStyle = '#f97316';
-    ctx.fillRect(jpX + 1, 9, 4, 3);
-
-    // DRAW STICKMAN SKELETON
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // 1. Torso Spine
-    ctx.beginPath();
-    ctx.moveTo(0, neckY);
-    ctx.lineTo(0, pelvisY);
-    ctx.stroke();
-
-    // 2. Animated Legs
-    const walkSin = Math.sin(this.walkCycle);
-    let lLegFootX, lLegFootY, rLegFootX, rLegFootY;
-
-    if (this.onGround) {
-      lLegFootX = walkSin * 8;
-      lLegFootY = pelvisY + legLength;
-      rLegFootX = -walkSin * 8;
-      rLegFootY = pelvisY + legLength;
+    if (this.hurtTimer > 0) {
+      heroSprite = SPRITES.hero.damage;
+    } else if (this.jetpackActive) {
+      heroSprite = SPRITES.hero.jetpack;
+      drawW = 40;
+      drawH = 44;
+      offY = -22;
+    } else if (!this.onGround) {
+      heroSprite = SPRITES.hero.jump;
+      drawW = 30;
+      drawH = 42;
+    } else if (Math.abs(this.vx) > 0.5) {
+      const frameIdx = Math.floor(this.walkCycle) % 3;
+      heroSprite = SPRITES.hero.run[frameIdx];
+      drawW = 38;
+      drawH = 42;
+    } else if (this.muzzleFlash > 0) {
+      heroSprite = SPRITES.hero.shoot[1];
+      drawW = 42;
+      drawH = 42;
     } else {
-      // In air: legs dangling / bent
-      lLegFootX = -4 * this.facing;
-      lLegFootY = pelvisY + legLength - 2;
-      rLegFootX = 6 * this.facing;
-      rLegFootY = pelvisY + legLength;
+      const frameIdx = Math.floor(this.animTimer * 3) % 3;
+      heroSprite = SPRITES.hero.idle[frameIdx];
+      drawW = 34;
+      drawH = 42;
     }
 
-    // Left leg
-    ctx.beginPath();
-    ctx.moveTo(0, pelvisY);
-    ctx.lineTo(lLegFootX, lLegFootY);
-    ctx.stroke();
+    // Apply Multiplayer Color Shift (Changes Visor & Armor Lights)
+    const hueDeg = this.getHueShift();
+    if (hueDeg !== 0) {
+      ctx.filter = `hue-rotate(${hueDeg}deg) saturate(1.2)`;
+    }
 
-    // Right leg
-    ctx.beginPath();
-    ctx.moveTo(0, pelvisY);
-    ctx.lineTo(rLegFootX, rLegFootY);
-    ctx.stroke();
+    // Facing direction
+    ctx.scale(this.facing, 1);
 
-    // 3. Head & Headband / Goggles
-    ctx.fillStyle = '#f8fafc';
-    ctx.beginPath();
-    ctx.arc(0, headY, headRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    // Draw Hero Body Sprite from Spritesheet
+    if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0) {
+      ctx.drawImage(
+        spriteSheetImg,
+        heroSprite.x, heroSprite.y, heroSprite.w, heroSprite.h,
+        -drawW / 2, offY, drawW, drawH
+      );
+    } else {
+      // Fallback stickman
+      this.renderFallbackStickman(ctx);
+    }
 
-    // Colored headband (identifies player color)
-    ctx.strokeStyle = this.color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(0, headY, headRadius, -0.4, 0.4);
-    ctx.stroke();
+    ctx.filter = 'none';
 
-    // 4. Arm and Weapon (Rotated towards aim)
+    // Draw Weapon Sprite in Hands
     ctx.save();
-    ctx.translate(0, neckY);
-    ctx.rotate(this.aimAngle);
+    ctx.translate(4, -4);
+    const renderAimAngle = this.facing === 1 ? this.aimAngle : (Math.PI - this.aimAngle);
+    ctx.rotate(renderAimAngle);
 
-    // Arm line
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(12, 0);
-    ctx.stroke();
-
-    // Weapon Sprite
     const w = this.getCurrentWeapon();
     this.renderWeaponSprite(ctx, w.name);
 
-    // Muzzle flash
+    // Muzzle flash effect
     if (this.muzzleFlash > 0) {
       ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = '#f97316';
+      ctx.shadowBlur = 8;
       ctx.beginPath();
-      ctx.arc(28, 0, 7, 0, Math.PI * 2);
+      ctx.arc(32, 0, 6, 0, Math.PI * 2);
       ctx.fill();
+      ctx.shadowBlur = 0;
     }
 
     ctx.restore();
     ctx.restore();
   }
 
+  // Draw Futuristic Weapon Sprite from Spritesheet
   renderWeaponSprite(ctx, weaponName) {
-    ctx.save();
-    ctx.translate(12, 0);
-
-    if (weaponName === 'Pistol') {
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(0, -2, 10, 4);
-      ctx.fillRect(2, 2, 3, 5);
-    } else if (weaponName === 'SMG') {
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, -3, 14, 6);
-      ctx.fillStyle = '#64748b';
-      ctx.fillRect(4, 3, 3, 6); // mag
-      ctx.fillRect(10, -1, 4, 2); // barrel
-    } else if (weaponName === 'Shotgun') {
-      ctx.fillStyle = '#78350f'; // wood stock
-      ctx.fillRect(-2, -1, 6, 4);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(4, -3, 16, 5); // barrel
-    } else if (weaponName === 'Rocket Launcher') {
-      ctx.fillStyle = '#065f46';
-      ctx.fillRect(-4, -5, 24, 9);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(20, -3, 4, 5); // rocket tip
-    } else if (weaponName === 'Railgun') {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-2, -4, 20, 7);
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(4, -2, 12, 3); // glowing core
-    } else if (weaponName === 'Flamethrower') {
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(-2, -4, 18, 7);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(0, 3, 6, 6); // canister
-    } else if (weaponName === 'The Magic Wand') {
-      ctx.fillStyle = '#d97706';
-      ctx.fillRect(0, -1, 18, 3);
-      ctx.fillStyle = '#c084fc';
-      ctx.beginPath();
-      ctx.arc(18, 0, 4, 0, Math.PI * 2);
-      ctx.fill();
+    const sp = SPRITES.weapons[weaponName] || SPRITES.weapons['Pistol'];
+    if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0 && sp) {
+      const targetH = 18;
+      const targetW = Math.round(targetH * (sp.w / sp.h));
+      ctx.drawImage(
+        spriteSheetImg,
+        sp.x, sp.y, sp.w, sp.h,
+        0, -targetH / 2, targetW, targetH
+      );
     } else {
-      ctx.fillStyle = '#475569';
+      // Fallback
+      ctx.fillStyle = '#64748b';
       ctx.fillRect(0, -3, 16, 6);
     }
+  }
 
+  drawHeroSprite(ctx, sp, ox, oy, dw, dh) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    const hueDeg = this.getHueShift();
+    if (hueDeg !== 0) ctx.filter = `hue-rotate(${hueDeg}deg) saturate(1.2)`;
+    ctx.scale(this.facing, 1);
+    if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0) {
+      ctx.drawImage(spriteSheetImg, sp.x, sp.y, sp.w, sp.h, ox - dw / 2, oy, dw, dh);
+    }
     ctx.restore();
+  }
+
+  renderFallbackStickman(ctx) {
+    ctx.strokeStyle = this.color || '#f97316';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -12, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
   }
 }
 
 window.Player = Player;
+window.SPRITES = SPRITES;
+window.spriteSheetImg = spriteSheetImg;

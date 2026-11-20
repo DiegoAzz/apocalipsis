@@ -16,31 +16,40 @@
 
     <!-- Buscador / Input de URL -->
     <div class="url-control-group">
-      <input type="text" id="webpage-url-input" placeholder="Escribe cualquier URL (ej: wikipedia.org, marca.com, bbc.com)..." value="https://en.wikipedia.org/wiki/Stick_figure">
+      <input type="text" id="webpage-url-input" placeholder="Escribe cualquier URL..." value="https://en.wikipedia.org/wiki/Stick_figure">
       <button class="btn btn-primary" id="btn-destroy-url">
         <span>⚡ DESTRUIR</span>
       </button>
     </div>
 
-    <!-- Páginas Rápidas & Subir Imagen -->
-    <div class="preset-group">
-      <button class="preset-pill active" data-preset="wikipedia">📄 Wikipedia</button>
-      <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
-      <button class="preset-pill" data-preset="google">🔍 Google</button>
-      <button class="preset-pill" data-preset="hackernews">💻 Hacker News</button>
-      <input type="file" id="image-upload-input" accept="image/*" style="display: none">
-      <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
-    </div>
+    <!-- Botón Menú Móvil / Ajustes -->
+    <button class="btn btn-menu-toggle" id="btn-menu-toggle" aria-label="Abrir opciones">
+      <span>⚙️</span> <span class="menu-label">Opciones</span>
+    </button>
 
-    <!-- Controles de Modo & Sonido -->
-    <div class="status-badges">
-      <button class="btn btn-mode active" id="btn-mode-solo">👤 Modo Solo</button>
-      <button class="btn btn-mode" id="btn-mode-multi">🌐 Online</button>
-      <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
-      <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
-      <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
-      <button class="btn btn-sm" id="btn-toggle-sound">🔊 Sonido</button>
-      <button class="btn btn-sm btn-help" id="btn-help">❓ ¿Cómo jugar?</button>
+    <!-- Contenedor de Opciones (Barra horizontal en Desktop, Menú desplegable en Móvil) -->
+    <div id="nav-drawer" class="nav-drawer">
+      <!-- Páginas Rápidas & Subir Imagen -->
+      <div class="preset-group">
+        <button class="preset-pill active" data-preset="wikipedia">📄 Wikipedia</button>
+        <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
+        <button class="preset-pill" data-preset="google">🔍 Google</button>
+        <button class="preset-pill" data-preset="hackernews">💻 Hacker News</button>
+        <input type="file" id="image-upload-input" accept="image/*" style="display: none">
+        <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
+      </div>
+
+      <!-- Controles de Modo & Sonido -->
+      <div class="status-badges">
+        <button class="btn btn-mode active" id="btn-mode-solo">👤 Modo Solo</button>
+        <button class="btn btn-mode" id="btn-mode-multi">🌐 Online</button>
+        <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
+        <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
+        <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
+        <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
+        <button class="btn btn-sm" id="btn-toggle-sound">🔊 Sonido</button>
+        <button class="btn btn-sm btn-help" id="btn-help">❓ ¿Cómo jugar?</button>
+      </div>
     </div>
   </header>
 

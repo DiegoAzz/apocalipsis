@@ -46,6 +46,11 @@ class MultiplayerManager {
       this.selfId = data.selfId;
       if (this.game.localPlayer) {
         this.game.localPlayer.id = data.selfId;
+        if (data.assignedColor) {
+          this.game.localPlayer.color = data.assignedColor;
+          const dot = document.getElementById('color-dot');
+          if (dot) dot.style.background = data.assignedColor;
+        }
       }
 
       // Load Map
@@ -108,6 +113,7 @@ class MultiplayerManager {
         p.jetpackActive = data.jetpack || false;
         p.currentWeaponIndex = data.weaponIndex || 0;
         p.health = data.health !== undefined ? data.health : p.health;
+        if (data.color) p.color = data.color;
         p.walkCycle = data.walkCycle || 0;
         p.isFlipping = data.isFlipping || false;
         p.flipAngle = data.flipAngle || 0;
@@ -216,6 +222,7 @@ class MultiplayerManager {
       jetpack: player.jetpackActive,
       weaponIndex: player.currentWeaponIndex,
       health: player.health,
+      color: player.color,
       walkCycle: Math.round(player.walkCycle * 10) / 10,
       isFlipping: player.isFlipping,
       flipAngle: Math.round(player.flipAngle * 100) / 100

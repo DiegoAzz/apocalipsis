@@ -205,10 +205,29 @@ io.on('connection', (socket) => {
 
     const roomData = getOrCreateRoom(targetRoomId);
 
+    // Dynamic Futuristic Operative Colors for Multiplayer
+    const MULTIPLAYER_COLORS = [
+      '#38bdf8', // Neon Cyan / Electric Blue
+      '#22c55e', // Acid Neon Green
+      '#a855f7', // Cyber Purple
+      '#ec4899', // Hot Pink
+      '#eab308', // Solar Yellow
+      '#ef4444', // Crimson Red
+      '#06b6d4', // Teal
+      '#f97316'  // Futuristic Orange
+    ];
+
+    // Guarantee each player entering multiplayer has a distinct visor/suit light color
+    const usedColors = new Set(Array.from(roomData.players.values()).map(p => p.color));
+    let assignedColor = skinColor;
+    if (!assignedColor || (roomData.players.size > 0 && assignedColor === '#f97316') || usedColors.has(assignedColor)) {
+      assignedColor = MULTIPLAYER_COLORS.find(c => !usedColors.has(c)) || MULTIPLAYER_COLORS[roomData.players.size % MULTIPLAYER_COLORS.length];
+    }
+
     const newPlayer = {
       id: playerId,
       name: (name || 'Operative').slice(0, 16),
-      color: skinColor || '#f97316',
+      color: assignedColor,
       x: 300 + Math.random() * 600,
       y: 150,
       vx: 0,
@@ -229,6 +248,7 @@ io.on('connection', (socket) => {
 
     socket.emit('init-state', {
       selfId: playerId,
+      assignedColor: assignedColor,
       preset: roomData.preset,
       url: roomData.url,
       seed: roomData.seed,

@@ -50,8 +50,13 @@ class Game {
     // Default Level: Authentic Facebook or Wikipedia
     this.loadMapPreset('wikipedia', 'https://en.wikipedia.org/wiki/Stick_figure', false);
 
-    // Draw authentic pixel-art icons on all bottom weapon slots
+    // Draw authentic futuristic weapon sprites on all bottom slots
     this.drawWeaponIcons();
+    if (window.spriteSheetImg) {
+      if (!window.spriteSheetImg.complete) {
+        window.spriteSheetImg.addEventListener('load', () => this.drawWeaponIcons());
+      }
+    }
 
     // Check if user entered via a shared room link (?room=...)
     const urlParams = new URLSearchParams(window.location.search);
@@ -69,7 +74,7 @@ class Game {
     }
 
     // Touch & Mobile Screen Detection
-    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 900;
     if (hasTouch) {
       document.body.classList.add('touch-active');
       this.setupMobileTouchControls();
@@ -393,112 +398,40 @@ class Game {
     this.ui.setPresetDisplay('image', 'Imagen Personalizada');
   }
 
-  // Draw Pixel-Art Icons on bottom weapon slots
+  // Draw Pixel-Art Icons on bottom weapon slots using uploaded Futuristic Spritesheet
   drawWeaponIcons() {
-    // 0: Pistol
-    this.drawIcon('icon-0', (ctx) => {
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(10, 10, 24, 7);
-      ctx.fillRect(14, 17, 8, 10);
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(28, 12, 6, 3);
-    });
+    const weaponMap = [
+      { id: 'icon-0', name: 'Pistol' },
+      { id: 'icon-1', name: 'SMG' },
+      { id: 'icon-2', name: 'Shotgun' },
+      { id: 'icon-3', name: 'Rocket Launcher' },
+      { id: 'icon-4', name: 'Railgun' },
+      { id: 'icon-5', name: 'Flamethrower' },
+      { id: 'icon-6', name: 'Too Much' },
+      { id: 'icon-7', name: 'The Magic Wand' },
+      { id: 'icon-8', name: 'PSR B0531+21' },
+      { id: 'icon-alt', name: 'Grenade' }
+    ];
 
-    // 1: SMG
-    this.drawIcon('icon-1', (ctx) => {
-      ctx.fillStyle = '#1e293b';
-      ctx.fillRect(8, 9, 30, 8);
-      ctx.fillStyle = '#64748b';
-      ctx.fillRect(18, 17, 6, 12); // mag
-      ctx.fillRect(36, 11, 4, 4); // barrel
-    });
-
-    // 2: Shotgun
-    this.drawIcon('icon-2', (ctx) => {
-      ctx.fillStyle = '#78350f'; // wood stock
-      ctx.fillRect(6, 14, 12, 7);
-      ctx.fillStyle = '#334155'; // twin barrel
-      ctx.fillRect(18, 11, 24, 6);
-    });
-
-    // 3: Rocket Launcher
-    this.drawIcon('icon-3', (ctx) => {
-      ctx.fillStyle = '#065f46';
-      ctx.fillRect(6, 9, 32, 12);
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.moveTo(38, 9);
-      ctx.lineTo(44, 15);
-      ctx.lineTo(38, 21);
-      ctx.fill();
-    });
-
-    // 4: Railgun
-    this.drawIcon('icon-4', (ctx) => {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(6, 10, 32, 10);
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(14, 13, 18, 4); // glow coil
-    });
-
-    // 5: Flamethrower
-    this.drawIcon('icon-5', (ctx) => {
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(8, 10, 24, 10);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(12, 20, 10, 8); // gas canister
-      ctx.fillStyle = '#ea580c';
-      ctx.beginPath();
-      ctx.arc(38, 15, 5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // 6: Too Much (Cluster Parachute)
-    this.drawIcon('icon-6', (ctx) => {
-      ctx.fillStyle = '#f97316';
-      ctx.beginPath();
-      ctx.arc(24, 22, 6, 0, Math.PI * 2);
-      ctx.fill();
-      // parachute
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(24, 10, 12, Math.PI, 0);
-      ctx.stroke();
-    });
-
-    // 7: The Magic Wand
-    this.drawIcon('icon-7', (ctx) => {
-      ctx.fillStyle = '#d97706';
-      ctx.fillRect(10, 18, 24, 3);
-      ctx.fillStyle = '#c084fc';
-      ctx.beginPath();
-      ctx.arc(36, 19, 5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // 8: PSR B0531+21 (Neutron Star)
-    this.drawIcon('icon-8', (ctx) => {
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(24, 16, 7, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#f43f5e';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(10, 8);
-      ctx.lineTo(38, 24);
-      ctx.stroke();
-    });
-
-    // Alt: Grenade
-    this.drawIcon('icon-alt', (ctx) => {
-      ctx.fillStyle = '#16a34a';
-      ctx.beginPath();
-      ctx.arc(24, 18, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(22, 7, 4, 4);
+    weaponMap.forEach(({ id, name }) => {
+      this.drawIcon(id, (ctx, c) => {
+        const sp = window.SPRITES && window.SPRITES.weapons[name];
+        if (window.spriteSheetImg && window.spriteSheetImg.complete && window.spriteSheetImg.naturalWidth > 0 && sp) {
+          const pad = 2;
+          const availW = c.width - pad * 2;
+          const availH = c.height - pad * 2;
+          const scale = Math.min(availW / sp.w, availH / sp.h);
+          const dw = Math.round(sp.w * scale);
+          const dh = Math.round(sp.h * scale);
+          const dx = Math.round((c.width - dw) / 2);
+          const dy = Math.round((c.height - dh) / 2);
+          ctx.drawImage(window.spriteSheetImg, sp.x, sp.y, sp.w, sp.h, dx, dy, dw, dh);
+        } else {
+          // Fallback vector shape
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(8, 12, 32, 8);
+        }
+      });
     });
   }
 
@@ -507,7 +440,7 @@ class Game {
     if (!c) return;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
-    drawFn(ctx);
+    drawFn(ctx, c);
   }
 
   spawnBot() {
@@ -780,6 +713,11 @@ class Game {
   }
 
   renderMinimap(ctx) {
+    // Hide minimap completely on mobile, tablets or narrow screens (< 860px) so it doesn't obstruct gameplay
+    if (this.canvas.width < 860 || window.innerWidth < 860 || document.body.classList.contains('touch-active')) {
+      return;
+    }
+
     const mw = 160;
     const mh = Math.floor(mw * (this.level.height / this.level.width));
     const mx = this.canvas.width - mw - 20;
@@ -952,6 +890,12 @@ class UIManager {
           if (btnSolo) btnSolo.classList.remove('active');
           const chatCont = document.getElementById('chat-container');
           if (chatCont) chatCont.style.display = 'flex';
+          // Color shift on multiplayer enter
+          if (this.game.localPlayer.color === '#f97316') {
+            this.game.localPlayer.color = '#38bdf8';
+            const dot = document.getElementById('color-dot');
+            if (dot) dot.style.background = '#38bdf8';
+          }
           this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
         }
 
@@ -993,6 +937,53 @@ class UIManager {
       });
     }
 
+    // Mobile Navigation Drawer Toggle
+    const menuToggle = document.getElementById('btn-menu-toggle');
+    const navDrawer = document.getElementById('nav-drawer');
+    if (menuToggle && navDrawer) {
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navDrawer.classList.toggle('open');
+      });
+      navDrawer.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+          navDrawer.classList.remove('open');
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!menuToggle.contains(e.target) && !navDrawer.contains(e.target)) {
+          navDrawer.classList.remove('open');
+        }
+      });
+    }
+
+    // Operative Visor/Armor Color Switcher
+    const colorBtn = document.getElementById('btn-color-picker');
+    const colorDot = document.getElementById('color-dot');
+    const OPERATIVE_PALETTE = [
+      { name: 'Naranja Futuro', hex: '#f97316' },
+      { name: 'Cian Neón', hex: '#38bdf8' },
+      { name: 'Verde Ácido', hex: '#22c55e' },
+      { name: 'Púrpura Cyber', hex: '#a855f7' },
+      { name: 'Rosa Láser', hex: '#ec4899' },
+      { name: 'Amarillo Solar', hex: '#eab308' },
+      { name: 'Rojo Carmesí', hex: '#ef4444' },
+      { name: 'Azul Eléctrico', hex: '#3b82f6' }
+    ];
+    let currentColorIndex = 0;
+
+    if (colorBtn) {
+      colorBtn.addEventListener('click', () => {
+        currentColorIndex = (currentColorIndex + 1) % OPERATIVE_PALETTE.length;
+        const chosen = OPERATIVE_PALETTE[currentColorIndex];
+        this.game.localPlayer.color = chosen.hex;
+        if (colorDot) colorDot.style.background = chosen.hex;
+        if (!this.game.isSoloMode && this.game.multiplayer) {
+          this.game.multiplayer.emitPlayerUpdate(this.game.localPlayer);
+        }
+      });
+    }
+
     // Solo Mode vs Online Toggle
     const btnSolo = document.getElementById('btn-mode-solo');
     const btnMulti = document.getElementById('btn-mode-multi');
@@ -1010,6 +1001,11 @@ class UIManager {
         btnMulti.classList.add('active');
         btnSolo.classList.remove('active');
         document.getElementById('chat-container').style.display = 'flex';
+        // Dynamic Visor & Light color shift when entering multiplayer!
+        if (this.game.localPlayer.color === '#f97316') {
+          this.game.localPlayer.color = '#38bdf8';
+          if (colorDot) colorDot.style.background = '#38bdf8';
+        }
         // Connect to online room
         this.game.multiplayer.init('lobby', this.game.localPlayer.name, this.game.localPlayer.color);
       });
