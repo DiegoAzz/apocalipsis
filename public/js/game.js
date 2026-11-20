@@ -1296,6 +1296,37 @@ class UIManager {
       });
     }
 
+    // Fullscreen Toggle (Ideal for TikTok Live streaming from mobile)
+    const fsBtn = document.getElementById('btn-toggle-fullscreen');
+    if (fsBtn) {
+      fsBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const docEl = document.documentElement;
+          if (docEl.requestFullscreen) {
+            docEl.requestFullscreen().catch(() => {});
+          } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+          }
+          fsBtn.textContent = '🗗 Salir Pantalla Completa';
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+          fsBtn.textContent = '📺 Pantalla Completa';
+        }
+      });
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          fsBtn.textContent = '📺 Pantalla Completa';
+        } else {
+          fsBtn.textContent = '🗗 Salir Pantalla Completa';
+        }
+        this.game.resizeCanvas();
+      });
+    }
+
     // 3D Victory Modal Buttons
     const btnVictoryAnother = document.getElementById('btn-victory-another');
     const btnVictoryRestart = document.getElementById('btn-victory-restart');
