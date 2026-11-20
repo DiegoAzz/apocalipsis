@@ -19,25 +19,25 @@ const SPRITES = {
   },
   hero: {
     idle: [
-      { x: 45, y: 500, w: 66, h: 81 },
-      { x: 123, y: 500, w: 76, h: 81 },
-      { x: 224, y: 500, w: 67, h: 82 }
+      { x: 46, y: 461, w: 50, h: 123 },
+      { x: 133, y: 461, w: 66, h: 137 },
+      { x: 225, y: 461, w: 65, h: 123 }
     ],
     run: [
-      { x: 335, y: 500, w: 91, h: 82 },
-      { x: 430, y: 500, w: 96, h: 82 },
-      { x: 535, y: 500, w: 98, h: 81 }
+      { x: 348, y: 470, w: 89, h: 115 },
+      { x: 452, y: 471, w: 89, h: 127 },
+      { x: 552, y: 469, w: 84, h: 116 }
     ],
-    jump: { x: 713, y: 500, w: 58, h: 82 },
-    jetpack: { x: 775, y: 480, w: 95, h: 102 },
-    landing: { x: 879, y: 500, w: 92, h: 82 },
+    jump: { x: 723, y: 464, w: 63, h: 117 },
+    jetpack: { x: 804, y: 434, w: 81, h: 168 },
+    landing: { x: 892, y: 470, w: 94, h: 128 },
     shoot: [
-      { x: 42, y: 613, w: 94, h: 99 },
-      { x: 161, y: 616, w: 105, h: 96 },
-      { x: 275, y: 613, w: 141, h: 99 }
+      { x: 43, y: 616, w: 90, h: 118 },
+      { x: 163, y: 616, w: 102, h: 118 },
+      { x: 287, y: 616, w: 111, h: 118 }
     ],
-    damage: { x: 500, y: 616, w: 96, h: 96 },
-    fall: { x: 617, y: 656, w: 105, h: 56 }
+    damage: { x: 500, y: 619, w: 102, h: 130 },
+    fall: { x: 622, y: 663, w: 119, h: 86 }
   }
 };
 
@@ -262,6 +262,11 @@ class Player {
     this.vy -= Math.sin(this.aimAngle) * (w.name === 'Shotgun' ? 2.5 : 0.4);
 
     physics.spawnMuzzleSmoke(originX, originY, this.aimAngle);
+
+    // Eject spinning brass shell casing (GTA 6 / Movie visual fidelity)
+    if (['Pistol', 'SMG', 'Shotgun'].includes(w.name)) {
+      physics.spawnShellCasing(shoulderX, shoulderY, this.facing);
+    }
 
     if (w.name === 'Pistol') {
       window.soundManager.playPistol();
@@ -546,8 +551,11 @@ class Player {
   // RENDER FUTURISTIC OPERATIVE SPRITE
   render(ctx) {
     if (this.isDead) {
-      // Draw fallen/knocked down operative sprite
-      this.drawHeroSprite(ctx, SPRITES.hero.fall, 0, 10, 48, 26);
+      // Fallen operative
+      const sp = SPRITES.hero.fall;
+      const dh = 32;
+      const dw = Math.round(dh * (sp.w / sp.h));
+      this.drawHeroSprite(ctx, sp, 0, 24 - dh, dw, dh);
       return;
     }
 
@@ -562,7 +570,7 @@ class Player {
     ctx.fillStyle = this.color || '#ffffff';
     ctx.font = 'bold 11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
     ctx.shadowBlur = 4;
     ctx.fillText(this.name, 0, -36);
     ctx.shadowBlur = 0;
@@ -585,36 +593,30 @@ class Player {
 
     // Select Hero Sprite based on action
     let heroSprite = SPRITES.hero.idle[0];
-    let drawW = 34;
-    let drawH = 42;
-    let offY = -22;
+    let targetH = 50;
 
     if (this.hurtTimer > 0) {
       heroSprite = SPRITES.hero.damage;
     } else if (this.jetpackActive) {
       heroSprite = SPRITES.hero.jetpack;
-      drawW = 40;
-      drawH = 44;
-      offY = -22;
+      targetH = 58; // slightly taller for thruster flames under feet
     } else if (!this.onGround) {
       heroSprite = SPRITES.hero.jump;
-      drawW = 30;
-      drawH = 42;
     } else if (Math.abs(this.vx) > 0.5) {
-      const frameIdx = Math.floor(this.walkCycle) % 3;
+      const frameIdx = Math.floor(this.walkCycle * 0.4) % 3;
       heroSprite = SPRITES.hero.run[frameIdx];
-      drawW = 38;
-      drawH = 42;
     } else if (this.muzzleFlash > 0) {
       heroSprite = SPRITES.hero.shoot[1];
-      drawW = 42;
-      drawH = 42;
     } else {
-      const frameIdx = Math.floor(this.animTimer * 3) % 3;
+      // Natural idle breathing cycle
+      const idlePhase = (this.animTimer % 2.4);
+      const frameIdx = idlePhase < 0.6 ? 1 : 0;
       heroSprite = SPRITES.hero.idle[frameIdx];
-      drawW = 34;
-      drawH = 42;
     }
+
+    const targetW = Math.round(targetH * (heroSprite.w / heroSprite.h));
+    const offY = 24 - targetH; // Anchor feet to bottom of hitbox (y = 24)
+    const offX = -targetW / 2;
 
     // Apply Multiplayer Color Shift (Changes Visor & Armor Lights)
     const hueDeg = this.getHueShift();
@@ -625,12 +627,12 @@ class Player {
     // Facing direction
     ctx.scale(this.facing, 1);
 
-    // Draw Hero Body Sprite from Spritesheet
+    // Draw Hero Body Sprite from Spritesheet with full helmet and head
     if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0) {
       ctx.drawImage(
         spriteSheetImg,
         heroSprite.x, heroSprite.y, heroSprite.w, heroSprite.h,
-        -drawW / 2, offY, drawW, drawH
+        offX, offY, targetW, targetH
       );
     } else {
       // Fallback stickman

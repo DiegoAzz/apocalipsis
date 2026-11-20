@@ -20,7 +20,12 @@ class Game {
       y: 0,
       zoom: 1.0,
       targetX: 0,
-      targetY: 0
+      targetY: 0,
+      isPanning: false,
+      panStartX: 0,
+      panStartY: 0,
+      camStartX: 0,
+      camStartY: 0
     };
 
     // Input State
@@ -41,6 +46,15 @@ class Game {
     this.init();
   }
 
+  snapCameraToPlayer() {
+    if (!this.localPlayer) return;
+    this.camera.x = this.localPlayer.x;
+    this.camera.y = this.localPlayer.y;
+    this.camera.targetX = this.localPlayer.x;
+    this.camera.targetY = this.localPlayer.y;
+    this.camera.isPanning = false;
+  }
+
   init() {
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
@@ -49,6 +63,7 @@ class Game {
 
     // Default Level: Authentic Facebook or Wikipedia
     this.loadMapPreset('wikipedia', 'https://en.wikipedia.org/wiki/Stick_figure', false);
+    this.snapCameraToPlayer();
 
     // Draw authentic futuristic weapon sprites on all bottom slots
     this.drawWeaponIcons();
@@ -288,6 +303,10 @@ class Game {
         this.input.isRightMouseDown = true;
       }
 
+      if (e.code === 'KeyC') {
+        this.snapCameraToPlayer();
+      }
+
       // Weapon Hotkeys 1-9
       const keyNum = parseInt(e.key);
       if (keyNum >= 1 && keyNum <= 9) {
@@ -317,11 +336,31 @@ class Game {
       this.input.screenMouseY = e.clientY;
       this.input.mouseX = (e.clientX - this.canvas.width / 2) / this.camera.zoom + this.camera.x;
       this.input.mouseY = (e.clientY - this.canvas.height / 2) / this.camera.zoom + this.camera.y;
+
+      // Middle mouse button / Wheel drag camera pan (Hand grab tool)
+      if (this.camera.isPanning) {
+        const dx = (e.clientX - this.camera.panStartX) / this.camera.zoom;
+        const dy = (e.clientY - this.camera.panStartY) / this.camera.zoom;
+        this.camera.x = this.camera.camStartX - dx;
+        this.camera.y = this.camera.camStartY - dy;
+        this.camera.targetX = this.camera.x;
+        this.camera.targetY = this.camera.y;
+        this.canvas.style.cursor = 'grabbing';
+      }
     });
 
     window.addEventListener('mousedown', (e) => {
       window.soundManager.ensureContext();
-      if (e.button === 0) {
+      if (e.button === 1) {
+        // Middle click / Wheel press activates pan hand tool
+        e.preventDefault();
+        this.camera.isPanning = true;
+        this.camera.panStartX = e.clientX;
+        this.camera.panStartY = e.clientY;
+        this.camera.camStartX = this.camera.x;
+        this.camera.camStartY = this.camera.y;
+        this.canvas.style.cursor = 'grabbing';
+      } else if (e.button === 0) {
         this.input.isMouseDown = true;
       } else if (e.button === 2) {
         e.preventDefault();
@@ -330,7 +369,10 @@ class Game {
     });
 
     window.addEventListener('mouseup', (e) => {
-      if (e.button === 0) {
+      if (e.button === 1) {
+        this.camera.isPanning = false;
+        this.canvas.style.cursor = 'crosshair';
+      } else if (e.button === 0) {
         this.input.isMouseDown = false;
       } else if (e.button === 2) {
         this.input.isRightMouseDown = false;
@@ -339,21 +381,29 @@ class Game {
 
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Mouse scroll wheel weapon cycle
+    // Mouse scroll wheel: Zoom with Ctrl/Alt/Shift, or cycle weapons
     window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.altKey || e.shiftKey) {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.1 : 0.9;
+        this.camera.zoom = Math.max(0.4, Math.min(2.5, this.camera.zoom * factor));
+        return;
+      }
       const dir = e.deltaY > 0 ? 1 : -1;
       let newIdx = this.localPlayer.currentWeaponIndex + dir;
       if (newIdx < 0) newIdx = this.localPlayer.weapons.length - 1;
       if (newIdx >= this.localPlayer.weapons.length) newIdx = 0;
       this.localPlayer.selectWeapon(newIdx);
       this.ui.updateActiveWeapon(newIdx);
-    });
+    }, { passive: false });
   }
 
   loadMapPreset(preset, url = '', notifyServer = true) {
     const lowerUrl = (url || preset).toLowerCase();
 
-    if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
+    if (lowerUrl.includes('amazon')) {
+      this.level.generateAmazon();
+    } else if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
       this.level.generateFacebook();
     } else if (preset === 'wikipedia' || lowerUrl.includes('wikipedia')) {
       this.level.generateWikipedia();
@@ -364,29 +414,35 @@ class Game {
     }
 
     this.localPlayer.respawn(this.level);
+    this.snapCameraToPlayer();
 
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap(preset, url);
     }
 
+    if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
     this.ui.setPresetDisplay(preset, this.level.pageUrl);
   }
 
   async loadParsedWebpage(pageData, notifyServer = true) {
     const lowerUrl = (pageData.url || '').toLowerCase();
-    if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
+    if (lowerUrl.includes('amazon')) {
+      this.level.generateAmazon();
+    } else if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
       this.level.generateFacebook();
     } else {
       await this.level.renderFetchedPage(pageData);
     }
 
     this.localPlayer.respawn(this.level);
+    this.snapCameraToPlayer();
 
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap('custom', pageData.url, pageData);
     }
 
+    if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
     this.ui.setPresetDisplay('custom', pageData.url);
   }
@@ -394,6 +450,8 @@ class Game {
   async loadUserImage(imageSource) {
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
+    this.snapCameraToPlayer();
+    if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
     this.ui.setPresetDisplay('image', 'Imagen Personalizada');
   }
@@ -665,12 +723,14 @@ class Game {
     );
 
     // 5. Update Camera
-    this.camera.targetX = this.localPlayer.x;
-    this.camera.targetY = this.localPlayer.y;
+    if (!this.camera.isPanning) {
+      this.camera.targetX = this.localPlayer.x;
+      this.camera.targetY = this.localPlayer.y;
 
-    const lerpSpeed = 0.12;
-    this.camera.x += (this.camera.targetX - this.camera.x) * lerpSpeed;
-    this.camera.y += (this.camera.targetY - this.camera.y) * lerpSpeed;
+      const lerpSpeed = 0.12;
+      this.camera.x += (this.camera.targetX - this.camera.x) * lerpSpeed;
+      this.camera.y += (this.camera.targetY - this.camera.y) * lerpSpeed;
+    }
 
     const halfW = (this.canvas.width / 2) / this.camera.zoom;
     const halfH = (this.canvas.height / 2) / this.camera.zoom;
@@ -810,6 +870,7 @@ class UIManager {
     this.scoreboard = document.getElementById('scoreboard-modal');
     this.urlInput = document.getElementById('webpage-url-input');
     this.helpModal = document.getElementById('help-modal');
+    this.victoryShown = false;
 
     this.setupUIEvents();
   }
@@ -839,12 +900,25 @@ class UIManager {
         // Check image file extension
         if (lower.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/)) {
           await this.game.loadUserImage(val);
+        } else if (lower.includes('amazon')) {
+          this.game.loadMapPreset('amazon', val, true);
         } else if (lower.includes('facebook') || lower.includes('fb.com')) {
           this.game.loadMapPreset('facebook', val, true);
+        } else if (lower.includes('wikipedia')) {
+          this.game.loadMapPreset('wikipedia', val, true);
+        } else if (lower.includes('google')) {
+          this.game.loadMapPreset('google', val, true);
         } else {
-          const res = await fetch(`/api/parse-url?url=${encodeURIComponent(val)}`);
-          const pageData = await res.json();
-          await this.game.loadParsedWebpage(pageData, true);
+          // Attempt authentic live screenshot capture of the actual webpage first
+          try {
+            await this.game.loadUserImage(`/api/screenshot-url?url=${encodeURIComponent(val)}`);
+            this.game.level.pageUrl = val;
+            this.setPresetDisplay('custom', val);
+          } catch (e) {
+            const res = await fetch(`/api/parse-url?url=${encodeURIComponent(val)}`);
+            const pageData = await res.json();
+            await this.game.loadParsedWebpage(pageData, true);
+          }
         }
       } catch (err) {
         console.error('Failed to parse URL:', err);
@@ -1057,6 +1131,58 @@ class UIManager {
       startPlay.addEventListener('click', () => { this.helpModal.style.display = 'none'; });
     }
 
+    // Custom Player Nickname
+    const nameInput = document.getElementById('player-name-input');
+    if (nameInput) {
+      const savedName = localStorage.getItem('destroy_player_name');
+      if (savedName) {
+        this.game.localPlayer.name = savedName;
+        nameInput.value = savedName;
+      }
+      nameInput.addEventListener('input', (e) => {
+        const clean = e.target.value.replace(/[^a-zA-Z0-9_ -]/g, '').slice(0, 15);
+        if (clean) {
+          this.game.localPlayer.name = clean;
+          localStorage.setItem('destroy_player_name', clean);
+          if (!this.game.isSoloMode && this.game.multiplayer) {
+            this.game.multiplayer.emitPlayerUpdate(this.game.localPlayer);
+          }
+        }
+      });
+    }
+
+    // Centering Camera Button
+    const btnCenter = document.getElementById('btn-center-camera');
+    if (btnCenter) {
+      btnCenter.addEventListener('click', () => {
+        this.game.snapCameraToPlayer();
+      });
+    }
+
+    // 3D Victory Modal Buttons
+    const btnVictoryAnother = document.getElementById('btn-victory-another');
+    const btnVictoryRestart = document.getElementById('btn-victory-restart');
+    const victoryModal = document.getElementById('victory-modal');
+
+    if (btnVictoryAnother && victoryModal) {
+      btnVictoryAnother.addEventListener('click', () => {
+        victoryModal.style.display = 'none';
+        this.victoryShown = false;
+        if (this.urlInput) {
+          this.urlInput.focus();
+          this.urlInput.select();
+        }
+      });
+    }
+
+    if (btnVictoryRestart && victoryModal) {
+      btnVictoryRestart.addEventListener('click', () => {
+        victoryModal.style.display = 'none';
+        this.victoryShown = false;
+        this.game.loadMapPreset(this.game.level.presetName || 'wikipedia', this.game.level.pageUrl, true);
+      });
+    }
+
     // Hotbar click selection
     document.querySelectorAll('.slot').forEach((slot) => {
       slot.addEventListener('click', () => {
@@ -1109,6 +1235,25 @@ class UIManager {
     }
     if (this.destructionText) {
       this.destructionText.textContent = `${percent.toFixed(1)}% DESTRUIDO`;
+    }
+
+    // 3D Obliteration Victory Celebration
+    if (percent >= 99.0 && !this.victoryShown) {
+      this.victoryShown = true;
+      const vModal = document.getElementById('victory-modal');
+      if (vModal) {
+        vModal.style.display = 'flex';
+        const vPct = document.getElementById('vstat-percent');
+        const vScore = document.getElementById('vstat-score');
+        const vPlayer = document.getElementById('vstat-player');
+        if (vPct) vPct.textContent = `${percent.toFixed(1)}%`;
+        if (vScore) vScore.textContent = (Math.round((this.game.localPlayer.kills * 1000) + (percent * 150))).toLocaleString();
+        if (vPlayer) {
+          vPlayer.textContent = this.game.localPlayer.name;
+          vPlayer.style.color = this.game.localPlayer.color;
+        }
+        this.game.physics.spawnVictoryConfetti(this.game.localPlayer.x, this.game.localPlayer.y - 120);
+      }
     }
   }
 

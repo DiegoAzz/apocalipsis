@@ -23,6 +23,22 @@ class PhysicsEngine {
     return { x: ox, y: oy, rot };
   }
 
+  // Brass bullet casings ejected with physical spin and bounce (GTA 6 / Movie style)
+  spawnShellCasing(x, y, facing) {
+    this.particles.push({
+      type: 'casing',
+      x,
+      y,
+      vx: -facing * (2.8 + Math.random() * 2.2) + (Math.random() - 0.5) * 1.5,
+      vy: -(3.8 + Math.random() * 2.5),
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 28,
+      color: '#eab308',
+      life: 1.0,
+      decay: 0.007
+    });
+  }
+
   // Debris chunks blasted out of carved terrain
   spawnDebris(debrisList) {
     if (!debrisList || !debrisList.length) return;
@@ -187,6 +203,27 @@ class PhysicsEngine {
     }
   }
 
+  // 3D Victory Celebration Confetti & Spark Storm
+  spawnVictoryConfetti(x, y, count = 120) {
+    const colors = ['#f59e0b', '#ec4899', '#38bdf8', '#10b981', '#a855f7', '#ef4444', '#fbbf24', '#ffffff'];
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        type: 'confetti',
+        x: x + (Math.random() - 0.5) * 360,
+        y: y + (Math.random() - 0.5) * 180,
+        vx: (Math.random() - 0.5) * 16,
+        vy: -(Math.random() * 18 + 6),
+        w: 6 + Math.random() * 6,
+        h: 9 + Math.random() * 8,
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 14,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1.0,
+        decay: 0.003
+      });
+    }
+  }
+
   addProjectile(proj) {
     this.projectiles.push(proj);
   }
@@ -243,6 +280,26 @@ class PhysicsEngine {
         p.vx *= 0.94;
         p.vy *= 0.94;
         if (p.size < p.maxSize) p.size += 0.4;
+      } else if (p.type === 'casing') {
+        p.vy += 0.45; // gravity
+        p.vx *= 0.985;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot * dt;
+
+        // Bounce off solid terrain
+        if (this.level.isSolid(p.x, p.y)) {
+          p.vy = -p.vy * 0.52;
+          p.vx *= 0.75;
+          p.vrot *= 0.6;
+          p.y -= 1;
+        }
+      } else if (p.type === 'confetti') {
+        p.vy += 0.25; // light float gravity
+        p.vx *= 0.985;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vrot * dt;
       } else if (p.type === 'hit_spark') {
         p.vy += 0.38;
         p.x += p.vx;
@@ -551,6 +608,20 @@ class PhysicsEngine {
         ctx.rotate(p.rot || 0);
         ctx.fillStyle = p.color;
         ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+      } else if (p.type === 'casing') {
+        // Brass bullet cartridge spinning
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot || 0);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(-2.5, -1.2, 5, 2.4);
+        ctx.fillStyle = '#b45309';
+        ctx.fillRect(-2.5, -1.2, 1.2, 2.4);
+      } else if (p.type === 'confetti') {
+        // Shimmering confetti piece
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot || 0);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
       } else if (p.type === 'spark' || p.type === 'hit_spark') {
         // Glowing incandescent streak in velocity direction
         ctx.strokeStyle = p.color;

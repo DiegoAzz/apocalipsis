@@ -37,6 +37,47 @@ app.get('/api/proxy-image', async (req, res) => {
   }
 });
 
+// Real Webpage Screenshot Renderer (Captures exact authentic visual look of ANY URL)
+app.get('/api/screenshot-url', async (req, res) => {
+  let targetUrl = req.query.url;
+  if (!targetUrl) return res.status(400).send('Missing url parameter');
+
+  if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+    targetUrl = 'https://' + targetUrl;
+  }
+
+  try {
+    const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1280`;
+    const response = await fetch(screenshotUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(buffer);
+  } catch (err) {
+    console.error('[SCREENSHOT API ERROR]:', err.message);
+    res.status(500).send('Failed to capture screenshot');
+  }
+});
+
+function cleanHtmlEntity(str) {
+  if (!str) return '';
+  return str
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .trim();
+}
+
 // Real Webpage Parser: Fetches HTML and converts into structured layout blocks
 app.get('/api/parse-url', async (req, res) => {
   let targetUrl = req.query.url;
@@ -73,19 +114,19 @@ app.get('/api/parse-url', async (req, res) => {
 
     // Extract Title
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].trim() : domain;
+    const title = titleMatch ? cleanHtmlEntity(titleMatch[1]) : domain;
 
     // Extract Meta Description
     const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-    const description = descMatch ? descMatch[1].trim() : `Explore the latest news and content on ${domain}.`;
+    const description = descMatch ? cleanHtmlEntity(descMatch[1]) : `Explore the latest news and content on ${domain}.`;
 
     // Extract Headings (H1, H2, H3)
     const headings = [];
     const hRegex = /<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/gi;
     let match;
     while ((match = hRegex.exec(html)) !== null && headings.length < 12) {
-      const cleanText = match[2].replace(/<[^>]+>/g, '').trim();
-      if (cleanText.length > 3 && cleanText.length < 120) {
+      const cleanText = cleanHtmlEntity(match[2]);
+      if (cleanText.length > 3 && cleanText.length < 120 && !/^[\s.,:;_-]+$/.test(cleanText)) {
         headings.push({ level: parseInt(match[1]), text: cleanText });
       }
     }
@@ -94,8 +135,8 @@ app.get('/api/parse-url', async (req, res) => {
     const paragraphs = [];
     const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
     while ((match = pRegex.exec(html)) !== null && paragraphs.length < 16) {
-      const cleanText = match[1].replace(/<[^>]+>/g, '').trim();
-      if (cleanText.length > 30 && cleanText.length < 400) {
+      const cleanText = cleanHtmlEntity(match[1]);
+      if (cleanText.length > 30 && cleanText.length < 400 && !/^[\s.,:;_-]+$/.test(cleanText)) {
         paragraphs.push(cleanText);
       }
     }

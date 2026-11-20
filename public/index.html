@@ -31,19 +31,25 @@
     <div id="nav-drawer" class="nav-drawer">
       <!-- Páginas Rápidas & Subir Imagen -->
       <div class="preset-group">
+        <button class="preset-pill" data-preset="amazon">📦 Amazon</button>
         <button class="preset-pill active" data-preset="wikipedia">📄 Wikipedia</button>
         <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
         <button class="preset-pill" data-preset="google">🔍 Google</button>
-        <button class="preset-pill" data-preset="hackernews">💻 Hacker News</button>
         <input type="file" id="image-upload-input" accept="image/*" style="display: none">
         <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
       </div>
 
-      <!-- Controles de Modo & Sonido -->
+      <!-- Controles de Modo & Jugador -->
       <div class="status-badges">
+        <!-- Nombrar Jugador -->
+        <div class="player-name-badge" title="Haz clic para cambiar tu nombre de jugador">
+          <span class="name-icon">👤</span>
+          <input type="text" id="player-name-input" maxlength="15" value="Operativo" placeholder="Tu Nombre">
+        </div>
         <button class="btn btn-mode active" id="btn-mode-solo">👤 Modo Solo</button>
         <button class="btn btn-mode" id="btn-mode-multi">🌐 Online</button>
         <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
+        <button class="btn btn-sm" id="btn-center-camera" title="Centrar cámara en tu personaje (o pulsa C)">🎯 Centrar</button>
         <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
         <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
         <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
@@ -294,6 +300,36 @@
         </thead>
         <tbody id="scoreboard-rows"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Modal 3D de Victoria / Obliteración Total -->
+  <div id="victory-modal">
+    <div class="victory-backdrop"></div>
+    <div class="victory-card-3d">
+      <div class="trophy-icon-3d">🏆</div>
+      <h1 class="victory-title">¡SITIO DESTRUIDO AL 100%!</h1>
+      <h2 class="victory-subtitle">⚡ OBLITERACIÓN TOTAL COMPLETADA ⚡</h2>
+      
+      <div class="victory-stats-row">
+        <div class="vstat-box">
+          <span class="vstat-num" id="vstat-percent">100%</span>
+          <span class="vstat-lbl">DESTRUCCIÓN</span>
+        </div>
+        <div class="vstat-box">
+          <span class="vstat-num" id="vstat-score">15,400</span>
+          <span class="vstat-lbl">PUNTOS</span>
+        </div>
+        <div class="vstat-box">
+          <span class="vstat-num" id="vstat-player">Operativo</span>
+          <span class="vstat-lbl">GANADOR</span>
+        </div>
+      </div>
+
+      <div class="victory-actions">
+        <button class="btn btn-primary btn-victory" id="btn-victory-another">⚡ DESTRUIR OTRO SITIO</button>
+        <button class="btn btn-mode btn-victory" id="btn-victory-restart">🔄 REPARAR Y VOLVER A DESTRUIR</button>
+      </div>
     </div>
   </div>
 

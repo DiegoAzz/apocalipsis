@@ -815,6 +815,248 @@ class LevelEngine {
     this.syncGridFromCanvas();
   }
 
+  // Authentic Real Amazon Page (Matches the iconic Amazon desktop store layout)
+  generateAmazon() {
+    this.presetName = 'amazon';
+    this.pageUrl = 'https://www.amazon.com/';
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.width, this.height);
+
+    // Amazon light-gray background
+    ctx.fillStyle = '#eaeded';
+    ctx.fillRect(80, 40, this.width - 160, this.height - 80);
+    ctx.strokeStyle = '#d5d9d9';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(80, 40, this.width - 160, this.height - 80);
+
+    // 1. Primary Amazon Header (#131921)
+    const navY = 40;
+    const navH = 72;
+    ctx.fillStyle = '#131921';
+    ctx.fillRect(80, navY, this.width - 160, navH);
+
+    // Amazon Logo with iconic smile arrow
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('amazon', 120, navY + 44);
+    ctx.fillStyle = '#ff9900';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('.com', 230, navY + 44);
+
+    // Smile arrow curve
+    ctx.strokeStyle = '#ff9900';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.arc(175, navY + 46, 36, 0.25 * Math.PI, 0.75 * Math.PI);
+    ctx.stroke();
+    // Smile arrowhead
+    ctx.beginPath();
+    ctx.moveTo(202, navY + 68);
+    ctx.lineTo(210, navY + 65);
+    ctx.lineTo(206, navY + 74);
+    ctx.fillStyle = '#ff9900';
+    ctx.fill();
+
+    // Deliver to Location
+    ctx.fillStyle = '#cccccc';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('Enviar a', 285, navY + 30);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('📍 Colombia / Destino', 285, navY + 48);
+
+    // Search Bar
+    const searchX = 460;
+    const searchW = this.width - 920;
+    const searchH = 42;
+    const searchY = navY + 15;
+
+    // "Todos" dropdown
+    ctx.fillStyle = '#f3f3f3';
+    ctx.fillRect(searchX, searchY, 65, searchH);
+    ctx.fillStyle = '#333333';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Todos ▾', searchX + 10, searchY + 26);
+
+    // Input box
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(searchX + 65, searchY, searchW - 120, searchH);
+    ctx.fillStyle = '#757575';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Buscar en Amazon (ej: Laptops, Videojuegos, Ofertas)...', searchX + 80, searchY + 26);
+
+    // Orange Magnifying Glass Button (#febd69)
+    ctx.fillStyle = '#febd69';
+    ctx.fillRect(searchX + searchW - 55, searchY, 55, searchH);
+    ctx.fillStyle = '#111111';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('🔍', searchX + searchW - 38, searchY + 27);
+
+    // Right Nav Items
+    const rightX = searchX + searchW + 25;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Hola, Identifícate', rightX, navY + 30);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('Cuenta y Listas ▾', rightX, navY + 48);
+
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Devoluciones', rightX + 130, navY + 30);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('& Pedidos', rightX + 130, navY + 48);
+
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('🛒 0', rightX + 225, navY + 44);
+
+    // 2. Sub-Navigation Bar (#232f3e)
+    const subNavY = navY + navH;
+    const subNavH = 40;
+    ctx.fillStyle = '#232f3e';
+    ctx.fillRect(80, subNavY, this.width - 160, subNavH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('☰ Todo    Ofertas del Día    Servicio al Cliente    Listas de Deseos    Tarjetas de Regalo    Vender    Electrónicos    Amazon Prime', 110, subNavY + 25);
+
+    // 3. Hero Promo Banner
+    const bannerY = subNavY + subNavH;
+    const bannerH = 220;
+    const grad = ctx.createLinearGradient(80, bannerY, this.width - 80, bannerY + bannerH);
+    grad.addColorStop(0, '#007185');
+    grad.addColorStop(0.5, '#232f3e');
+    grad.addColorStop(1, '#ff9900');
+    ctx.fillStyle = grad;
+    ctx.fillRect(80, bannerY, this.width - 160, bannerH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillText('Grandes Ofertas de Temporada en Amazon', 130, bannerY + 70);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('Aprovecha hasta un 50% de descuento en electrónica, computadoras y videojuegos.', 130, bannerY + 110);
+    ctx.fillText('Envíos rápidos con Prime y garantía oficial de devolución.', 130, bannerY + 140);
+
+    // Prime badge button
+    ctx.fillStyle = '#ffd814';
+    ctx.fillRect(130, bannerY + 160, 200, 42);
+    ctx.fillStyle = '#0f1111';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('Explorar Ofertas Prime', 150, bannerY + 186);
+
+    // 4. Product Card Grid (4 Big Solid Platform Cards)
+    const gridY = bannerY + bannerH + 25;
+    const cardW = 320;
+    const cardH = 340;
+    const gap = 30;
+    const startX = 110;
+
+    const cards = [
+      {
+        title: 'Computadoras & PC Gamer',
+        sub: 'Laptops RTX 4080, Teclados Mecánicos',
+        price: 'Desde US $899.99',
+        rating: '⭐⭐⭐⭐⭐ (4.8)',
+        tag: 'Más vendido'
+      },
+      {
+        title: 'Consolas & Videojuegos',
+        sub: 'PlayStation 5 Pro, Mandos & VR Headset',
+        price: 'Desde US $499.99',
+        rating: '⭐⭐⭐⭐⭐ (4.9)',
+        tag: 'Elección de Amazon'
+      },
+      {
+        title: 'Ofertas Relámpago ⚡',
+        sub: 'Auriculares Noise Cancelling & Relojes Smart',
+        price: 'US $79.99 (50% Descuento)',
+        rating: '⭐⭐⭐⭐☆ (4.6)',
+        tag: 'Oferta del Día'
+      },
+      {
+        title: 'Dispositivos Amazon Alexa',
+        sub: 'Echo Dot 5ª Gen con Sonido Envolvente',
+        price: 'US $49.99',
+        rating: '⭐⭐⭐⭐⭐ (4.7)',
+        tag: 'Prime Exclusivo'
+      }
+    ];
+
+    cards.forEach((card, idx) => {
+      const cx = startX + idx * (cardW + gap);
+      if (cx + cardW > this.width - 80) return;
+
+      // Card Background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx, gridY, cardW, cardH);
+      ctx.strokeStyle = '#d5d9d9';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx, gridY, cardW, cardH);
+
+      // Tag pill
+      ctx.fillStyle = '#cc0c39';
+      ctx.fillRect(cx + 18, gridY + 18, 120, 24);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(card.tag, cx + 26, gridY + 34);
+
+      // Card Title
+      ctx.fillStyle = '#0f1111';
+      ctx.font = 'bold 19px sans-serif';
+      ctx.fillText(card.title, cx + 18, gridY + 70);
+
+      // Inner Product Visual Box
+      ctx.fillStyle = '#f7f8f8';
+      ctx.fillRect(cx + 18, gridY + 85, cardW - 36, 120);
+      ctx.strokeStyle = '#e7e7e7';
+      ctx.strokeRect(cx + 18, gridY + 85, cardW - 36, 120);
+
+      ctx.fillStyle = '#565959';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(card.sub, cx + 28, gridY + 140);
+      ctx.fillStyle = '#007185';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Ver detalles del producto ➔', cx + 28, gridY + 175);
+
+      // Price & Rating
+      ctx.fillStyle = '#b12704';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText(card.price, cx + 18, gridY + 235);
+
+      ctx.fillStyle = '#ffa41c';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(card.rating, cx + 18, gridY + 260);
+
+      // Yellow "Añadir a la cesta" Button (#ffd814)
+      ctx.fillStyle = '#ffd814';
+      ctx.fillRect(cx + 18, gridY + 280, cardW - 36, 40);
+      ctx.strokeStyle = '#fcd200';
+      ctx.strokeRect(cx + 18, gridY + 280, cardW - 36, 40);
+      ctx.fillStyle = '#0f1111';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Añadir a la cesta', cx + cardW / 2, gridY + 305);
+      ctx.textAlign = 'left';
+    });
+
+    // 5. Amazon Footer (#232f3e)
+    const footY = this.height - 130;
+    ctx.fillStyle = '#37475a';
+    ctx.fillRect(80, footY, this.width - 160, 40);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('▲ Inicio de página', this.width / 2, footY + 25);
+
+    ctx.fillStyle = '#232f3e';
+    ctx.fillRect(80, footY + 40, this.width - 160, 90);
+    ctx.fillStyle = '#dddddd';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Conócenos · Trabaja en Amazon · Ayuda · Envío y Devoluciones · Condiciones de Uso · Destructible Canvas Edition', this.width / 2, footY + 70);
+    ctx.fillStyle = '#999999';
+    ctx.fillText('© 1996-2026, Amazon.com, Inc. o sus afiliados. All elements fully destructible.', this.width / 2, footY + 95);
+    ctx.textAlign = 'left';
+
+    this.syncGridFromCanvas();
+  }
+
   // Render ANY Real Webpage parsed from URL
   async renderFetchedPage(pageData) {
     this.presetName = 'custom';
