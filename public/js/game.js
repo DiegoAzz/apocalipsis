@@ -80,6 +80,28 @@ class Game {
     }
   }
 
+  clampCamera() {
+    if (!this.level || !this.camera) return;
+    const halfW = (this.canvas.width / 2) / (this.camera.zoom || 1);
+    const halfH = (this.canvas.height / 2) / (this.camera.zoom || 1);
+
+    // Horizontal bounds: center if it fits on screen, otherwise clamp within level bounds
+    if (this.level.width <= halfW * 2) {
+      this.camera.x = this.level.width / 2;
+      this.camera.targetX = this.camera.x;
+    } else {
+      this.camera.x = Math.max(halfW, Math.min(this.level.width - halfW, this.camera.x));
+    }
+
+    // Vertical bounds: center if it fits on screen, otherwise clamp within level bounds
+    if (this.level.height <= halfH * 2) {
+      this.camera.y = this.level.height / 2;
+      this.camera.targetY = this.camera.y;
+    } else {
+      this.camera.y = Math.max(halfH, Math.min(this.level.height - halfH, this.camera.y));
+    }
+  }
+
   snapCameraToPlayer() {
     if (!this.localPlayer) return;
     this.camera.x = this.localPlayer.x;
@@ -87,6 +109,7 @@ class Game {
     this.camera.targetX = this.localPlayer.x;
     this.camera.targetY = this.localPlayer.y;
     this.camera.isPanning = false;
+    this.clampCamera();
   }
 
   init() {
@@ -299,6 +322,7 @@ class Game {
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    this.adaptZoomForCurrentMap();
   }
 
   setupInputListeners() {
@@ -447,6 +471,51 @@ class Game {
     }, { passive: false });
   }
 
+  adaptZoomForCurrentMap() {
+    if (!this.level || !this.camera) return;
+    const screenW = this.canvas.width || window.innerWidth;
+    const screenH = this.canvas.height || window.innerHeight;
+
+    if (screenW <= 900) {
+      // Mobile phone screen: automatically fit width edge-to-edge so websites and images are 100% responsive!
+      const fitZoomX = screenW / this.level.width;
+      if (this.level.presetName === 'image') {
+        const fitZoomY = screenH / this.level.height;
+        this.camera.zoom = Math.max(fitZoomX, fitZoomY);
+        this.camera.x = this.level.width / 2;
+        this.camera.y = this.level.height / 2;
+      } else {
+        // Websites / Presets (Wikipedia, Google, Facebook, Amazon, etc.): fit width cleanly
+        this.camera.zoom = fitZoomX;
+        this.camera.x = this.level.width / 2;
+        this.camera.y = Math.min(this.level.height / 2, (screenH / 2) / this.camera.zoom);
+      }
+      this.camera.targetX = this.camera.x;
+      this.camera.targetY = this.camera.y;
+    } else {
+      // Desktop / PC
+      if (this.level.presetName === 'image') {
+        const fitZoomX = (screenW * 0.94) / this.level.width;
+        const fitZoomY = (screenH * 0.88) / this.level.height;
+        if (this.level.height > this.level.width * 1.3) {
+          this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY * 0.92));
+        } else {
+          this.camera.zoom = Math.min(1.0, Math.max(0.35, Math.min(fitZoomX * 0.95, fitZoomY * 0.9)));
+        }
+        this.camera.x = this.level.width / 2;
+        this.camera.y = this.level.height / 2;
+        this.camera.targetX = this.camera.x;
+        this.camera.targetY = this.camera.y;
+      } else {
+        const fitZoomX = (screenW * 0.92) / this.level.width;
+        this.camera.zoom = Math.min(1.0, Math.max(0.5, fitZoomX));
+        this.snapCameraToPlayer();
+      }
+    }
+
+    this.clampCamera();
+  }
+
   loadMapPreset(preset, url = '', notifyServer = true) {
     const lowerUrl = (url || preset).toLowerCase();
 
@@ -463,7 +532,7 @@ class Game {
     }
 
     this.localPlayer.respawn(this.level);
-    this.snapCameraToPlayer();
+    this.adaptZoomForCurrentMap();
 
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap(preset, url);
@@ -485,7 +554,7 @@ class Game {
     }
 
     this.localPlayer.respawn(this.level);
-    this.snapCameraToPlayer();
+    this.adaptZoomForCurrentMap();
 
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap('custom', pageData.url, pageData);
@@ -499,27 +568,7 @@ class Game {
   async loadUserImage(imageSource) {
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
-
-    // Auto-fit camera zoom so the image looks natural, proportional and NOT gigantic!
-    const screenW = this.canvas.width || window.innerWidth;
-    const screenH = this.canvas.height || window.innerHeight;
-    const fitZoomX = (screenW * 0.94) / this.level.width;
-    const fitZoomY = (screenH * 0.88) / this.level.height;
-
-    if (screenW <= 900) {
-      // On phone: zoom so the image fills 100% of the mobile screen edge-to-edge!
-      this.camera.zoom = screenW / this.level.width;
-      this.camera.x = this.level.width / 2;
-      this.camera.y = this.level.height / 2;
-    } else if (this.level.height > this.level.width * 1.3) {
-      // On PC viewing a vertical mobile image: fit height nicely
-      this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY));
-      this.snapCameraToPlayer();
-    } else {
-      // Desktop screenshot or photo
-      this.camera.zoom = Math.min(1.0, Math.max(0.35, Math.min(fitZoomX, fitZoomY)));
-      this.snapCameraToPlayer();
-    }
+    this.adaptZoomForCurrentMap();
 
     if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
@@ -803,9 +852,7 @@ class Game {
       this.camera.y += (this.camera.targetY - this.camera.y) * lerpSpeed;
     }
 
-    const pad = 250;
-    this.camera.x = Math.max(-pad, Math.min(this.level.width + pad, this.camera.x));
-    this.camera.y = Math.max(-pad, Math.min(this.level.height + pad, this.camera.y));
+    this.clampCamera();
 
     // Update UI HUD
     this.ui.updateHUD(this.localPlayer);

@@ -656,9 +656,9 @@ class LevelEngine {
 
         if (isMobileScreen) {
           // On mobile: take the exact aspect ratio and dimensions of the mobile phone!
-          const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : 2.0;
+          const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : (16 / 9);
           targetW = 800; // Crisp base width
-          targetH = Math.round(targetW * Math.max(1.5, Math.min(2.4, screenAspect)));
+          targetH = Math.round(targetW * screenAspect);
         } else {
           // Desktop / PC
           const aspect = img.height / img.width;

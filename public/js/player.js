@@ -533,7 +533,7 @@ class Player {
     this.isDead = false;
     this.health = this.maxHealth;
     this.x = Math.round(level.width / 2);
-    this.y = 160;
+    this.y = Math.min(220, Math.round(level.height * 0.25));
     this.vx = 0;
     this.vy = 0;
     this.jetpackFuel = this.maxJetpackFuel;
