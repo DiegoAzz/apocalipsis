@@ -53,6 +53,23 @@
   <!-- Canvas Principal del Videojuego -->
   <canvas id="game-canvas"></canvas>
 
+  <!-- Controles Táctiles para Móviles / Tablets -->
+  <div id="mobile-controls">
+    <!-- Joystick Virtual (Pulgar Izquierdo: Correr y Volar) -->
+    <div id="touch-joystick-zone">
+      <div id="touch-joystick-base">
+        <div id="touch-joystick-knob"></div>
+      </div>
+      <span class="touch-hint">Mover / Volar</span>
+    </div>
+
+    <!-- Botones Táctiles de Acción (Pulgar Derecho) -->
+    <div id="touch-buttons-zone">
+      <button class="touch-action-btn" id="touch-btn-jump">🚀 SALTAR / VOLAR</button>
+      <button class="touch-action-btn" id="touch-btn-grenade">💣 GRANADA</button>
+    </div>
+  </div>
+
   <!-- Notificaciones de Bajas (Kill Feed) -->
   <div id="kill-feed"></div>
 

@@ -68,8 +68,167 @@ class Game {
       this.multiplayer.init(roomParam, this.localPlayer.name, this.localPlayer.color);
     }
 
-    // Start Game Loop
+    // Touch & Mobile Screen Detection
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (hasTouch) {
+      document.body.classList.add('touch-active');
+      this.setupMobileTouchControls();
+    }
     requestAnimationFrame((t) => this.gameLoop(t));
+  }
+
+  setupMobileTouchControls() {
+    const joyZone = document.getElementById('touch-joystick-zone');
+    const joyBase = document.getElementById('touch-joystick-base');
+    const joyKnob = document.getElementById('touch-joystick-knob');
+    const btnJump = document.getElementById('touch-btn-jump');
+    const btnGrenade = document.getElementById('touch-btn-grenade');
+
+    let joyTouchId = null;
+
+    if (joyZone && joyBase && joyKnob) {
+      const handleJoyMove = (touch) => {
+        const rect = joyBase.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const rawDx = touch.clientX - centerX;
+        const rawDy = touch.clientY - centerY;
+        const dist = Math.hypot(rawDx, rawDy);
+        const maxDist = 36;
+        const angle = Math.atan2(rawDy, rawDx);
+        const clampedDist = Math.min(dist, maxDist);
+
+        const dx = Math.cos(angle) * clampedDist;
+        const dy = Math.sin(angle) * clampedDist;
+
+        joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+        // Horizontal movement
+        if (dx < -10) {
+          this.input.keys['KeyA'] = true;
+          this.input.keys['KeyD'] = false;
+        } else if (dx > 10) {
+          this.input.keys['KeyD'] = true;
+          this.input.keys['KeyA'] = false;
+        } else {
+          this.input.keys['KeyA'] = false;
+          this.input.keys['KeyD'] = false;
+        }
+
+        // Upward movement (Jump / Jetpack)
+        if (dy < -14) {
+          if (!this.input.keys['Space']) {
+            this.input.justPressedJump = true;
+          }
+          this.input.keys['Space'] = true;
+        } else {
+          this.input.keys['Space'] = false;
+        }
+      };
+
+      joyZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        window.soundManager.ensureContext();
+        if (joyTouchId === null) {
+          const touch = e.changedTouches[0];
+          joyTouchId = touch.identifier;
+          handleJoyMove(touch);
+        }
+      }, { passive: false });
+
+      joyZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joyTouchId) {
+            handleJoyMove(e.changedTouches[i]);
+            break;
+          }
+        }
+      }, { passive: false });
+
+      const handleJoyEnd = (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joyTouchId) {
+            joyTouchId = null;
+            joyKnob.style.transform = 'translate(0px, 0px)';
+            this.input.keys['KeyA'] = false;
+            this.input.keys['KeyD'] = false;
+            this.input.keys['Space'] = false;
+            break;
+          }
+        }
+      };
+
+      joyZone.addEventListener('touchend', handleJoyEnd);
+      joyZone.addEventListener('touchcancel', handleJoyEnd);
+    }
+
+    // Touch Action Buttons
+    if (btnJump) {
+      btnJump.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        window.soundManager.ensureContext();
+        this.input.justPressedJump = true;
+        this.input.keys['Space'] = true;
+      }, { passive: false });
+
+      btnJump.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        this.input.keys['Space'] = false;
+      }, { passive: false });
+    }
+
+    if (btnGrenade) {
+      btnGrenade.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        window.soundManager.ensureContext();
+        this.localPlayer.tryGrenade(this.physics);
+      }, { passive: false });
+    }
+
+    // Direct Canvas Touch to Aim & Shoot Continuously
+    let shootTouchId = null;
+    this.canvas.addEventListener('touchstart', (e) => {
+      window.soundManager.ensureContext();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.clientX > 140 && shootTouchId === null) {
+          shootTouchId = touch.identifier;
+          this.updateTouchAim(touch);
+          this.input.isMouseDown = true;
+          break;
+        }
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        if (touch.identifier === shootTouchId) {
+          this.updateTouchAim(touch);
+          break;
+        }
+      }
+    }, { passive: true });
+
+    const handleShootEnd = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === shootTouchId) {
+          shootTouchId = null;
+          this.input.isMouseDown = false;
+          break;
+        }
+      }
+    };
+    this.canvas.addEventListener('touchend', handleShootEnd);
+    this.canvas.addEventListener('touchcancel', handleShootEnd);
+  }
+
+  updateTouchAim(touch) {
+    this.input.screenMouseX = touch.clientX;
+    this.input.screenMouseY = touch.clientY;
+    this.input.mouseX = (touch.clientX - this.canvas.width / 2) / this.camera.zoom + this.camera.x;
+    this.input.mouseY = (touch.clientY - this.canvas.height / 2) / this.camera.zoom + this.camera.y;
   }
 
   resizeCanvas() {

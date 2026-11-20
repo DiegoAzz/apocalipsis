@@ -548,7 +548,167 @@ body, html {
   margin-top: 10px;
 }
 
-/* Scoreboard Modal */
+/* Controles Táctiles para Móviles / Tablets */
+#mobile-controls {
+  display: none; /* Se activa dinámicamente si se detecta pantalla táctil */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 92;
+}
+
+body.touch-active #mobile-controls {
+  display: block;
+}
+
+/* Joystick Virtual (Izquierda) */
+#touch-joystick-zone {
+  position: absolute;
+  bottom: 95px;
+  left: 20px;
+  width: 110px;
+  height: 110px;
+  pointer-events: auto;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#touch-joystick-base {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(249, 115, 22, 0.6);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(249, 115, 22, 0.3);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#touch-joystick-knob {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fb923c, #ea580c);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px var(--orange);
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  pointer-events: none;
+  transition: transform 0.05s ease;
+}
+
+.touch-hint {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fb923c;
+  margin-top: 4px;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+/* Botones Táctiles de Acción (Derecha) */
+#touch-buttons-zone {
+  position: absolute;
+  bottom: 95px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.touch-action-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  background: rgba(18, 18, 20, 0.85);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  touch-action: none;
+}
+
+#touch-btn-jump {
+  background: radial-gradient(circle, #ea580c, #c2410c);
+  border-color: #fb923c;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.6);
+}
+
+#touch-btn-grenade {
+  background: radial-gradient(circle, #16a34a, #15803d);
+  border-color: #4ade80;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+}
+
+.touch-action-btn:active {
+  transform: scale(0.92);
+}
+
+/* Adaptación para pantallas de móvil */
+@media (max-width: 768px) {
+  #top-nav {
+    height: 48px;
+    padding: 0 8px;
+    gap: 8px;
+  }
+  .brand-title {
+    display: none;
+  }
+  .url-control-group {
+    max-width: 240px;
+  }
+  #hud-stats {
+    bottom: 155px;
+    left: 10px;
+    transform: scale(0.85);
+    transform-origin: bottom left;
+  }
+  .hud-bottom-wrap {
+    bottom: 6px;
+    max-width: 98vw;
+  }
+  .hud-weapons {
+    overflow-x: auto;
+    max-width: 96vw;
+    padding: 4px 6px;
+    gap: 4px;
+    scrollbar-width: none;
+  }
+  .hud-weapons::-webkit-scrollbar {
+    display: none;
+  }
+  .slot {
+    min-width: 54px;
+    width: 54px;
+    height: 44px;
+  }
+  .slot .key {
+    display: none;
+  }
+  .slot-lbl {
+    font-size: 8px;
+  }
+  .hud-hint {
+    display: none; /* En móvil se usan los controles táctiles */
+  }
+}
+
 #scoreboard-modal {
   display: none;
   position: absolute;
