@@ -172,6 +172,114 @@ class SoundManager {
     noise.start(t);
   }
 
+  // ☢️ Sirena Nuclear Procedural para la Tsar Bomba
+  playNukeSiren() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.linearRampToValueAtTime(750, t + 0.35);
+    osc.frequency.linearRampToValueAtTime(380, t + 0.7);
+
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.75);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.75);
+  }
+
+  // 💥 Explosión Atómica Retumbante con Sub-Bass Masivo
+  playNukeExplosion() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+
+    // Sub-bass rumble
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(95, t);
+    subOsc.frequency.exponentialRampToValueAtTime(25, t + 1.8);
+    subGain.gain.setValueAtTime(1.0, t);
+    subGain.gain.exponentialRampToValueAtTime(0.01, t + 1.8);
+    subOsc.connect(subGain);
+    subGain.connect(this.masterGain);
+    subOsc.start(t);
+    subOsc.stop(t + 1.8);
+
+    // Massive filtered noise burst
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this.createNoiseBuffer(2.2);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, t);
+    filter.frequency.exponentialRampToValueAtTime(40, t + 2.2);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(1.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 2.2);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    noise.start(t);
+  }
+
+  // 💰 Sonido de Moneda / Ganancia Idle (Retro Chime B5 -> E6)
+  playCoin() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(987.77, t); // B5
+    osc.frequency.setValueAtTime(1318.51, t + 0.05); // E6
+
+    gain.gain.setValueAtTime(0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.005, t + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
+  // ⭐ Sonido de Mejora Comprada (Arpegio Ascendente Fanfarria)
+  playUpgrade() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+    freqs.forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t + i * 0.04);
+      gain.gain.setValueAtTime(0.25, t + i * 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.04 + 0.15);
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(t + i * 0.04);
+      osc.stop(t + i * 0.04 + 0.15);
+    });
+  }
+
   playRailgun() {
     if (this.muted) return;
     this.ensureContext();

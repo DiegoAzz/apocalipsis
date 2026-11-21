@@ -76,26 +76,22 @@ class LevelEngine {
       15/16, 7/16, 13/16, 5/16
     ];
 
-    // Sample a few pixels for flying debris chunks
-    const sampleCount = Math.min(25, Math.floor(radius / 2));
+    // High-performance debris sampling without getImageData pipeline stalls
+    const debrisPalette = ['#f97316', '#fde047', '#ef4444', '#cbd5e1', '#64748b', '#334155'];
+    const sampleCount = Math.min(12, Math.max(3, Math.floor(radius / 6)));
     for (let i = 0; i < sampleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * (radius * 0.85);
+      const dist = Math.random() * (radius * 0.8);
       const sx = Math.floor(x + Math.cos(angle) * dist);
       const sy = Math.floor(y + Math.sin(angle) * dist);
-      if (sx >= 0 && sx < this.width && sy >= 0 && sy < this.height && this.isSolid(sx, sy)) {
-        const p = this.ctx.getImageData(sx, sy, 1, 1).data;
-        if (p[3] > 30) {
-          debris.push({
-            x: sx,
-            y: sy,
-            vx: (Math.cos(angle) * (1.5 + Math.random() * 4)),
-            vy: (Math.sin(angle) * (1.5 + Math.random() * 4) - 2),
-            color: `rgb(${p[0]},${p[1]},${p[2]})`,
-            size: 2 + Math.random() * 3
-          });
-        }
-      }
+      debris.push({
+        x: sx,
+        y: sy,
+        vx: (Math.cos(angle) * (1.5 + Math.random() * 3.5)),
+        vy: (Math.sin(angle) * (1.5 + Math.random() * 3.5) - 2),
+        color: debrisPalette[i % debrisPalette.length],
+        size: 2 + Math.random() * 2.5
+      });
     }
 
     // Carve out visuals on canvas with dithered jagged pixel chunks
@@ -154,6 +150,9 @@ class LevelEngine {
     }
 
     this.destroyedCount += newlyDestroyed;
+    if (newlyDestroyed > 0 && this.onCellsDestroyed) {
+      this.onCellsDestroyed(newlyDestroyed, x, y);
+    }
     return debris;
   }
 
@@ -637,6 +636,233 @@ class LevelEngine {
       ctx.font = '14px/1.5 Arial, sans-serif';
       resY = this.renderWrappedText(ctx, res.desc, 120, resY + 52, 780, 20) + 40;
     });
+
+    this.syncGridFromCanvas();
+  }
+
+  // 📺 Generar Nivel de YouTube (Dark Theme)
+  generateYouTube() {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
+    this.presetName = 'youtube';
+    this.pageUrl = 'https://www.youtube.com/watch?v=apocalipsis_gameplay';
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.width, this.height);
+
+    // Fondo YouTube Dark
+    ctx.fillStyle = '#0f0f0f';
+    ctx.fillRect(80, 40, this.width - 160, this.height - 80);
+    ctx.strokeStyle = '#272727';
+    ctx.strokeRect(80, 40, this.width - 160, this.height - 80);
+
+    // Barra Superior YouTube
+    ctx.fillStyle = '#181818';
+    ctx.fillRect(80, 40, this.width - 160, 68);
+
+    // Logo YouTube (Botón Rojo + Play Blanco)
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.roundRect(120, 54, 52, 38, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(140, 63);
+    ctx.lineTo(158, 73);
+    ctx.lineTo(140, 83);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.font = 'bold 26px Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('YouTube', 182, 82);
+
+    // Barra de Búsqueda
+    ctx.fillStyle = '#121212';
+    ctx.fillRect(360, 52, 600, 42);
+    ctx.strokeStyle = '#303030';
+    ctx.strokeRect(360, 52, 600, 42);
+    ctx.fillStyle = '#888888';
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillText('Buscar: cómo destruir cualquier página web...', 385, 78);
+
+    // Video Player Principal
+    const vX = 120;
+    const vY = 140;
+    const vW = 860;
+    const vH = 480;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(vX, vY, vW, vH);
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(vX, vY, vW, vH);
+
+    // Arte dentro del reproductor
+    ctx.fillStyle = '#181818';
+    ctx.fillRect(vX + 20, vY + 20, vW - 40, vH - 40);
+    ctx.fillStyle = '#f97316';
+    ctx.font = 'bold 44px Arial, sans-serif';
+    ctx.fillText('⚡ APOCALIPSIS', vX + 50, vY + 120);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '24px Arial, sans-serif';
+    ctx.fillText('DESTRUYENDO CUALQUIER SITIO WEB 💥', vX + 50, vY + 170);
+    ctx.fillStyle = '#eab308';
+    ctx.font = '20px Arial, sans-serif';
+    ctx.fillText('10 Armas Masivas • Jetpack • Multijugador', vX + 50, vY + 220);
+
+    // Barra de Reproducción Roja
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(vX, vY + vH - 8, vW * 0.65, 8);
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(vX + vW * 0.65, vY + vH - 8, vW * 0.35, 8);
+
+    // Título del Video y Canal
+    ctx.fillStyle = '#f1f1f1';
+    ctx.font = 'bold 26px Arial, sans-serif';
+    ctx.fillText('Probando la BOMBA NUCLEAR en YouTube [Destrucción Total 100%]', vX, vY + vH + 45);
+
+    // Datos del Canal
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(vX + 25, vY + vH + 95, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.fillText('⚡', vX + 16, vY + vH + 101);
+
+    ctx.fillStyle = '#f1f1f1';
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.fillText('Apocalipsis Oficial', vX + 62, vY + vH + 92);
+    ctx.fillStyle = '#aaaaaa';
+    ctx.font = '14px Arial, sans-serif';
+    ctx.fillText('1.45M suscriptores • 3.2M visualizaciones', vX + 62, vY + vH + 112);
+
+    // Botón Suscribirse
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect(vX + 380, vY + vH + 75, 140, 42, 21);
+    ctx.fill();
+    ctx.fillStyle = '#0f0f0f';
+    ctx.font = 'bold 15px Arial, sans-serif';
+    ctx.fillText('Suscribirse', vX + 412, vY + vH + 101);
+
+    // Sidebar de Videos Recomendados
+    const recX = 1010;
+    for (let r = 0; r < 5; r++) {
+      const ry = 140 + r * 140;
+      ctx.fillStyle = '#1c1c1c';
+      ctx.fillRect(recX, ry, 170, 95);
+      ctx.strokeStyle = '#333333';
+      ctx.strokeRect(recX, ry, 170, 95);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px Arial, sans-serif';
+      ctx.fillText(`Video Viral #${r + 1}: Destruyendo webs`, recX + 185, ry + 25);
+      ctx.fillStyle = '#aaaaaa';
+      ctx.font = '13px Arial, sans-serif';
+      ctx.fillText('Canal Apocalipsis • Hace 2 horas', recX + 185, ry + 50);
+      ctx.fillText('420K vistas • 99% Destruido', recX + 185, ry + 72);
+    }
+
+    this.syncGridFromCanvas();
+  }
+
+  // 🎵 Generar Nivel de TikTok (Vertical Style & Neon Glitch)
+  generateTikTok() {
+    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
+    this.presetName = 'tiktok';
+    this.pageUrl = 'https://www.tiktok.com/@apocalipsis/video/7391823901';
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.width, this.height);
+
+    // Fondo TikTok
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(80, 40, this.width - 160, this.height - 80);
+    ctx.strokeStyle = '#1e1e1e';
+    ctx.strokeRect(80, 40, this.width - 160, this.height - 80);
+
+    // Logotipo TikTok Glitch (Cian + Magenta + Blanco)
+    const logoX = 160;
+    const logoY = 95;
+    ctx.font = '900 38px Arial, sans-serif';
+    ctx.fillStyle = '#00f2fe';
+    ctx.fillText('TikTok', logoX - 3, logoY - 2);
+    ctx.fillStyle = '#fe2c55';
+    ctx.fillText('TikTok', logoX + 3, logoY + 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('TikTok', logoX, logoY);
+
+    // Pestañas "Siguiendo" / "Para ti"
+    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.fillStyle = '#777777';
+    ctx.fillText('Siguiendo', 650, 95);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('Para ti', 790, 95);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(790, 108, 65, 4);
+
+    // Contenedor Central de Video (Formato 9:16)
+    const feedX = 420;
+    const feedY = 150;
+    const feedW = 660;
+    const feedH = 1150;
+
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(feedX, feedY, feedW, feedH);
+    ctx.strokeStyle = '#fe2c55';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(feedX, feedY, feedW, feedH);
+
+    // Cartel Viral en Pantalla
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(feedX + 40, feedY + 80, feedW - 80, 180);
+    ctx.strokeStyle = '#00f2fe';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(feedX + 40, feedY + 80, feedW - 80, 180);
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 34px Arial, sans-serif';
+    ctx.fillText('¿SE PUEDE DESTRUIR', feedX + 70, feedY + 145);
+    ctx.fillStyle = '#fe2c55';
+    ctx.fillText('TIKTOK CON 1 BOMBA? 💥', feedX + 70, feedY + 195);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '18px Arial, sans-serif';
+    ctx.fillText('Juega gratis en: apocalipsis.appzplay.online', feedX + 70, feedY + 235);
+
+    // Barra Lateral de Botones de Interacción TikTok (Like, Comentario, Compartir)
+    const btnX = feedX + feedW + 35;
+    const actions = [
+      { icon: '❤️', count: '1.8M', label: 'Likes' },
+      { icon: '💬', count: '64.2K', label: 'Comentarios' },
+      { icon: '🔖', count: '215K', label: 'Guardar' },
+      { icon: '🔄', count: '98.4K', label: 'Compartir' }
+    ];
+
+    actions.forEach((act, idx) => {
+      const by = feedY + 450 + (idx * 115);
+      ctx.fillStyle = '#222222';
+      ctx.beginPath();
+      ctx.arc(btnX + 25, by, 32, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.font = '28px sans-serif';
+      ctx.fillText(act.icon, btnX + 11, by + 10);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px Arial, sans-serif';
+      ctx.fillText(act.count, btnX + 5, by + 48);
+    });
+
+    // Handle de Cuenta y Descripción en el pie del video
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px Arial, sans-serif';
+    ctx.fillText('@Apocalipsis ⚡', feedX + 30, feedY + feedH - 120);
+
+    ctx.font = '16px Arial, sans-serif';
+    ctx.fillText('Comenta qué web o foto destruyo en el próximo video! 👇💥 #gaming #satisfying #destruction', feedX + 30, feedY + feedH - 85);
+
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillText('🎵 Sonido Original - Apocalipsis Destrucción Total', feedX + 30, feedY + feedH - 50);
 
     this.syncGridFromCanvas();
   }

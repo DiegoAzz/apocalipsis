@@ -40,10 +40,12 @@
     <div id="nav-drawer" class="nav-drawer">
       <!-- Páginas Rápidas & Subir Imagen -->
       <div class="preset-group">
+        <button class="preset-pill active" data-preset="google">🔍 Google</button>
+        <button class="preset-pill" data-preset="youtube">▶️ YouTube</button>
+        <button class="preset-pill" data-preset="tiktok">🎵 TikTok</button>
+        <button class="preset-pill" data-preset="wikipedia">📄 Wikipedia</button>
         <button class="preset-pill" data-preset="amazon">📦 Amazon</button>
-        <button class="preset-pill active" data-preset="wikipedia">📄 Wikipedia</button>
         <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
-        <button class="preset-pill" data-preset="google">🔍 Google</button>
         <input type="file" id="image-upload-input" accept="image/*" style="display: none">
         <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
       </div>
@@ -74,6 +76,57 @@
   <button id="btn-show-ui" class="btn-show-ui-pill" title="Mostrar interfaz y opciones">
     <span>👁️ Mostrar Menú</span>
   </button>
+
+  <!-- Marca de Agua para Videos de TikTok / YouTube -->
+  <div id="viral-watermark" title="Canal Oficial Apocalipsis">
+    <span class="bolt">⚡</span> APOCALIPSIS • <span class="url">apocalipsis.appzplay.online</span>
+  </div>
+
+  <!-- HUD INCREMENTAL / IDLE (Contador de Dinero & Mejoras) -->
+  <div id="idle-hud-widget">
+    <div class="idle-money-card">
+      <div class="idle-money-main">
+        <span class="idle-coin-icon">💰</span>
+        <span id="idle-cash-display">$ 0</span>
+      </div>
+      <div id="idle-rate-display" class="idle-rate-sub">+ $0 / seg</div>
+    </div>
+    <div class="idle-hud-actions">
+      <button class="btn btn-idle-boost" id="btn-idle-boost" title="Activa ganancias dobles con un anuncio">
+        <span>⚡ BOOST 2X</span>
+      </button>
+      <button class="btn btn-idle-store" id="btn-idle-store-toggle" title="Abrir tienda de mejoras incrementales">
+        <span>🛒 MEJORAS</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CAJÓN LATERAL DE MEJORAS IDLE -->
+  <aside id="idle-store-drawer" class="idle-store-drawer">
+    <div class="idle-drawer-header">
+      <div class="idle-drawer-title">
+        <span>🛒 TIENDA INCREMENTAL</span>
+      </div>
+      <button class="btn-close-drawer" id="btn-close-idle-store">✕</button>
+    </div>
+    
+    <div class="idle-drawer-body">
+      <div class="idle-cores-banner" id="idle-cores-banner">
+        <span id="idle-cores-text">⚛️ Núcleos de Plutonio: 0 (x1.0 Mult Permanente)</span>
+      </div>
+
+      <div id="idle-store-list" class="idle-store-list">
+        <!-- Rendered dynamically by IdleManager -->
+      </div>
+
+      <div class="idle-prestige-section">
+        <button class="btn btn-primary btn-block btn-prestige" id="btn-idle-prestige" title="Reinicia la web actual a cambio de núcleos permanentes">
+          <span>⚛️ PRESTIGIO ATÓMICO</span>
+        </button>
+        <span class="prestige-hint">Disponible al alcanzar más del 45% de destrucción</span>
+      </div>
+    </div>
+  </aside>
 
   <!-- Distintivo de Modo Live / Slow-Mo -->
   <div id="live-overlay-badge"><span class="live-pulse-dot">🔴</span> LIVE SLOW-MO (0.35X)</div>
@@ -211,9 +264,15 @@
         <canvas class="slot-icon" id="icon-8" width="48" height="32"></canvas>
         <span class="slot-lbl">Neutron</span>
       </div>
-      <!-- Alt: Granada (Clic Derecho) -->
-      <div class="slot alt" data-slot="alt">
-        <kbd class="key">R-CLICK</kbd>
+      <!-- 0: Tsar Bomba (Nuke) -->
+      <div class="slot" data-slot="9">
+        <kbd class="key">0</kbd>
+        <canvas class="slot-icon" id="icon-9" width="48" height="32"></canvas>
+        <span class="slot-lbl">☢️ Nuke</span>
+      </div>
+      <!-- G: Granada / Lanzagranadas (Slot 10 / Tecla G o Clic Derecho) -->
+      <div class="slot" data-slot="10" title="Lanzagranadas (Pulsa G o Clic Derecho)">
+        <kbd class="key">G</kbd>
         <canvas class="slot-icon" id="icon-alt" width="48" height="32"></canvas>
         <span class="slot-lbl">Grenade</span>
       </div>
@@ -223,11 +282,13 @@
     <div class="hud-hint">
       <div class="keys-row">
         <span><kbd>A</kbd><kbd>D</kbd> Correr</span>
-        <span><kbd>ESPACIO</kbd> Salto · Doble toque: Voltereta · Mantener: <strong>Volar con Jetpack</strong></span>
+        <span><kbd>ESPACIO</kbd> Jetpack</span>
         <span><kbd>CLIC IZQ</kbd> Disparar</span>
         <span><kbd>CLIC DER</kbd> Granada</span>
-        <span><kbd>1-9 / Rueda</kbd> Armas</span>
-        <span><kbd>TAB</kbd> Marcador</span>
+        <span><kbd>1-9, 0</kbd> Armas</span>
+        <span><kbd>H</kbd> Modo Cine</span>
+        <span><kbd>L</kbd> Slow-Mo</span>
+        <span><kbd>C</kbd> Centrar</span>
       </div>
     </div>
   </div>
@@ -372,6 +433,7 @@
   <script src="js/player.js"></script>
   <script src="js/bot.js"></script>
   <script src="js/multiplayer.js"></script>
+  <script src="js/idleManager.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

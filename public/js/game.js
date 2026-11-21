@@ -120,8 +120,14 @@ class Game {
 
     this.setupInputListeners();
 
+    // Initialize Idle Incremental Manager
+    this.idle = new IdleManager(this);
+
     // Default Level: Authentic Facebook or Wikipedia
     this.loadMapPreset('wikipedia', 'https://en.wikipedia.org/wiki/Stick_figure', false);
+    if (this.level && this.idle) {
+      this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
+    }
     this.snapCameraToPlayer();
 
     // Draw authentic futuristic weapon sprites on all bottom slots
@@ -434,11 +440,27 @@ class Game {
         this.toggleLiveMode();
       }
 
-      // Weapon Hotkeys 1-9
-      const keyNum = parseInt(e.key);
-      if (keyNum >= 1 && keyNum <= 9) {
-        this.localPlayer.selectWeapon(keyNum - 1);
-        this.ui.updateActiveWeapon(keyNum - 1);
+      // Tecla H: Alternar Modo Cine (Ocultar/Mostrar Interfaz para grabar)
+      if (e.code === 'KeyH') {
+        document.body.classList.toggle('ui-hidden');
+      }
+
+      // Tecla G: Seleccionar Granada / Lanzagranadas
+      if (e.code === 'KeyG') {
+        this.localPlayer.selectWeapon(10);
+        this.ui.updateActiveWeapon(10);
+      }
+
+      // Weapon Hotkeys 1-9 y 0 (Tsar Bomba)
+      if (e.key === '0') {
+        this.localPlayer.selectWeapon(9);
+        this.ui.updateActiveWeapon(9);
+      } else {
+        const keyNum = parseInt(e.key);
+        if (keyNum >= 1 && keyNum <= 9) {
+          this.localPlayer.selectWeapon(keyNum - 1);
+          this.ui.updateActiveWeapon(keyNum - 1);
+        }
       }
     });
 
@@ -581,12 +603,20 @@ class Game {
       this.level.generateWikipedia();
     } else if (preset === 'google' || lowerUrl.includes('google')) {
       this.level.generateGoogle();
+    } else if (preset === 'youtube' || lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be')) {
+      this.level.generateYouTube();
+    } else if (preset === 'tiktok' || lowerUrl.includes('tiktok')) {
+      this.level.generateTikTok();
     } else {
       this.level.generateCustom(url || preset);
     }
 
     this.localPlayer.respawn(this.level);
     this.adaptZoomForCurrentMap();
+
+    if (this.level && this.idle) {
+      this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
+    }
 
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap(preset, url);
@@ -610,6 +640,10 @@ class Game {
     this.localPlayer.respawn(this.level);
     this.adaptZoomForCurrentMap();
 
+    if (this.level && this.idle) {
+      this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
+    }
+
     if (notifyServer && !this.isSoloMode) {
       this.multiplayer.emitChangeMap('custom', pageData.url, pageData);
     }
@@ -623,6 +657,10 @@ class Game {
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
     this.adaptZoomForCurrentMap();
+
+    if (this.level && this.idle) {
+      this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
+    }
 
     // Auto-hide the top UI bars on image load so the image is 100% visible and clean
     document.body.classList.add('ui-hidden');
@@ -644,6 +682,7 @@ class Game {
       { id: 'icon-6', name: 'Too Much' },
       { id: 'icon-7', name: 'The Magic Wand' },
       { id: 'icon-8', name: 'PSR B0531+21' },
+      { id: 'icon-9', name: 'Tsar Bomba' },
       { id: 'icon-alt', name: 'Grenade' }
     ];
 
@@ -911,6 +950,11 @@ class Game {
 
     this.clampCamera();
 
+    // 6. Update Idle Incremental Mechanics (Drones, Meteors, Boosts, Cash)
+    if (this.idle) {
+      this.idle.update(dt);
+    }
+
     // Update UI HUD
     this.ui.updateHUD(this.localPlayer);
   }
@@ -958,11 +1002,24 @@ class Game {
     // 5. Draw Local Player
     this.localPlayer.render(ctx);
 
+    // 5.5 Draw Idle Autonomous Drones & Floating Cash Numbers
+    if (this.idle) {
+      this.idle.render(ctx);
+    }
+
     ctx.restore();
 
     // 6. Draw Minimap & HUD Crosshair
     this.renderMinimap(ctx);
     this.renderCrosshair(ctx);
+
+    // 7. Destello Nuclear Cegador (Tsar Bomba)
+    if (this.physics && this.physics.screenFlash > 0) {
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, this.physics.screenFlash * 0.95)})`;
+      ctx.fillRect(0, 0, this.canvas.width / dpr, this.canvas.height / dpr);
+      ctx.restore();
+    }
 
     ctx.restore();
   }
@@ -1097,6 +1154,10 @@ class UIManager {
           this.game.loadMapPreset('wikipedia', val, true);
         } else if (lower.includes('google')) {
           this.game.loadMapPreset('google', val, true);
+        } else if (lower.includes('youtube') || lower.includes('youtu.be')) {
+          this.game.loadMapPreset('youtube', val, true);
+        } else if (lower.includes('tiktok')) {
+          this.game.loadMapPreset('tiktok', val, true);
         } else {
           // Attempt authentic live screenshot capture of the actual webpage first
           try {
@@ -1491,10 +1552,8 @@ class UIManager {
           e.stopPropagation();
         }
         const slotVal = slot.getAttribute('data-slot');
-        if (slotVal === 'alt') {
-          this.game.localPlayer.tryGrenade(this.game.physics);
-        } else {
-          const idx = parseInt(slotVal);
+        const idx = slotVal === 'alt' ? 10 : parseInt(slotVal);
+        if (!isNaN(idx)) {
           this.game.localPlayer.selectWeapon(idx);
           this.updateActiveWeapon(idx);
         }
@@ -1526,9 +1585,10 @@ class UIManager {
 
   updateActiveWeapon(index) {
     document.querySelectorAll('.slot').forEach((slot) => {
-      const idx = parseInt(slot.getAttribute('data-slot'));
+      const slotVal = slot.getAttribute('data-slot');
+      const idx = slotVal === 'alt' ? 10 : parseInt(slotVal);
       if (idx === index) slot.classList.add('active');
-      else if (slot.getAttribute('data-slot') !== 'alt') slot.classList.remove('active');
+      else slot.classList.remove('active');
     });
     const w = this.game.localPlayer.weapons[index];
     if (w && this.wnameText) {

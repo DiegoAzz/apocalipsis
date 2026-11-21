@@ -15,6 +15,8 @@ const SPRITES = {
     'Too Much': { x: 41, y: 290, w: 218, h: 87 },
     'The Magic Wand': { x: 288, y: 296, w: 248, h: 81 },
     'PSR B0531+21': { x: 588, y: 290, w: 235, h: 87 },
+    'Tsar Bomba': { x: 714, y: 185, w: 256, h: 82 },
+    'Grenade Launcher': { x: 842, y: 290, w: 114, h: 87 },
     'Grenade': { x: 842, y: 290, w: 114, h: 87 }
   },
   hero: {
@@ -100,7 +102,9 @@ class Player {
       { name: 'Flamethrower', key: '6', fireRate: 0.04, damage: 5, radius: 15, ammo: Infinity, maxAmmo: Infinity, auto: true },
       { name: 'Too Much', key: '7', fireRate: 0.95, damage: 55, radius: 42, ammo: Infinity, maxAmmo: Infinity, auto: true },
       { name: 'The Magic Wand', key: '8', fireRate: 1.1, damage: 130, radius: 38, ammo: Infinity, maxAmmo: Infinity, auto: true },
-      { name: 'PSR B0531+21', key: '9', fireRate: 1.4, damage: 95, radius: 62, ammo: Infinity, maxAmmo: Infinity, auto: true }
+      { name: 'PSR B0531+21', key: '9', fireRate: 1.4, damage: 95, radius: 62, ammo: Infinity, maxAmmo: Infinity, auto: true },
+      { name: 'Tsar Bomba', key: '0', fireRate: 1.8, damage: 350, radius: 175, ammo: Infinity, maxAmmo: Infinity, auto: false },
+      { name: 'Grenade Launcher', key: 'G', fireRate: 0.45, damage: 95, radius: 55, ammo: Infinity, maxAmmo: Infinity, auto: true }
     ];
     this.currentWeaponIndex = 0;
     this.fireCooldown = 0;
@@ -265,6 +269,11 @@ class Player {
 
     physics.spawnMuzzleSmoke(originX, originY, this.aimAngle);
 
+    // Multiplicador de Daño y Radio según Mejoras Idle
+    const powerMult = (window.game && window.game.idle) ? (1 + (window.game.idle.upgrades.weaponPower.level - 1) * 0.12) : 1.0;
+    const effDamage = Math.round(w.damage * powerMult);
+    const effRadius = Math.round(w.radius * powerMult);
+
     // Eject spinning brass shell casing (GTA 6 / Movie visual fidelity)
     if (['Pistol', 'SMG', 'Shotgun'].includes(w.name)) {
       physics.spawnShellCasing(shoulderX, shoulderY, this.facing);
@@ -280,8 +289,8 @@ class Player {
         y: originY,
         vx: Math.cos(this.aimAngle) * 22,
         vy: Math.sin(this.aimAngle) * 22,
-        damage: w.damage,
-        radius: w.radius,
+        damage: effDamage,
+        radius: effRadius,
         life: 2.0
       });
     } else if (w.name === 'SMG') {
@@ -295,8 +304,8 @@ class Player {
         y: originY,
         vx: Math.cos(this.aimAngle + spread) * 24,
         vy: Math.sin(this.aimAngle + spread) * 24,
-        damage: w.damage,
-        radius: w.radius,
+        damage: effDamage,
+        radius: effRadius,
         life: 2.0
       });
     } else if (w.name === 'Shotgun') {
@@ -312,8 +321,8 @@ class Player {
           y: originY,
           vx: Math.cos(this.aimAngle + spread) * spd,
           vy: Math.sin(this.aimAngle + spread) * spd,
-          damage: w.damage,
-          radius: w.radius,
+          damage: effDamage,
+          radius: effRadius,
           life: 0.8
         });
       }
@@ -327,8 +336,8 @@ class Player {
         y: originY,
         vx: Math.cos(this.aimAngle) * 14,
         vy: Math.sin(this.aimAngle) * 14,
-        damage: w.damage,
-        radius: w.radius,
+        damage: effDamage,
+        radius: effRadius,
         life: 4.0
       });
     } else if (w.name === 'Railgun') {
@@ -404,6 +413,23 @@ class Player {
         rotation: 0,
         life: 2.0
       });
+    } else if (w.name === 'Tsar Bomba') {
+      window.soundManager.playNukeSiren();
+      physics.addProjectile({
+        type: 'nuke',
+        weapon: 'nuke',
+        ownerId: this.id,
+        x: originX,
+        y: originY,
+        vx: Math.cos(this.aimAngle) * 9,
+        vy: Math.sin(this.aimAngle) * 9,
+        radius: w.radius,
+        damage: w.damage,
+        life: 6.0
+      });
+    } else if (w.name === 'Grenade Launcher') {
+      window.soundManager.playRocketLaunch();
+      this.tryGrenade(physics, onShoot);
     }
 
     if (onShoot) {

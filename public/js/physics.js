@@ -6,6 +6,7 @@ class PhysicsEngine {
     this.particles = [];
     this.shockwaves = [];
     this.trauma = 0; // Screen shake trauma (0 to 1)
+    this.screenFlash = 0; // Fullscreen white flash on nuclear detonation (0 to 1)
   }
 
   addTrauma(amount) {
@@ -230,8 +231,11 @@ class PhysicsEngine {
 
   // Update all projectiles, particles, and physics
   update(dt, targets = [], onTerrainDamage, onTargetHit) {
-    // Decay trauma
+    // Decay trauma & screen flash
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
+    if (this.screenFlash > 0) {
+      this.screenFlash = Math.max(0, this.screenFlash - dt * 2.2);
+    }
 
     // Update Shockwaves
     for (let i = this.shockwaves.length - 1; i >= 0; i--) {
@@ -241,6 +245,11 @@ class PhysicsEngine {
       if (sw.life <= 0) {
         this.shockwaves.splice(i, 1);
       }
+    }
+
+    // Enforce strict particle limit for buttery smooth 60 FPS
+    if (this.particles.length > 200) {
+      this.particles.splice(0, this.particles.length - 200);
     }
 
     // Update Particles
@@ -494,6 +503,35 @@ class PhysicsEngine {
         });
       }
 
+      // ☢️ Tsar Bomba / Nuke heavy missile exhaust trail
+      if (p.type === 'nuke') {
+        p.vy += 0.04;
+        // Heavy flame exhaust
+        this.particles.push({
+          type: 'flame',
+          x: p.x - p.vx * 0.4,
+          y: p.y - p.vy * 0.4,
+          vx: (Math.random() - 0.5) * 1.6,
+          vy: (Math.random() - 0.5) * 1.6,
+          color: Math.random() > 0.4 ? '#ef4444' : '#fde047',
+          size: 8 + Math.random() * 6,
+          life: 0.45,
+          decay: 0.05
+        });
+        // Dense dark smoke trail
+        this.particles.push({
+          type: 'smoke',
+          x: p.x - p.vx * 0.85,
+          y: p.y - p.vy * 0.85,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: (Math.random() - 0.5) * 0.8,
+          color: 'rgba(51, 65, 85, 0.85)',
+          size: 10 + Math.random() * 8,
+          life: 1.2,
+          decay: 0.02
+        });
+      }
+
       // Step raycast movement
       const speed = Math.hypot(p.vx, p.vy);
       const steps = Math.max(1, Math.ceil(speed / 4));
@@ -515,6 +553,8 @@ class PhysicsEngine {
             this.spawnHitSparks(p.x, p.y);
             if (p.type === 'rocket') {
               this.detonateExplosion(p.x, p.y, 50, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
+            } else if (p.type === 'nuke') {
+              this.detonateNuke(p.x, p.y, p.radius || 175, p.damage, p.ownerId, onTerrainDamage, onTargetHit, targets);
             } else {
               if (onTargetHit) onTargetHit(t.id, p.damage, p.weapon, p.ownerId);
               const debris = this.level.carveHole(p.x, p.y, p.radius || 9, p.weapon);
@@ -533,6 +573,8 @@ class PhysicsEngine {
           hit = true;
           if (p.type === 'rocket') {
             this.detonateExplosion(p.x, p.y, 50, p.damage, p.ownerId, 'rocket', onTerrainDamage, onTargetHit, targets);
+          } else if (p.type === 'nuke') {
+            this.detonateNuke(p.x, p.y, p.radius || 175, p.damage, p.ownerId, onTerrainDamage, onTargetHit, targets);
           } else {
             const r = p.radius || (p.type === 'flame' ? 14 : 9);
             const debris = this.level.carveHole(p.x, p.y, r, p.weapon);
@@ -546,6 +588,89 @@ class PhysicsEngine {
 
       if (hit) {
         this.projectiles.splice(i, 1);
+      }
+    }
+  }
+
+  // ☢️ Hongo Atómico Pixelado y Detonación Nuclear Épica
+  spawnMushroomCloud(x, y, radius = 175) {
+    // 1. Columna de fuego y humo ascendente optimizada (Tallo del hongo)
+    const stemParticles = 24;
+    for (let i = 0; i < stemParticles; i++) {
+      const angle = (Math.random() - 0.5) * 0.7 - Math.PI / 2;
+      const speed = 2 + Math.random() * 8;
+      const pColor = ['#ffffff', '#fde047', '#f97316', '#ef4444', '#71717a'][Math.floor(Math.random() * 5)];
+      this.particles.push({
+        type: 'fire',
+        x: x + (Math.random() - 0.5) * (radius * 0.35),
+        y: y - Math.random() * (radius * 0.3),
+        vx: Math.cos(angle) * speed * 0.6,
+        vy: -2 - Math.random() * 9,
+        color: pColor,
+        size: 20 + Math.random() * 30,
+        maxSize: 45 + Math.random() * 35,
+        life: 1.6,
+        decay: 0.018
+      });
+    }
+
+    // 2. Sombrero del Hongo que se expande hacia los lados
+    const capParticles = 36;
+    for (let i = 0; i < capParticles; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3 + Math.random() * 7;
+      const dist = Math.random() * (radius * 0.55);
+      const pColor = ['#fde047', '#f97316', '#ef4444', '#475569', '#1e293b'][Math.floor(Math.random() * 5)];
+      this.particles.push({
+        type: 'smoke',
+        x: x + Math.cos(angle) * dist,
+        y: y - (radius * 0.8) + Math.sin(angle) * (dist * 0.45),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * (speed * 0.4) - 1.5,
+        color: pColor,
+        size: 26 + Math.random() * 34,
+        life: 2.0,
+        decay: 0.015
+      });
+    }
+
+    // 3. Chispas de alta velocidad y fragmentos brillantes
+    this.spawnSparks(x, y, 16, '#fde047', 8, 22);
+    this.spawnSparks(x, y, 12, '#ffffff', 10, 24);
+  }
+
+  detonateNuke(x, y, radius, damage, attackerId, onTerrainDamage, onTargetHit, targets = []) {
+    // 1. Destello cegador en pantalla y máxima sacudida
+    this.screenFlash = 1.0;
+    this.addTrauma(1.0);
+    window.soundManager.playNukeExplosion();
+
+    // 2. Cráter gigante en el terreno de la web
+    const debris = this.level.carveHole(x, y, radius, 'nuke');
+    this.spawnDebris(debris);
+
+    // 3. Generación del Hongo Atómico y Ondas Expansivas Múltiples
+    this.spawnMushroomCloud(x, y, radius);
+    this.spawnShockwave(x, y, radius * 2.2, '#fde047');
+    this.spawnShockwave(x, y, radius * 1.5, '#ef4444');
+    this.spawnShockwave(x, y, radius * 0.9, '#ffffff');
+
+    // 4. Notificar daño masivo al servidor
+    if (onTerrainDamage) {
+      onTerrainDamage(x, y, radius, 'nuke');
+    }
+
+    // 5. Daño devastador a todos los objetivos en el área
+    for (const t of targets) {
+      if (t.health <= 0) continue;
+      const dist = Math.hypot(t.x - x, t.y - y);
+      if (dist < radius * 1.8) {
+        const falloff = 1 - (dist / (radius * 1.8));
+        const dmg = Math.round(damage * Math.max(0.4, falloff));
+        if (onTargetHit) {
+          onTargetHit(t.id, dmg, 'nuke', attackerId);
+        }
+        this.spawnHitSparks(t.x, t.y);
       }
     }
   }
@@ -623,11 +748,9 @@ class PhysicsEngine {
         ctx.fillStyle = p.color;
         ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
       } else if (p.type === 'spark' || p.type === 'hit_spark') {
-        // Glowing incandescent streak in velocity direction
+        // Glowing incandescent streak in velocity direction (high performance)
         ctx.strokeStyle = p.color;
         ctx.lineWidth = p.size;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
         ctx.lineTo(p.x - p.vx * 1.4, p.y - p.vy * 1.4);
@@ -635,8 +758,6 @@ class PhysicsEngine {
       } else if (p.type === 'fire') {
         // Multi-layered hot fireball
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
@@ -752,6 +873,39 @@ class PhysicsEngine {
         ctx.moveTo(-16, -3);
         ctx.lineTo(-24 - Math.random() * 8, 0);
         ctx.lineTo(-16, 3);
+        ctx.fill();
+      } else if (p.type === 'nuke') {
+        // ☢️ Heavy Atomic Warhead oriented in flight direction
+        const angle = Math.atan2(p.vy, p.vx);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(angle);
+
+        // Dark missile body with yellow caution hazard stripes
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-20, -7, 34, 14);
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(-4, -7, 8, 14);
+
+        // Pointed atomic warhead tip (Red & White)
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(14, -7);
+        ctx.lineTo(26, 0);
+        ctx.lineTo(14, 7);
+        ctx.fill();
+
+        // Heavy fins
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-22, -11, 5, 22);
+
+        // Massive Rocket Plume & Core Glow
+        ctx.fillStyle = '#fde047';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(-22, -5);
+        ctx.lineTo(-38 - Math.random() * 12, 0);
+        ctx.lineTo(-22, 5);
         ctx.fill();
       } else if (p.type === 'flame') {
         // Expanding flame tongue
