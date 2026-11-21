@@ -19,6 +19,11 @@ class LevelEngine {
     this.destroyedCount = 0;
     this.presetName = 'wikipedia';
     this.pageUrl = 'https://en.wikipedia.org/wiki/Stick_figure';
+
+    // Sistema de Excavación & Secretos Ocultos en la Web
+    this.secrets = [];
+    this.onSecretRevealed = null;
+    this.onSecretCollected = null;
   }
 
   resize(width, height) {
@@ -32,6 +37,7 @@ class LevelEngine {
     this.grid = new Uint8Array(this.cols * this.rows);
     this.initialSolidCount = 0;
     this.destroyedCount = 0;
+    this.secrets = [];
   }
 
   isSolid(worldX, worldY) {
@@ -153,6 +159,8 @@ class LevelEngine {
     if (newlyDestroyed > 0 && this.onCellsDestroyed) {
       this.onCellsDestroyed(newlyDestroyed, x, y);
     }
+    // Comprobar si la explosión desentierra algún secreto oculto en esta web
+    this.checkSecretsExcavation(x, y, radius);
     return debris;
   }
 
@@ -198,6 +206,172 @@ class LevelEngine {
         if (alpha > 40) {
           this.grid[r * this.cols + c] = 1;
           this.initialSolidCount++;
+        }
+      }
+    }
+
+    // Enterrar secretos en coordenadas sólidas de la página web
+    this.generateSecrets();
+  }
+
+  // Genera 5 Secretos y Reliquias Ocultas enterradas dentro del contenido de la web
+  generateSecrets() {
+    this.secrets = [];
+    const secretTemplates = [
+      { name: '💾 Chip Cuántico Cifrado', icon: '💾', color: '#38bdf8', cash: 10000 },
+      { name: '⚛️ Núcleo de Plutonio Prohibido', icon: '⚛️', color: '#a855f7', cash: 20000 },
+      { name: '📦 Caja Fuerte de la Red', icon: '📦', color: '#facc15', cash: 25000 },
+      { name: '💎 Cristal de Hiper-Datos', icon: '💎', color: '#ec4899', cash: 15000 },
+      { name: '🔑 Llave Maestra del Servidor', icon: '🔑', color: '#10b981', cash: 35000 }
+    ];
+
+    // Candidatos sólidos
+    const solidCandidates = [];
+    for (let r = 5; r < this.rows - 5; r += 4) {
+      for (let c = 5; c < this.cols - 5; c += 4) {
+        if (this.grid[r * this.cols + c] === 1) {
+          solidCandidates.push({
+            x: Math.round((c + 0.5) * this.cellSize),
+            y: Math.round((r + 0.5) * this.cellSize)
+          });
+        }
+      }
+    }
+
+    const count = secretTemplates.length;
+    if (solidCandidates.length < count) {
+      for (let i = 0; i < count; i++) {
+        const tpl = secretTemplates[i];
+        this.secrets.push({
+          id: 'sec_' + i,
+          name: tpl.name,
+          icon: tpl.icon,
+          color: tpl.color,
+          cash: tpl.cash,
+          x: Math.round(150 + Math.random() * (this.width - 300)),
+          y: Math.round(150 + Math.random() * (this.height - 300)),
+          radius: 28,
+          revealed: false,
+          collected: false
+        });
+      }
+      return;
+    }
+
+    const selected = [];
+    const minSpacing = Math.min(this.width, this.height) / 4.5;
+
+    for (let i = 0; i < count; i++) {
+      let chosen = null;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const cand = solidCandidates[Math.floor(Math.random() * solidCandidates.length)];
+        const tooClose = selected.some(s => Math.hypot(s.x - cand.x, s.y - cand.y) < minSpacing);
+        if (!tooClose) {
+          chosen = cand;
+          break;
+        }
+      }
+      if (!chosen) {
+        chosen = solidCandidates[Math.floor(Math.random() * solidCandidates.length)];
+      }
+      selected.push(chosen);
+
+      const tpl = secretTemplates[i];
+      this.secrets.push({
+        id: 'sec_' + i,
+        name: tpl.name,
+        icon: tpl.icon,
+        color: tpl.color,
+        cash: tpl.cash,
+        x: chosen.x,
+        y: chosen.y,
+        radius: 28,
+        revealed: false,
+        collected: false
+      });
+    }
+  }
+
+  // Verifica si el impacto o cráter desentierra secretos
+  checkSecretsExcavation(x, y, radius) {
+    if (!this.secrets || this.secrets.length === 0) return;
+    for (const secret of this.secrets) {
+      if (secret.revealed || secret.collected) continue;
+      const d = Math.hypot(secret.x - x, secret.y - y);
+      if (d <= radius + secret.radius) {
+        secret.revealed = true;
+        if (window.soundManager && typeof window.soundManager.playSecretFound === 'function') {
+          window.soundManager.playSecretFound();
+        }
+        if (this.onSecretRevealed) {
+          this.onSecretRevealed(secret);
+        }
+      }
+    }
+  }
+
+  // Renderiza los secretos desenterrados y pistas sobre el terreno
+  renderSecrets(ctx) {
+    if (!this.secrets || this.secrets.length === 0) return;
+    const now = Date.now();
+    for (const secret of this.secrets) {
+      if (secret.collected) continue;
+
+      if (secret.revealed) {
+        // Reliquia desenterrada flotante con halo radiante
+        const bob = Math.sin(now * 0.005 + secret.x) * 6;
+        const pulse = Math.sin(now * 0.008 + secret.y) * 4;
+
+        ctx.save();
+        ctx.translate(secret.x, secret.y + bob);
+
+        // Halo resplandeciente
+        ctx.beginPath();
+        ctx.arc(0, 0, 24 + pulse, 0, Math.PI * 2);
+        ctx.fillStyle = secret.color + '33';
+        ctx.fill();
+
+        ctx.strokeStyle = secret.color;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Anillo giratorio blanco
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Icono de la reliquia
+        ctx.font = '22px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(secret.icon, 0, 0);
+
+        // Nombre y Recompensa holográficos
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeText(secret.name, 0, -28);
+        ctx.fillText(secret.name, 0, -28);
+
+        ctx.font = 'bold 11px Arial, sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.strokeText(`+$${secret.cash.toLocaleString()}`, 0, 26);
+        ctx.fillText(`+$${secret.cash.toLocaleString()}`, 0, 26);
+
+        ctx.restore();
+      } else {
+        // Pista sutil que destella ocasionalmente para guiar al jugador
+        const glimmer = (Math.sin(now * 0.003 + secret.x * 0.1) + 1) * 0.5;
+        if (glimmer > 0.88) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(secret.x, secret.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 215, 0, 0.45)';
+          ctx.fill();
+          ctx.restore();
         }
       }
     }
@@ -883,26 +1057,15 @@ class LevelEngine {
         if (isMobileScreen) {
           // On mobile: take the exact aspect ratio and dimensions of the mobile phone!
           const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : (16 / 9);
-          targetW = 800; // Crisp base width
+          targetW = Math.max(800, window.innerWidth || 800);
           targetH = Math.round(targetW * screenAspect);
         } else {
-          // Desktop / PC
+          // Desktop / PC: Adapt to fill entire screen width edge-to-edge with 0 black sidebars!
+          const screenW = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth >= 1200) ? window.innerWidth : 1600;
           const aspect = img.height / img.width;
-          if (aspect >= 1.35) {
-            targetW = Math.min(800, Math.max(500, img.width));
-            targetH = Math.round(targetW * aspect);
-            if (targetH > 2400) {
-              targetH = 2400;
-              targetW = Math.round(targetH / aspect);
-            }
-          } else {
-            targetW = Math.min(1350, Math.max(800, img.width));
-            targetH = Math.round(targetW * aspect);
-            if (targetH > 2400) {
-              targetH = 2400;
-              targetW = Math.round(targetH / aspect);
-            }
-          }
+          targetW = screenW;
+          targetH = Math.max(Math.round(screenW * aspect), Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) || 900));
+          if (targetH > 3200) targetH = 3200;
         }
 
         this.resize(targetW, targetH);
@@ -910,24 +1073,8 @@ class LevelEngine {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.width, this.height);
 
-        // Draw image covering 100% of the mobile screen without distortion
-        const imgRatio = img.width / img.height;
-        const canvasRatio = this.width / this.height;
-        let sWidth, sHeight, sx, sy;
-
-        if (imgRatio > canvasRatio) {
-          sHeight = img.height;
-          sWidth = img.height * canvasRatio;
-          sx = (img.width - sWidth) / 2;
-          sy = 0;
-        } else {
-          sWidth = img.width;
-          sHeight = img.width / canvasRatio;
-          sx = 0;
-          sy = (img.height - sHeight) / 2;
-        }
-
-        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, this.width, this.height);
+        // Draw image covering 100% of the level canvas edge-to-edge!
+        ctx.drawImage(img, 0, 0, this.width, this.height);
 
         // Sync solid collision grid so every pixel of the uploaded image is destructible!
         this.syncGridFromCanvas();

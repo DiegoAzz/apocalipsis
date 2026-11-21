@@ -95,7 +95,7 @@ app.get('/api/screenshot-url', async (req, res) => {
   try {
     // 1. Proveedor Principal: thum.io (Ultra rápido, captura real de alta definición)
     try {
-      const thumUrl = `https://image.thum.io/get/width/1280/${targetUrl}`;
+      const thumUrl = `https://image.thum.io/get/width/1440/${targetUrl}`;
       const thumRes = await fetch(thumUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -115,7 +115,7 @@ app.get('/api/screenshot-url', async (req, res) => {
     }
 
     // 2. Proveedor Secundario: WordPress mshots
-    const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1280`;
+    const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1440`;
     let buffer = null;
 
     for (let attempt = 0; attempt < 3; attempt++) {

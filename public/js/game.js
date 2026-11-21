@@ -123,10 +123,27 @@ class Game {
     // Initialize Idle Incremental Manager
     this.idle = new IdleManager(this);
 
-    // Default Level: Authentic Facebook or Wikipedia
+    // Initialize Video Gameplay Recorder (60 FPS para TikTok/Reels)
+    if (typeof GameRecorder !== 'undefined') {
+      this.recorder = new GameRecorder(this);
+    }
+
+    // Initialize Wompi Payment Manager (Pase VIP Inmediato)
+    if (typeof WompiManager !== 'undefined') {
+      this.wompi = new WompiManager(this);
+    }
+
+    this.secretsFoundCount = 0;
+
+    // Default Level: Authentic TikTok or Wikipedia
     this.loadMapPreset('wikipedia', 'https://en.wikipedia.org/wiki/Stick_figure', false);
     if (this.level && this.idle) {
       this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
+    }
+    if (this.level) {
+      this.level.onSecretRevealed = (sec) => {
+        if (this.ui) this.ui.showToast(`🔍 ¡SECRETO DESENTERRADO: ${sec.name}! Acércate para extraerlo.`);
+      };
     }
     this.snapCameraToPlayer();
 
@@ -136,6 +153,13 @@ class Game {
       if (!window.spriteSheetImg.complete) {
         window.spriteSheetImg.addEventListener('load', () => this.drawWeaponIcons());
       }
+    }
+
+    // Setup GTA VI Style Intro Overlay
+    this.setupGtaIntro();
+
+    if (this.ui) {
+      this.ui.refreshWeaponLocks();
     }
 
     // Auto-connect to Online Multiplayer (room parameter or default 'lobby')
@@ -377,6 +401,132 @@ class Game {
     this.input.mouseY = (touch.clientY - window.innerHeight / 2) / this.camera.zoom + this.camera.y;
   }
 
+  // Configuración del Menú de Entrada e Intro estilo GTA VI
+  setupGtaIntro() {
+    const overlay = document.getElementById('gta-intro-overlay');
+    const startBtn = document.getElementById('btn-gta-start');
+    if (!overlay || !startBtn) return;
+
+    let selectedPreset = 'tiktok';
+    const urlInput = document.getElementById('gta-url-input');
+    const nameInput = document.getElementById('gta-player-name');
+    const fileInput = document.getElementById('gta-file-input');
+    const btnUpload = document.getElementById('btn-gta-upload');
+
+    // Inicializar nombre guardado en input
+    if (nameInput && this.localPlayer) {
+      nameInput.value = this.localPlayer.name;
+    }
+
+    // Botones de presets en la intro
+    document.querySelectorAll('[data-gta-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-gta-preset]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPreset = btn.getAttribute('data-gta-preset');
+        const mapUrls = {
+          tiktok: 'https://www.tiktok.com',
+          youtube: 'https://www.youtube.com',
+          google: 'https://www.google.com',
+          wikipedia: 'https://en.wikipedia.org/wiki/Stick_figure',
+          amazon: 'https://www.amazon.com',
+          facebook: 'https://www.facebook.com'
+        };
+        if (urlInput) urlInput.value = mapUrls[selectedPreset] || `https://www.${selectedPreset}.com`;
+      });
+    });
+
+    // Paleta de colores de traje en la intro
+    document.querySelectorAll('.gta-color-swatch').forEach((swatch) => {
+      swatch.addEventListener('click', () => {
+        document.querySelectorAll('.gta-color-swatch').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        const col = swatch.getAttribute('data-color');
+        if (this.localPlayer) {
+          this.localPlayer.color = col;
+          this.localPlayer.savePersistence();
+          const dot = document.getElementById('color-dot');
+          if (dot) dot.style.background = col;
+        }
+      });
+    });
+
+    // Modos en la intro
+    const btnSolo = document.getElementById('gta-mode-solo');
+    const btnMulti = document.getElementById('gta-mode-multi');
+    if (btnSolo && btnMulti) {
+      btnSolo.addEventListener('click', () => {
+        this.isSoloMode = true;
+        btnSolo.classList.add('active');
+        btnMulti.classList.remove('active');
+        const topSolo = document.getElementById('btn-mode-solo');
+        const topMulti = document.getElementById('btn-mode-multi');
+        if (topSolo) topSolo.classList.add('active');
+        if (topMulti) topMulti.classList.remove('active');
+      });
+      btnMulti.addEventListener('click', () => {
+        this.isSoloMode = false;
+        btnMulti.classList.add('active');
+        btnSolo.classList.remove('active');
+        const topSolo = document.getElementById('btn-mode-solo');
+        const topMulti = document.getElementById('btn-mode-multi');
+        if (topSolo) topSolo.classList.remove('active');
+        if (topMulti) topMulti.classList.add('active');
+      });
+    }
+
+    // Subida de imagen desde la intro
+    if (btnUpload && fileInput) {
+      btnUpload.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+            await this.loadUserImage(dataUrl);
+            btnUpload.textContent = `🖼️ Imagen: ${file.name.substring(0, 16)}...`;
+            btnUpload.style.borderColor = '#10b981';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    // Botón Iniciar Misión GTA VI
+    startBtn.addEventListener('click', async () => {
+      if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
+        window.soundManager.playCinematicBoom();
+      }
+
+      if (nameInput && nameInput.value.trim() && this.localPlayer) {
+        this.localPlayer.name = nameInput.value.trim();
+        this.localPlayer.savePersistence();
+        const topName = document.getElementById('player-name-input');
+        if (topName) topName.value = this.localPlayer.name;
+      }
+
+      overlay.classList.add('hidden');
+
+      const targetUrl = urlInput ? urlInput.value.trim() : '';
+      if (targetUrl) {
+        const topUrlInput = document.getElementById('webpage-url-input');
+        if (topUrlInput) topUrlInput.value = targetUrl;
+        const destroyBtn = document.getElementById('btn-destroy-url');
+        if (destroyBtn) {
+          destroyBtn.click();
+        } else {
+          this.loadMapPreset(selectedPreset, targetUrl, true);
+        }
+      }
+
+      this.snapCameraToPlayer();
+      if (this.ui) {
+        this.ui.showToast('🚀 ¡MISIÓN INICIADA! Excava los 5 núcleos y desata el armamento.');
+      }
+    });
+  }
+
   resizeCanvas() {
     const dpr = Math.min(2.5, window.devicePixelRatio || 1);
     this.dpr = dpr;
@@ -447,19 +597,31 @@ class Game {
 
       // Tecla G: Seleccionar Granada / Lanzagranadas
       if (e.code === 'KeyG') {
-        this.localPlayer.selectWeapon(10);
-        this.ui.updateActiveWeapon(10);
+        if (this.localPlayer.isWeaponUnlocked(10)) {
+          this.localPlayer.selectWeapon(10);
+          this.ui.updateActiveWeapon(10);
+        } else {
+          if (window.soundManager && window.soundManager.playLockedBuzz) window.soundManager.playLockedBuzz();
+          this.ui.showToast('🔒 Lanzagranadas Bloqueado: Requiere 10% de Destrucción');
+        }
       }
 
       // Weapon Hotkeys 1-9 y 0 (Tsar Bomba)
-      if (e.key === '0') {
-        this.localPlayer.selectWeapon(9);
-        this.ui.updateActiveWeapon(9);
-      } else {
+      let targetIdx = -1;
+      if (e.key === '0') targetIdx = 9;
+      else {
         const keyNum = parseInt(e.key);
-        if (keyNum >= 1 && keyNum <= 9) {
-          this.localPlayer.selectWeapon(keyNum - 1);
-          this.ui.updateActiveWeapon(keyNum - 1);
+        if (keyNum >= 1 && keyNum <= 9) targetIdx = keyNum - 1;
+      }
+      if (targetIdx !== -1) {
+        if (this.localPlayer.isWeaponUnlocked(targetIdx)) {
+          this.localPlayer.selectWeapon(targetIdx);
+          this.ui.updateActiveWeapon(targetIdx);
+        } else {
+          const w = this.localPlayer.weapons[targetIdx];
+          const rule = this.localPlayer.weaponUnlockRules.find(r => r.index === targetIdx);
+          if (window.soundManager && window.soundManager.playLockedBuzz) window.soundManager.playLockedBuzz();
+          this.ui.showToast(`🔒 ${w ? w.name : 'Arma'} Bloqueada: ${rule ? rule.desc : 'bloqueada'}`);
         }
       }
     });
@@ -539,56 +701,33 @@ class Game {
         return;
       }
       const dir = e.deltaY > 0 ? 1 : -1;
-      let newIdx = this.localPlayer.currentWeaponIndex + dir;
-      if (newIdx < 0) newIdx = this.localPlayer.weapons.length - 1;
-      if (newIdx >= this.localPlayer.weapons.length) newIdx = 0;
-      this.localPlayer.selectWeapon(newIdx);
-      this.ui.updateActiveWeapon(newIdx);
+      let newIdx = this.localPlayer.currentWeaponIndex;
+      for (let step = 0; step < this.localPlayer.weapons.length; step++) {
+        newIdx += dir;
+        if (newIdx < 0) newIdx = this.localPlayer.weapons.length - 1;
+        if (newIdx >= this.localPlayer.weapons.length) newIdx = 0;
+        if (this.localPlayer.isWeaponUnlocked(newIdx)) {
+          this.localPlayer.selectWeapon(newIdx);
+          this.ui.updateActiveWeapon(newIdx);
+          break;
+        }
+      }
     }, { passive: false });
   }
 
   adaptZoomForCurrentMap() {
     if (!this.level || !this.camera) return;
-    const screenW = this.canvas.width || window.innerWidth;
-    const screenH = this.canvas.height || window.innerHeight;
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
 
-    if (screenW <= 900) {
-      // Mobile phone screen: automatically fit width edge-to-edge so websites and images are 100% responsive!
-      const fitZoomX = screenW / this.level.width;
-      if (this.level.presetName === 'image') {
-        const fitZoomY = screenH / this.level.height;
-        this.camera.zoom = Math.max(fitZoomX, fitZoomY);
-        this.camera.x = this.level.width / 2;
-        this.camera.y = this.level.height / 2;
-      } else {
-        // Websites / Presets (Wikipedia, Google, Facebook, Amazon, etc.): fit width cleanly
-        this.camera.zoom = fitZoomX;
-        this.camera.x = this.level.width / 2;
-        this.camera.y = Math.min(this.level.height / 2, (screenH / 2) / this.camera.zoom);
-      }
-      this.camera.targetX = this.camera.x;
-      this.camera.targetY = this.camera.y;
-    } else {
-      // Desktop / PC
-      if (this.level.presetName === 'image') {
-        const fitZoomX = (screenW * 0.94) / this.level.width;
-        const fitZoomY = (screenH * 0.88) / this.level.height;
-        if (this.level.height > this.level.width * 1.3) {
-          this.camera.zoom = Math.min(1.0, Math.max(0.35, fitZoomY * 0.92));
-        } else {
-          this.camera.zoom = Math.min(1.0, Math.max(0.35, Math.min(fitZoomX * 0.95, fitZoomY * 0.9)));
-        }
-        this.camera.x = this.level.width / 2;
-        this.camera.y = this.level.height / 2;
-        this.camera.targetX = this.camera.x;
-        this.camera.targetY = this.camera.y;
-      } else {
-        const fitZoomX = (screenW * 0.92) / this.level.width;
-        this.camera.zoom = Math.min(1.0, Math.max(0.5, fitZoomX));
-        this.snapCameraToPlayer();
-      }
-    }
+    // Adapt zoom to fill screen width edge-to-edge with 0 black side bars!
+    const fitZoomX = screenW / this.level.width;
 
+    this.camera.zoom = fitZoomX;
+    this.camera.x = this.level.width / 2;
+    this.camera.y = Math.min(this.level.height / 2, (screenH / 2) / this.camera.zoom);
+    this.camera.targetX = this.camera.x;
+    this.camera.targetY = this.camera.y;
     this.clampCamera();
   }
 
@@ -955,6 +1094,46 @@ class Game {
       this.idle.update(dt);
     }
 
+    // 7. Recolección de Reliquias y Secretos Excavados
+    if (this.level && this.level.secrets) {
+      for (const secret of this.level.secrets) {
+        if (secret.revealed && !secret.collected) {
+          const dist = Math.hypot(this.localPlayer.x - secret.x, this.localPlayer.y - secret.y);
+          if (dist < 42) {
+            secret.collected = true;
+            this.secretsFoundCount = (this.secretsFoundCount || 0) + 1;
+            const secCounter = document.getElementById('secrets-found-count');
+            if (secCounter) secCounter.textContent = this.secretsFoundCount;
+
+            if (this.idle) {
+              this.idle.cash += secret.cash;
+              this.idle.save();
+              this.idle.updateUI();
+            }
+
+            if (window.soundManager && typeof window.soundManager.playSecretCollect === 'function') {
+              window.soundManager.playSecretCollect();
+            }
+
+            if (this.ui) {
+              this.ui.showToast(`🔍 ¡RELIQUIA EXTRAÍDA: ${secret.name} (+ $${secret.cash.toLocaleString()})!`);
+              const pct = this.level.getDestructionPercentage();
+              const unlocked = this.localPlayer.checkUnlocks(pct, this.secretsFoundCount);
+              if (unlocked && unlocked.length > 0) {
+                unlocked.forEach(w => {
+                  this.ui.showToast(`🎉 ¡NUEVA ARMA DESBLOQUEADA: ${w.name.toUpperCase()}!`);
+                });
+                if (window.soundManager && typeof window.soundManager.playWeaponUnlocked === 'function') {
+                  window.soundManager.playWeaponUnlocked();
+                }
+                this.ui.refreshWeaponLocks();
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Update UI HUD
     this.ui.updateHUD(this.localPlayer);
   }
@@ -983,6 +1162,11 @@ class Game {
 
     // 1. Draw Level Canvas (Webpage with dithered craters)
     ctx.drawImage(this.level.canvas, 0, 0);
+
+    // 1.5 Draw Excavated Secrets / Relics on Terrain
+    if (this.level && typeof this.level.renderSecrets === 'function') {
+      this.level.renderSecrets(ctx);
+    }
 
     // 2. Draw Physics (Debris, Shockwaves, Projectiles)
     this.physics.render(ctx);
@@ -1540,6 +1724,24 @@ class UIManager {
       });
     }
 
+    // Toggle barra inferior de armas
+    const btnToggleHotbar = document.getElementById('btn-toggle-hotbar');
+    const hudBottomWrap = document.getElementById('hud-bottom-wrap');
+    if (btnToggleHotbar && hudBottomWrap) {
+      btnToggleHotbar.addEventListener('click', () => {
+        hudBottomWrap.classList.toggle('collapsed');
+        btnToggleHotbar.innerHTML = hudBottomWrap.classList.contains('collapsed') ? '<span>▲ ARMAS</span>' : '<span>▼ ARMAS</span>';
+      });
+    }
+
+    // Botón VIP en Hotbar
+    const btnVipHotbar = document.getElementById('btn-vip-hotbar');
+    if (btnVipHotbar) {
+      btnVipHotbar.addEventListener('click', () => {
+        if (this.game.wompi) this.game.wompi.openModal();
+      });
+    }
+
     // Hotbar Instant Selection on Touch (No delay, immediate weapon switch)
     document.querySelectorAll('.slot').forEach((slot) => {
       const selectSlot = (e) => {
@@ -1547,17 +1749,63 @@ class UIManager {
           e.preventDefault();
           e.stopPropagation();
         }
+        if (slot.id === 'btn-vip-hotbar') {
+          if (this.game.wompi) this.game.wompi.openModal();
+          return;
+        }
+
         const slotVal = slot.getAttribute('data-slot');
         const idx = slotVal === 'alt' ? 10 : parseInt(slotVal);
         if (!isNaN(idx)) {
-          this.game.localPlayer.selectWeapon(idx);
-          this.updateActiveWeapon(idx);
+          if (this.game.localPlayer.isWeaponUnlocked(idx)) {
+            this.game.localPlayer.selectWeapon(idx);
+            this.updateActiveWeapon(idx);
+          } else {
+            const w = this.game.localPlayer.weapons[idx];
+            const rule = this.game.localPlayer.weaponUnlockRules.find(r => r.index === idx);
+            if (window.soundManager && typeof window.soundManager.playLockedBuzz === 'function') {
+              window.soundManager.playLockedBuzz();
+            }
+            slot.classList.remove('shake-error');
+            void slot.offsetWidth;
+            slot.classList.add('shake-error');
+            this.showToast(`🔒 ${w ? w.name : 'Arma'} Bloqueada: Requiere ${rule ? rule.desc : 'más destrucción'} o Pase VIP`);
+          }
         }
       };
 
       slot.addEventListener('pointerdown', selectSlot);
       slot.addEventListener('touchstart', selectSlot, { passive: false });
       slot.addEventListener('click', selectSlot);
+    });
+  }
+
+  showToast(message) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast-item';
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3600);
+  }
+
+  refreshWeaponLocks() {
+    document.querySelectorAll('.slot').forEach((slot) => {
+      const slotVal = slot.getAttribute('data-slot');
+      if (!slotVal || slot.id === 'btn-vip-hotbar') return;
+      const idx = slotVal === 'alt' ? 10 : parseInt(slotVal);
+      const isUnlocked = this.game.localPlayer && this.game.localPlayer.isWeaponUnlocked(idx);
+      const lockOverlay = slot.querySelector('.slot-lock');
+      if (isUnlocked) {
+        slot.classList.remove('locked');
+        if (lockOverlay) lockOverlay.style.display = 'none';
+      } else {
+        slot.classList.add('locked');
+        if (lockOverlay) lockOverlay.style.display = 'flex';
+      }
     });
   }
 
@@ -1598,6 +1846,20 @@ class UIManager {
     }
     if (this.destructionText) {
       this.destructionText.textContent = `${percent.toFixed(1)}% DESTRUIDO`;
+    }
+
+    // Comprobar progresión de desbloqueo de armas
+    if (this.game.localPlayer) {
+      const newlyUnlocked = this.game.localPlayer.checkUnlocks(percent, this.game.secretsFoundCount || 0);
+      if (newlyUnlocked && newlyUnlocked.length > 0) {
+        newlyUnlocked.forEach(w => {
+          this.showToast(`🎉 ¡NUEVA ARMA DESBLOQUEADA: ${w.name.toUpperCase()}!`);
+        });
+        if (window.soundManager && typeof window.soundManager.playWeaponUnlocked === 'function') {
+          window.soundManager.playWeaponUnlocked();
+        }
+        this.refreshWeaponLocks();
+      }
     }
 
     // 3D Obliteration Victory Celebration

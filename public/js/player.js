@@ -110,6 +110,26 @@ class Player {
     this.fireCooldown = 0;
     this.grenadeCooldown = 0;
 
+    // Sistema Progresivo de Armas Desbloqueables
+    this.weaponUnlockRules = [
+      { index: 0, name: 'Pistol', reqPct: 0, desc: 'Arma inicial' },
+      { index: 1, name: 'SMG', reqPct: 0, desc: 'Arma inicial' },
+      { index: 2, name: 'Shotgun', reqPct: 5, desc: '5% de Destrucción' },
+      { index: 10, name: 'Grenade Launcher', reqPct: 10, desc: '10% de Destrucción' },
+      { index: 3, name: 'Rocket Launcher', reqPct: 20, desc: '20% de Destrucción' },
+      { index: 4, name: 'Railgun', reqPct: 35, desc: '35% de Destrucción o 1 Secreto' },
+      { index: 5, name: 'Flamethrower', reqPct: 50, desc: '50% de Destrucción' },
+      { index: 6, name: 'Too Much', reqPct: 65, desc: '65% de Destrucción' },
+      { index: 7, name: 'The Magic Wand', reqPct: 75, desc: '75% de Destrucción o 3 Secretos' },
+      { index: 8, name: 'PSR B0531+21', reqPct: 85, desc: '85% de Destrucción' },
+      { index: 9, name: 'Tsar Bomba', reqPct: 95, desc: '95% de Destrucción o Prestigio' }
+    ];
+
+    // Persistencia por Dispositivo
+    this.unlockedWeapons = [0, 1];
+    this.isVip = false;
+    this.loadPersistence();
+
     // Animation state
     this.animTimer = 0;
     this.walkCycle = 0;
@@ -118,14 +138,91 @@ class Player {
     this.spawnBeaconTimer = 5.0;
   }
 
+  isWeaponUnlocked(index) {
+    if (this.isVip) return true;
+    return this.unlockedWeapons.includes(index);
+  }
+
+  unlockWeapon(index) {
+    if (!this.unlockedWeapons.includes(index)) {
+      this.unlockedWeapons.push(index);
+      this.savePersistence();
+      return true;
+    }
+    return false;
+  }
+
+  unlockAllWeaponsVip() {
+    this.isVip = true;
+    this.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    this.savePersistence();
+  }
+
+  checkUnlocks(currentPct, secretsCount = 0) {
+    const newlyUnlocked = [];
+    if (this.isVip) return newlyUnlocked;
+
+    for (const rule of this.weaponUnlockRules) {
+      if (!this.unlockedWeapons.includes(rule.index)) {
+        let shouldUnlock = currentPct >= rule.reqPct;
+        if (rule.index === 4 && secretsCount >= 1) shouldUnlock = true;
+        if (rule.index === 7 && secretsCount >= 3) shouldUnlock = true;
+
+        if (shouldUnlock) {
+          this.unlockWeapon(rule.index);
+          newlyUnlocked.push(this.weapons[rule.index]);
+        }
+      }
+    }
+    return newlyUnlocked;
+  }
+
+  savePersistence() {
+    if (!this.isLocal) return;
+    try {
+      const data = {
+        name: this.name,
+        color: this.color,
+        unlockedWeapons: this.unlockedWeapons,
+        isVip: this.isVip
+      };
+      localStorage.setItem('apocalipsis_player_data', JSON.stringify(data));
+      localStorage.setItem('destroy_player_name', this.name);
+    } catch (e) {}
+  }
+
+  loadPersistence() {
+    if (!this.isLocal) return;
+    try {
+      const raw = localStorage.getItem('apocalipsis_player_data');
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.name) this.name = d.name;
+        if (d.color) this.color = d.color;
+        if (d.isVip) {
+          this.isVip = true;
+          this.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        } else if (Array.isArray(d.unlockedWeapons)) {
+          this.unlockedWeapons = d.unlockedWeapons;
+          if (!this.unlockedWeapons.includes(0)) this.unlockedWeapons.push(0);
+          if (!this.unlockedWeapons.includes(1)) this.unlockedWeapons.push(1);
+        }
+      }
+    } catch (e) {}
+  }
+
   getCurrentWeapon() {
     return this.weapons[this.currentWeaponIndex];
   }
 
   selectWeapon(index) {
     if (index >= 0 && index < this.weapons.length) {
-      this.currentWeaponIndex = index;
+      if (this.isWeaponUnlocked(index)) {
+        this.currentWeaponIndex = index;
+        return true;
+      }
     }
+    return false;
   }
 
   // Returns Hue shift degrees based on player color for Multiplayer
@@ -210,23 +307,41 @@ class Player {
       }
     }
 
-    // Jetpack thrust
+    // Jetpack thrust - ESTABILIZADOR AVANZADO DE VUELO & HOVER SUAVE
     if (wantsJump && !this.onGround && this.jetpackFuel > 0) {
       this.jetpackActive = true;
-      this.vy = Math.max(-6.5, this.vy - 0.85);
+      // Impulso suave y estable hacia velocidad de crucero sin sacudidas
+      const targetAscent = -5.8;
+      this.vy += (targetAscent - this.vy) * 0.22;
+
+      // Maniobrabilidad aérea precisa
+      if (moveDir !== 0) {
+        this.vx += moveDir * (this.accel * 1.25);
+        this.vx = Math.max(-this.speed * 1.15, Math.min(this.speed * 1.15, this.vx));
+      } else {
+        // Amortiguación aérea para apuntar y suspenderse en el aire (hover)
+        this.vx *= 0.92;
+      }
+
       this.jetpackFuel = Math.max(0, this.jetpackFuel - this.fuelBurnRate * dt);
       physics.spawnJetpackFlame(this.x, this.y, this.facing);
       window.soundManager.playJetpack();
     } else {
       this.jetpackActive = false;
+      // Resistencia al aire suave en caída
+      if (!this.onGround) {
+        this.vx *= 0.96;
+      }
       if (this.onGround) {
         this.jetpackFuel = Math.min(this.maxJetpackFuel, this.jetpackFuel + this.fuelRechargeRate * dt);
       } else {
-        this.jetpackFuel = Math.min(this.maxJetpackFuel, this.jetpackFuel + (this.fuelRechargeRate * 0.35) * dt);
+        this.jetpackFuel = Math.min(this.maxJetpackFuel, this.jetpackFuel + (this.fuelRechargeRate * 0.45) * dt);
       }
     }
 
     this.vy += this.gravity;
+    // Límite de velocidad terminal para evitar caídas descontroladas
+    if (this.vy > 9.5) this.vy = 9.5;
     if (this.onWall !== 0 && this.vy > 1.5) {
       this.vy = 1.5;
     }

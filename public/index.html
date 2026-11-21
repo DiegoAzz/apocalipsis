@@ -8,9 +8,100 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#090d16">
   <title>Destroy Any Website - Destruye cualquier página web</title>
-  <link rel="stylesheet" href="style.css?v=3.0">
+  <link rel="stylesheet" href="style.css?v=4.0">
+  <!-- Wompi Checkout Widget Oficial -->
+  <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
 </head>
 <body>
+  <!-- GTA VI STYLE INTRO & PRE-GAME SETUP OVERLAY -->
+  <div id="gta-intro-overlay" class="gta-intro-overlay">
+    <div class="gta-bg-grid"></div>
+    <div class="gta-scanlines"></div>
+    
+    <div class="gta-container">
+      <div class="gta-header">
+        <div class="gta-badge">⚡ PROTOCOLO DE OBLITERACIÓN & EXCAVACIÓN WEB</div>
+        <h1 class="gta-title">APOCALIPSIS <span class="gta-six">VI</span></h1>
+        <p class="gta-subtitle">DESTROZA CUALQUIER PÁGINA WEB • ENCUENTRA LOS 5 SECRETOS • DESBLOQUEA EL ARSENAL</p>
+      </div>
+
+      <div class="gta-panels-grid">
+        <!-- Panel 1: Objetivo a Destruir -->
+        <div class="gta-panel">
+          <div class="gta-panel-title"><span>🌐 1. OBJETIVO A DESTRUIR</span></div>
+          <div class="gta-presets-row">
+            <button class="gta-preset-btn active" data-gta-preset="tiktok">🎵 TikTok</button>
+            <button class="gta-preset-btn" data-gta-preset="youtube">▶️ YouTube</button>
+            <button class="gta-preset-btn" data-gta-preset="google">🔍 Google</button>
+            <button class="gta-preset-btn" data-gta-preset="wikipedia">📄 Wikipedia</button>
+            <button class="gta-preset-btn" data-gta-preset="amazon">📦 Amazon</button>
+            <button class="gta-preset-btn" data-gta-preset="facebook">📘 Facebook</button>
+          </div>
+          <div class="gta-url-box">
+            <input type="text" id="gta-url-input" placeholder="O escribe cualquier URL (ej: https://www.tiktok.com)..." value="https://www.tiktok.com">
+          </div>
+          <div class="gta-upload-row">
+            <button class="gta-upload-btn" id="btn-gta-upload">🖼️ O Sube Cualquier Imagen / Foto / Meme</button>
+            <input type="file" id="gta-file-input" accept="image/*" style="display:none">
+          </div>
+        </div>
+
+        <!-- Panel 2: Operativo y Modo -->
+        <div class="gta-panel">
+          <div class="gta-panel-title"><span>👤 2. OPERATIVO & MODO DE JUEGO</span></div>
+          <div class="gta-name-row">
+            <label>Nombre del Operativo:</label>
+            <input type="text" id="gta-player-name" maxlength="15" value="Operativo" placeholder="Tu Nombre">
+          </div>
+          <div class="gta-colors-section">
+            <label>Color del Traje & Visor:</label>
+            <div class="gta-color-palette" id="gta-color-palette">
+              <button class="gta-color-swatch active" data-color="#f97316" style="background:#f97316" title="Naranja Táctico"></button>
+              <button class="gta-color-swatch" data-color="#38bdf8" style="background:#38bdf8" title="Cyan Neón"></button>
+              <button class="gta-color-swatch" data-color="#22c55e" style="background:#22c55e" title="Verde Radiactivo"></button>
+              <button class="gta-color-swatch" data-color="#a855f7" style="background:#a855f7" title="Púrpura Cuántico"></button>
+              <button class="gta-color-swatch" data-color="#ef4444" style="background:#ef4444" title="Rojo Carmesí"></button>
+              <button class="gta-color-swatch" data-color="#facc15" style="background:#facc15" title="Oro VIP"></button>
+            </div>
+          </div>
+          <div class="gta-mode-selector">
+            <label>Modo de Partida:</label>
+            <div class="gta-modes-row">
+              <button class="gta-mode-btn" id="gta-mode-solo">👤 Modo Solitario</button>
+              <button class="gta-mode-btn active" id="gta-mode-multi">🌐 Cooperativo Online</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Misión de Excavación -->
+      <div class="gta-mission-brief">
+        <div class="brief-icon">🎯</div>
+        <div class="brief-text">
+          <strong>MISIÓN:</strong> Desintegra el sitio con tus armas para desenterrar los <strong>5 Núcleos Secretos</strong> ocultos. A medida que destruyas se irán desbloqueando las 11 armas. ¡Graba clips a 60 FPS listos para TikTok y redes sociales!
+        </div>
+      </div>
+
+      <!-- Botón Gigante de Inicio Estilo GTA VI -->
+      <div class="gta-actions">
+        <button id="btn-gta-start" class="btn-gta-start">
+          <span class="btn-bolt">⚡</span>
+          <span class="btn-text">INICIAR APOCALIPSIS</span>
+          <span class="btn-sub">START MISSION</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Píldoras Flotantes en Esquina Superior Derecha -->
+  <div class="floating-pills-top">
+    <button class="pill-btn pill-record" id="btn-screen-record" title="Graba la partida a 60 FPS lista para TikTok, Shorts y Reels (o pulsa R)">
+      <span class="rec-dot">🔴</span> <span id="rec-label">REC (TikTok/Reels)</span>
+    </button>
+    <button class="pill-btn pill-vip" id="btn-open-wompi-top" title="Desbloquear Todo el Arsenal con Wompi">
+      <span>⭐ Arsenal VIP</span>
+    </button>
+  </div>
   <!-- Barra Superior de Navegación & Selector de URL -->
   <header id="top-nav">
     <div class="brand">
@@ -137,6 +228,13 @@
     <span id="destruction-percent-text">0.0% DESTRUIDO</span>
   </div>
 
+  <!-- Contador de Reliquias & Secretos Ocultos Excavados -->
+  <div id="secret-meter-container" title="Reliquias ocultas enterradas en la web. ¡Destruye la página para excavarlas!">
+    <span class="secret-icon">🔍</span>
+    <span class="secret-label">SECRETOS:</span>
+    <span id="secrets-found-count" class="secret-count">0</span><span class="secret-total">/5</span>
+  </div>
+
   <!-- Canvas Principal del Videojuego -->
   <canvas id="game-canvas"></canvas>
 
@@ -201,14 +299,19 @@
   </div>
 
   <!-- BARRA DE ARMAS INFERIOR EXACTA A SPRITE FUSION -->
-  <div class="hud-bottom-wrap">
+  <div class="hud-bottom-wrap" id="hud-bottom-wrap">
+    <!-- Pestaña para Colapsar/Expandir la barra inferior -->
+    <button class="btn-toggle-hotbar" id="btn-toggle-hotbar" title="Ocultar / Mostrar Barra de Armas (o pulsa H)">
+      <span>▼ ARMAS</span>
+    </button>
+
     <!-- Etiqueta Flotante con el Nombre del Arma Activa -->
     <div class="wname-tag" id="wname-tag">
       <span id="wname-text">Pistol</span>
       <span class="ammo-tag" id="wname-ammo">∞</span>
     </div>
 
-    <!-- Slots de Armas 1 al 9 + Granada -->
+    <!-- Slots de Armas 1 al 9 + Granada + VIP -->
     <div class="hud-weapons" id="hud-weapons">
       <!-- 1: Pistola -->
       <div class="slot active" data-slot="0">
@@ -227,54 +330,68 @@
         <kbd class="key">3</kbd>
         <canvas class="slot-icon" id="icon-2" width="48" height="32"></canvas>
         <span class="slot-lbl">Shotgun</span>
+        <div class="slot-lock" id="lock-slot-2" title="Desbloquea al 5% de destrucción">🔒<span class="lock-req">5%</span></div>
       </div>
       <!-- 4: Lanzacohetes -->
       <div class="slot" data-slot="3">
         <kbd class="key">4</kbd>
         <canvas class="slot-icon" id="icon-3" width="48" height="32"></canvas>
         <span class="slot-lbl">Rocket</span>
+        <div class="slot-lock" id="lock-slot-3" title="Desbloquea al 20% de destrucción">🔒<span class="lock-req">20%</span></div>
       </div>
       <!-- 5: Railgun -->
       <div class="slot" data-slot="4">
         <kbd class="key">5</kbd>
         <canvas class="slot-icon" id="icon-4" width="48" height="32"></canvas>
         <span class="slot-lbl">Railgun</span>
+        <div class="slot-lock" id="lock-slot-4" title="Desbloquea al 35% o 1 Secreto">🔒<span class="lock-req">35%</span></div>
       </div>
       <!-- 6: Lanzallamas -->
       <div class="slot" data-slot="5">
         <kbd class="key">6</kbd>
         <canvas class="slot-icon" id="icon-5" width="48" height="32"></canvas>
         <span class="slot-lbl">Flame</span>
+        <div class="slot-lock" id="lock-slot-5" title="Desbloquea al 50% de destrucción">🔒<span class="lock-req">50%</span></div>
       </div>
       <!-- 7: Too Much (Racimo) -->
       <div class="slot" data-slot="6">
         <kbd class="key">7</kbd>
         <canvas class="slot-icon" id="icon-6" width="48" height="32"></canvas>
         <span class="slot-lbl">Cluster</span>
+        <div class="slot-lock" id="lock-slot-6" title="Desbloquea al 65% de destrucción">🔒<span class="lock-req">65%</span></div>
       </div>
       <!-- 8: Varita Mágica -->
       <div class="slot" data-slot="7">
         <kbd class="key">8</kbd>
         <canvas class="slot-icon" id="icon-7" width="48" height="32"></canvas>
         <span class="slot-lbl">Wand</span>
+        <div class="slot-lock" id="lock-slot-7" title="Desbloquea al 75% o 3 Secretos">🔒<span class="lock-req">75%</span></div>
       </div>
       <!-- 9: Estrella Neutrones -->
       <div class="slot" data-slot="8">
         <kbd class="key">9</kbd>
         <canvas class="slot-icon" id="icon-8" width="48" height="32"></canvas>
         <span class="slot-lbl">Neutron</span>
+        <div class="slot-lock" id="lock-slot-8" title="Desbloquea al 85% de destrucción">🔒<span class="lock-req">85%</span></div>
       </div>
       <!-- 0: Tsar Bomba (Nuke) -->
       <div class="slot" data-slot="9">
         <kbd class="key">0</kbd>
         <canvas class="slot-icon" id="icon-9" width="48" height="32"></canvas>
         <span class="slot-lbl">☢️ Nuke</span>
+        <div class="slot-lock" id="lock-slot-9" title="Desbloquea al 95% o Prestigio / VIP">🔒<span class="lock-req">95%</span></div>
       </div>
       <!-- G: Granada / Lanzagranadas (Slot 10 / Tecla G o Clic Derecho) -->
       <div class="slot" data-slot="10" title="Lanzagranadas (Pulsa G o Clic Derecho)">
         <kbd class="key">G</kbd>
         <canvas class="slot-icon" id="icon-alt" width="48" height="32"></canvas>
         <span class="slot-lbl">Grenade</span>
+        <div class="slot-lock" id="lock-slot-10" title="Desbloquea al 10% de destrucción">🔒<span class="lock-req">10%</span></div>
+      </div>
+      <!-- Botón VIP Arsenal Wompi -->
+      <div class="slot slot-vip" id="btn-vip-hotbar" title="Desbloquear Todo el Arsenal con Wompi">
+        <span class="vip-icon">⭐</span>
+        <span class="slot-lbl">VIP</span>
       </div>
     </div>
 
@@ -425,15 +542,82 @@
     </div>
   </div>
 
+  <!-- Modal de Video Grabado para Redes Sociales (TikTok, Reels, Shorts) -->
+  <div id="video-export-modal" class="custom-modal">
+    <div class="modal-card video-card">
+      <div class="modal-head">
+        <h2>🎬 ¡VIDEO LISTO PARA TIKTOK / REDES!</h2>
+        <button class="close-btn" id="btn-close-video-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="desc">Tu clip ha sido grabado a <strong>60 FPS</strong> en alta definición. ¡Descárgalo o compártelo directo en tus redes sociales!</p>
+        <div class="video-preview-wrapper">
+          <video id="video-preview-player" controls autoplay loop playsinline></video>
+        </div>
+        <div class="video-actions-row">
+          <a id="btn-download-video" class="btn btn-primary btn-lg" download="apocalipsis_clip.webm" href="#">
+            <span>💾 DESCARGAR VIDEO (.WEBM / MP4)</span>
+          </a>
+          <button id="btn-share-video" class="btn btn-mode btn-lg">
+            <span>📤 COMPARTIR DIRECTO</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Wompi Pasarela de Pagos (Desbloqueo VIP Inmediato) -->
+  <div id="wompi-modal" class="custom-modal">
+    <div class="modal-card wompi-card">
+      <div class="modal-head">
+        <h2>⭐ PASE VIP APOCALIPSIS (PAGOS WOMPI)</h2>
+        <button class="close-btn" id="btn-close-wompi">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="wompi-badge-hero">
+          <span class="wompi-logo-txt">wompi</span>
+          <span class="wompi-colombia">Bancolombia • Nequi • PSE • Tarjetas</span>
+        </div>
+        <p class="desc">¿Quieres todo el armamento ya mismo? Desbloquea el <strong>Arsenal VIP Definitivo</strong> al instante en tu dispositivo:</p>
+        
+        <div class="wompi-perks-list">
+          <div class="perk-item"><span>☢️</span> <strong>Bomba del Zar (Tsar Bomba)</strong> desbloqueada para siempre</div>
+          <div class="perk-item"><span>⚡</span> <strong>Todas las 11 Armas</strong> (Railgun, Neutrones, Varita, Lanzallamas...)</div>
+          <div class="perk-item"><span>💰</span> <strong>$100,000 en Efectivo del Juego</strong> para mejoras inmediatas</div>
+          <div class="perk-item"><span>⚛️</span> <strong>5 Núcleos de Plutonio</strong> (Prestigio Permanente)</div>
+          <div class="perk-item"><span>⭐</span> <strong>Distintivo VIP Dorado</strong> en Multijugador</div>
+        </div>
+
+        <div class="wompi-price-box">
+          <span class="price-val">$ 5.000 COP</span>
+          <span class="price-sub">Pago único • Desbloqueo Permanente en este Dispositivo</span>
+        </div>
+
+        <button id="btn-pay-wompi-trigger" class="btn btn-wompi-main">
+          <span>💳 PAGAR CON WOMPI (NEQUI / PSE / BANCOLOMBIA)</span>
+        </button>
+
+        <div class="wompi-test-hint">
+          <button id="btn-wompi-test-unlock" class="btn btn-sm btn-ghost">⚡ Probar Activación Inmediata (Modo Prueba)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Flotante de Notificaciones Toast -->
+  <div id="toast-container" class="toast-container"></div>
+
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=3.0"></script>
-  <script src="js/levelGenerator.js?v=3.0"></script>
-  <script src="js/physics.js?v=3.0"></script>
-  <script src="js/player.js?v=3.0"></script>
-  <script src="js/bot.js?v=3.0"></script>
-  <script src="js/multiplayer.js?v=3.0"></script>
-  <script src="js/idleManager.js?v=3.0"></script>
-  <script src="js/game.js?v=3.0"></script>
+  <script src="js/audio.js?v=4.0"></script>
+  <script src="js/levelGenerator.js?v=4.0"></script>
+  <script src="js/physics.js?v=4.0"></script>
+  <script src="js/player.js?v=4.0"></script>
+  <script src="js/bot.js?v=4.0"></script>
+  <script src="js/multiplayer.js?v=4.0"></script>
+  <script src="js/idleManager.js?v=4.0"></script>
+  <script src="js/videoRecorder.js?v=4.0"></script>
+  <script src="js/wompiManager.js?v=4.0"></script>
+  <script src="js/game.js?v=4.0"></script>
 </body>
 </html>
