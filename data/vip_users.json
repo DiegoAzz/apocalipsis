@@ -1,1 +1,11 @@
-{}
+{
+  "diego@test.com": {
+    "email": "diego@test.com",
+    "isVip": false,
+    "unlockedWeapons": [
+      0,
+      1
+    ],
+    "lastLogin": "2026-11-21T23:14:21.355Z"
+  }
+}

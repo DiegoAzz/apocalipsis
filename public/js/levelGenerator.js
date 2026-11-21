@@ -107,7 +107,8 @@ class LevelEngine {
     this.ctx.arc(x, y, rInner, 0, Math.PI * 2);
     this.ctx.fill();
 
-    // Dithered outer rim
+    // Dithered outer rim with batched subpaths for maximum 60 FPS GPU performance
+    this.ctx.beginPath();
     for (let r = minRow; r <= maxRow; r++) {
       const cy = (r + 0.5) * this.cellSize;
       const dy = cy - y;
@@ -123,7 +124,7 @@ class LevelEngine {
           const ratio = (d - rInner) / (radius - rInner);
           const threshold = bayer[(r & 3) * 4 + (c & 3)];
           if (ratio < threshold) {
-            this.ctx.fillRect(c * this.cellSize, r * this.cellSize, this.cellSize, this.cellSize);
+            this.ctx.rect(c * this.cellSize, r * this.cellSize, this.cellSize, this.cellSize);
             const idx = r * this.cols + c;
             if (this.grid[idx] === 1) {
               this.grid[idx] = 0;
@@ -133,6 +134,7 @@ class LevelEngine {
         }
       }
     }
+    this.ctx.fill();
     this.ctx.restore();
 
     // Update collision grid for inner hole
@@ -225,10 +227,15 @@ class LevelEngine {
       { name: '🔑 Llave Maestra del Servidor', icon: '🔑', color: '#10b981', cash: 35000 }
     ];
 
-    // Candidatos sólidos
+    // Enterrar secretos en zonas interiores y profundas (lejos del borde superior/spawn)
+    const minRow = Math.max(12, Math.floor(this.rows * 0.18));
+    const maxRow = Math.max(minRow + 10, Math.floor(this.rows * 0.88));
+    const minCol = Math.max(10, Math.floor(this.cols * 0.12));
+    const maxCol = Math.max(minCol + 10, Math.floor(this.cols * 0.88));
+
     const solidCandidates = [];
-    for (let r = 5; r < this.rows - 5; r += 4) {
-      for (let c = 5; c < this.cols - 5; c += 4) {
+    for (let r = minRow; r < maxRow; r += 3) {
+      for (let c = minCol; c < maxCol; c += 3) {
         if (this.grid[r * this.cols + c] === 1) {
           solidCandidates.push({
             x: Math.round((c + 0.5) * this.cellSize),
@@ -248,22 +255,23 @@ class LevelEngine {
           icon: tpl.icon,
           color: tpl.color,
           cash: tpl.cash,
-          x: Math.round(150 + Math.random() * (this.width - 300)),
-          y: Math.round(150 + Math.random() * (this.height - 300)),
-          radius: 28,
+          x: Math.round(this.width * (0.2 + 0.15 * i)),
+          y: Math.round(this.height * (0.3 + 0.12 * i)),
+          radius: 24,
           revealed: false,
-          collected: false
+          collected: false,
+          excavationProgress: 0
         });
       }
       return;
     }
 
     const selected = [];
-    const minSpacing = Math.min(this.width, this.height) / 4.5;
+    const minSpacing = Math.min(this.width, this.height) / 4.2;
 
     for (let i = 0; i < count; i++) {
       let chosen = null;
-      for (let attempt = 0; attempt < 30; attempt++) {
+      for (let attempt = 0; attempt < 40; attempt++) {
         const cand = solidCandidates[Math.floor(Math.random() * solidCandidates.length)];
         const tooClose = selected.some(s => Math.hypot(s.x - cand.x, s.y - cand.y) < minSpacing);
         if (!tooClose) {
@@ -285,9 +293,10 @@ class LevelEngine {
         cash: tpl.cash,
         x: chosen.x,
         y: chosen.y,
-        radius: 28,
+        radius: 24,
         revealed: false,
-        collected: false
+        collected: false,
+        excavationProgress: 0
       });
     }
   }
@@ -297,83 +306,85 @@ class LevelEngine {
     if (!this.secrets || this.secrets.length === 0) return;
     for (const secret of this.secrets) {
       if (secret.revealed || secret.collected) continue;
+
       const d = Math.hypot(secret.x - x, secret.y - y);
       if (d <= radius + secret.radius) {
-        secret.revealed = true;
-        if (window.soundManager && typeof window.soundManager.playSecretFound === 'function') {
-          window.soundManager.playSecretFound();
-        }
-        if (this.onSecretRevealed) {
-          this.onSecretRevealed(secret);
+        // Comprobar si el terreno directamente en la coordenada del secreto ya fue destruido
+        const isCovered = this.isSolid(secret.x, secret.y);
+        
+        // Sumar progreso de excavación con el radio de la explosión
+        secret.excavationProgress = (secret.excavationProgress || 0) + (radius / 25);
+
+        // SOLO SE REVELA cuando el terreno que lo cubría ha sido desintegrado y excavado
+        if (!isCovered && secret.excavationProgress >= 1.0) {
+          secret.revealed = true;
+          if (window.soundManager && typeof window.soundManager.playSecretFound === 'function') {
+            window.soundManager.playSecretFound();
+          }
+          if (this.onSecretRevealed) {
+            this.onSecretRevealed(secret);
+          }
         }
       }
     }
   }
 
-  // Renderiza los secretos desenterrados y pistas sobre el terreno
+  // Renderiza los secretos desenterrados (100% invisibles mientras sigan ocultos bajo tierra)
   renderSecrets(ctx) {
     if (!this.secrets || this.secrets.length === 0) return;
     const now = Date.now();
     for (const secret of this.secrets) {
       if (secret.collected) continue;
 
-      if (secret.revealed) {
-        // Reliquia desenterrada flotante con halo radiante
-        const bob = Math.sin(now * 0.005 + secret.x) * 6;
-        const pulse = Math.sin(now * 0.008 + secret.y) * 4;
-
-        ctx.save();
-        ctx.translate(secret.x, secret.y + bob);
-
-        // Halo resplandeciente
-        ctx.beginPath();
-        ctx.arc(0, 0, 24 + pulse, 0, Math.PI * 2);
-        ctx.fillStyle = secret.color + '33';
-        ctx.fill();
-
-        ctx.strokeStyle = secret.color;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        // Anillo giratorio blanco
-        ctx.beginPath();
-        ctx.arc(0, 0, 16, 0, Math.PI * 2);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Icono de la reliquia
-        ctx.font = '22px Arial, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(secret.icon, 0, 0);
-
-        // Nombre y Recompensa holográficos
-        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 3;
-        ctx.strokeText(secret.name, 0, -28);
-        ctx.fillText(secret.name, 0, -28);
-
-        ctx.font = 'bold 11px Arial, sans-serif';
-        ctx.fillStyle = '#facc15';
-        ctx.strokeText(`+$${secret.cash.toLocaleString()}`, 0, 26);
-        ctx.fillText(`+$${secret.cash.toLocaleString()}`, 0, 26);
-
-        ctx.restore();
-      } else {
-        // Pista sutil que destella ocasionalmente para guiar al jugador
-        const glimmer = (Math.sin(now * 0.003 + secret.x * 0.1) + 1) * 0.5;
-        if (glimmer > 0.88) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(secret.x, secret.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 215, 0, 0.45)';
-          ctx.fill();
-          ctx.restore();
-        }
+      // SI NO HA SIDO DESENTERRADO: 100% INVISIBLE (CERO PISTAS O MARCADORES)
+      if (!secret.revealed) {
+        continue;
       }
+
+      // Reliquia desenterrada flotante con halo radiante
+      const bob = Math.sin(now * 0.005 + secret.x) * 6;
+      const pulse = Math.sin(now * 0.008 + secret.y) * 4;
+
+      ctx.save();
+      ctx.translate(secret.x, secret.y + bob);
+
+      // Halo resplandeciente
+      ctx.beginPath();
+      ctx.arc(0, 0, 24 + pulse, 0, Math.PI * 2);
+      ctx.fillStyle = secret.color + '33';
+      ctx.fill();
+
+      ctx.strokeStyle = secret.color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Anillo giratorio blanco
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Icono de la reliquia
+      ctx.font = '22px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(secret.icon, 0, 0);
+
+      // Nombre y Recompensa holográficos
+      ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      ctx.strokeText(secret.name, 0, -28);
+      ctx.fillText(secret.name, 0, -28);
+
+      ctx.font = 'bold 11px Arial, sans-serif';
+      ctx.fillStyle = '#facc15';
+      ctx.strokeText(`+$${secret.cash.toLocaleString()}`, 0, 26);
+      ctx.fillText(`+$${secret.cash.toLocaleString()}`, 0, 26);
+
+      ctx.restore();
     }
   }
 
@@ -1048,7 +1059,9 @@ class LevelEngine {
 
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      if (typeof imageSource === 'string' && (imageSource.startsWith('http://') || imageSource.startsWith('https://'))) {
+        img.crossOrigin = 'anonymous';
+      }
       img.onload = () => {
         // Adapt arena dimensions dynamically to match the mobile screen or desktop!
         const isMobileScreen = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));

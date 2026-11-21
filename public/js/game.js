@@ -44,6 +44,7 @@ class Game {
     this.lastTime = performance.now();
     this.timeScale = 1.0;
     this.isLiveMode = false;
+    this.isGameStarted = false; // Prevents auto-fire and bomb drops before player starts mission
     this.ui = new UIManager(this);
 
     this.init();
@@ -407,6 +408,19 @@ class Game {
     const startBtn = document.getElementById('btn-gta-start');
     if (!overlay || !startBtn) return;
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = (urlParams.get('room') || '').trim();
+    const isFriendInvite = roomParam && roomParam !== 'lobby';
+
+    if (isFriendInvite) {
+      startBtn.innerHTML = `<span>🚀 ENTRAR A LA SALA (${roomParam.toUpperCase()})</span>`;
+      const subtitle = document.querySelector('.gta-subtitle');
+      if (subtitle) {
+        subtitle.innerHTML = `🎮 <strong>¡INVITACIÓN DETECTADA!</strong> Te estás uniendo a la sala <em>${roomParam.toUpperCase()}</em> de tu amigo.`;
+        subtitle.style.color = '#38bdf8';
+      }
+    }
+
     let selectedPreset = 'tiktok';
     const urlInput = document.getElementById('gta-url-input');
     const nameInput = document.getElementById('gta-player-name');
@@ -495,6 +509,10 @@ class Game {
 
     // Botón Iniciar Misión GTA VI
     startBtn.addEventListener('click', async () => {
+      this.isGameStarted = true;
+      this.input.isMouseDown = false;
+      this.input.isRightMouseDown = false;
+
       if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
         window.soundManager.playCinematicBoom();
       }
@@ -507,6 +525,15 @@ class Game {
       }
 
       overlay.classList.add('hidden');
+
+      if (isFriendInvite) {
+        // Enlace de amigo (?room=): Entrar a la sala compartida directamente sin sobreescribir el nivel
+        this.snapCameraToPlayer();
+        if (this.ui) {
+          this.ui.showToast(`🎮 ¡Conectado a la sala ${roomParam.toUpperCase()} con tu amigo!`);
+        }
+        return;
+      }
 
       const targetUrl = urlInput ? urlInput.value.trim() : '';
       if (targetUrl) {
@@ -530,6 +557,9 @@ class Game {
     const btnSkip = document.getElementById('btn-gta-skip');
     if (btnSkip) {
       btnSkip.addEventListener('click', () => {
+        this.isGameStarted = true;
+        this.input.isMouseDown = false;
+        this.input.isRightMouseDown = false;
         if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
           window.soundManager.playCinematicBoom();
         }
@@ -663,9 +693,39 @@ class Game {
       }
     });
 
+    const isTargetUI = (target) => {
+      if (!target || target === this.canvas || target === document.body || target === document.documentElement) {
+        return false;
+      }
+      return !!target.closest(
+        'button, input, select, textarea, a, label, kbd, .slot, .hud-bottom-wrap, #top-nav, .floating-pills-top, .idle-drawer, .custom-modal, #help-modal, #chat-container, #mobile-controls, .gta-intro-overlay, .btn, .hud-weapons, #destruction-meter-container, #secret-meter-container, .wompi-card'
+      );
+    };
+
+    // Prevenir disparos accidentales cuando se interactúa con botones o elementos de interfaz
+    window.addEventListener('pointerdown', (e) => {
+      if (isTargetUI(e.target)) {
+        this.input.isMouseDown = false;
+        this.input.isRightMouseDown = false;
+      }
+    }, { capture: true });
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.target && isTargetUI(e.target)) {
+        this.input.isMouseDown = false;
+        this.input.isRightMouseDown = false;
+      }
+    }, { capture: true, passive: true });
+
     window.addEventListener('mousemove', (e) => {
       this.input.screenMouseX = e.clientX;
       this.input.screenMouseY = e.clientY;
+
+      if (isTargetUI(e.target)) {
+        this.input.isMouseDown = false;
+        return;
+      }
+
       this.input.mouseX = (e.clientX - this.canvas.width / 2) / this.camera.zoom + this.camera.x;
       this.input.mouseY = (e.clientY - this.canvas.height / 2) / this.camera.zoom + this.camera.y;
 
@@ -683,6 +743,14 @@ class Game {
 
     window.addEventListener('mousedown', (e) => {
       window.soundManager.ensureContext();
+
+      // Si el clic es sobre un botón, menú, barra de armas o UI: NO DISPARAR
+      if (isTargetUI(e.target)) {
+        this.input.isMouseDown = false;
+        this.input.isRightMouseDown = false;
+        return;
+      }
+
       if (e.button === 1) {
         // Middle click / Wheel press activates pan hand tool
         e.preventDefault();
@@ -1031,6 +1099,13 @@ class Game {
   }
 
   update(dt) {
+    // Si la misión aún no inicia (intro de inicio activa), prevenir disparos, bombas y proyectiles
+    if (!this.isGameStarted) {
+      this.input.isMouseDown = false;
+      this.input.isRightMouseDown = false;
+      return;
+    }
+
     const targets = this.getAllTargets();
 
     // 1. Update Local Player
@@ -1156,9 +1231,38 @@ class Game {
                 }
                 this.ui.refreshWeaponLocks();
               }
+
+              // Verificación de Victoria de Misión por Secretos (Auto-descarga de video)
+              if (this.secretsFoundCount >= 5 && !this.victoryAnnounced) {
+                this.victoryAnnounced = true;
+                if (this.physics) {
+                  this.physics.triggerSuperArtCutIn('¡VICTORIA TOTAL!', '🏆 TODOS LOS SECRETOS REVELADOS - MISIÓN CUMPLIDA', '#10b981');
+                }
+                if (this.ui) {
+                  this.ui.showToast('🏆 ¡VICTORIA TOTAL! Has desenterrado todos los secretos y conquistado la web.');
+                }
+                if (this.recorder) {
+                  this.recorder.onMissionComplete();
+                }
+              }
             }
           }
         }
+      }
+    }
+
+    // Verificación de Victoria por Destrucción Total del Sitio (Auto-descarga de video)
+    const currentPct = this.level ? this.level.getDestructionPercentage() : 0;
+    if (currentPct >= 99 && !this.destructionVictoryAnnounced) {
+      this.destructionVictoryAnnounced = true;
+      if (this.physics) {
+        this.physics.triggerSuperArtCutIn('ANIQUILACIÓN 100%', '💥 PÁGINA WEB TOTALMENTE PULVERIZADA', '#ef4444');
+      }
+      if (this.ui) {
+        this.ui.showToast('💥 ¡ANIQUILACIÓN COMPLETA! Sitio destruido al 100%.');
+      }
+      if (this.recorder) {
+        this.recorder.onMissionComplete();
       }
     }
 
@@ -1512,8 +1616,13 @@ class UIManager {
         const ssRes = await fetch(`/api/screenshot-url?url=${encodeURIComponent(targetUrl)}`);
         if (!ssRes.ok) throw new Error(`Captura no disponible (${ssRes.status})`);
         const blob = await ssRes.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        await this.game.loadUserImage(blobUrl);
+        const reader = new FileReader();
+        const dataUrl = await new Promise((res, rej) => {
+          reader.onload = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(blob);
+        });
+        await this.game.loadUserImage(dataUrl);
         this.game.level.pageUrl = targetUrl;
         this.setPresetDisplay(fallbackPreset, targetUrl);
       } catch (err) {
@@ -1593,73 +1702,9 @@ class UIManager {
       });
     }
 
-    // Share Room Modal Events
-    const shareBtn = document.getElementById('btn-share-room');
-    const shareModal = document.getElementById('share-modal');
-    const closeShare = document.getElementById('btn-close-share');
-    const copyShareUrlBtn = document.getElementById('btn-copy-share-url');
-    const shareRoomInput = document.getElementById('share-room-input');
-    const shareRoomCode = document.getElementById('share-room-code');
-    const whatsappBtn = document.getElementById('btn-whatsapp-share');
-
-    if (shareBtn && shareModal) {
-      shareBtn.addEventListener('click', () => {
-        let currentRoom = this.game.multiplayer.roomId;
-        if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
-          currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
-          this.game.isSoloMode = false;
-          const btnMulti = document.getElementById('btn-mode-multi');
-          const btnSolo = document.getElementById('btn-mode-solo');
-          if (btnMulti) btnMulti.classList.add('active');
-          if (btnSolo) btnSolo.classList.remove('active');
-          const chatCont = document.getElementById('chat-container');
-          if (chatCont) chatCont.style.display = 'flex';
-          // Color shift on multiplayer enter
-          if (this.game.localPlayer.color === '#f97316') {
-            this.game.localPlayer.color = '#38bdf8';
-            const dot = document.getElementById('color-dot');
-            if (dot) dot.style.background = '#38bdf8';
-          }
-          this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
-        }
-
-        const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
-        if (shareRoomInput) shareRoomInput.value = shareUrl;
-        if (shareRoomCode) shareRoomCode.textContent = currentRoom.toUpperCase();
-
-        if (whatsappBtn) {
-          whatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('¡Entra a destruir esta web conmigo en tiempo real! ' + shareUrl)}`;
-        }
-
-        shareModal.style.display = 'flex';
-
-        // Auto copy
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(shareUrl).then(() => {
-            if (copyShareUrlBtn) copyShareUrlBtn.textContent = '✅ ¡Copiado!';
-            setTimeout(() => { if (copyShareUrlBtn) copyShareUrlBtn.textContent = '📋 Copiar Enlace'; }, 3000);
-          }).catch(() => {});
-        }
-      });
-    }
-
-    if (closeShare && shareModal) {
-      closeShare.addEventListener('click', () => { shareModal.style.display = 'none'; });
-    }
-
-    if (copyShareUrlBtn && shareRoomInput) {
-      copyShareUrlBtn.addEventListener('click', () => {
-        shareRoomInput.select();
-        shareRoomInput.setSelectionRange(0, 99999);
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(shareRoomInput.value);
-        } else {
-          document.execCommand('copy');
-        }
-        copyShareUrlBtn.textContent = '✅ ¡Copiado con Éxito!';
-        setTimeout(() => { copyShareUrlBtn.textContent = '📋 Copiar Enlace'; }, 3000);
-      });
-    }
+    // Rooms Hub & Authentication Modals
+    this.setupRoomsHub();
+    this.setupAuthModal();
 
     // Mobile Navigation Drawer Toggle
     const menuToggle = document.getElementById('btn-menu-toggle');
@@ -2074,6 +2119,284 @@ class UIManager {
     if (el) {
       el.textContent = connected ? `SALA: ${room.toUpperCase()}` : 'SOLO';
       el.style.borderColor = connected ? '#22c55e' : '#ef4444';
+    }
+    const hudRoom = document.getElementById('hud-room-name');
+    if (hudRoom) {
+      hudRoom.textContent = connected ? `SALA: ${room.toUpperCase()}` : 'MODO SOLO';
+    }
+    const shareCode = document.getElementById('share-room-code');
+    if (shareCode) {
+      shareCode.textContent = room ? room.toUpperCase() : 'LOBBY';
+    }
+  }
+
+  setupRoomsHub() {
+    const shareBtn = document.getElementById('btn-share-room');
+    const pillBtn = document.getElementById('btn-open-rooms-hub');
+    const shareModal = document.getElementById('share-modal');
+    const closeShare = document.getElementById('btn-close-share');
+    const copyShareUrlBtn = document.getElementById('btn-copy-share-url');
+    const shareRoomInput = document.getElementById('share-room-input');
+    const shareRoomCode = document.getElementById('share-room-code');
+    const whatsappBtn = document.getElementById('btn-whatsapp-share');
+    const refreshBtn = document.getElementById('btn-refresh-rooms');
+    const joinCustomBtn = document.getElementById('btn-join-custom-room');
+    const customInput = document.getElementById('custom-room-input');
+
+    const openRoomsModal = () => {
+      let currentRoom = this.game.multiplayer.roomId || 'lobby';
+      if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
+        currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
+        this.game.isSoloMode = false;
+        this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+      }
+
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+      if (shareRoomInput) shareRoomInput.value = shareUrl;
+      if (shareRoomCode) shareRoomCode.textContent = currentRoom.toUpperCase();
+
+      if (whatsappBtn) {
+        whatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('¡Entra a destruir esta web conmigo en tiempo real! ' + shareUrl)}`;
+      }
+
+      if (shareModal) shareModal.style.display = 'flex';
+      this.fetchAndRenderActiveRooms();
+    };
+
+    if (shareBtn) shareBtn.addEventListener('click', openRoomsModal);
+    if (pillBtn) pillBtn.addEventListener('click', openRoomsModal);
+
+    if (closeShare && shareModal) {
+      closeShare.addEventListener('click', () => { shareModal.style.display = 'none'; });
+    }
+
+    if (copyShareUrlBtn && shareRoomInput) {
+      copyShareUrlBtn.addEventListener('click', () => {
+        shareRoomInput.select();
+        shareRoomInput.setSelectionRange(0, 99999);
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(shareRoomInput.value);
+        } else {
+          document.execCommand('copy');
+        }
+        copyShareUrlBtn.textContent = '✅ ¡Copiado con Éxito!';
+        setTimeout(() => { copyShareUrlBtn.textContent = '📋 Copiar Enlace'; }, 3000);
+      });
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => this.fetchAndRenderActiveRooms());
+    }
+
+    if (joinCustomBtn && customInput) {
+      joinCustomBtn.addEventListener('click', () => {
+        const val = customInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        if (val) {
+          window.location.search = `?room=${encodeURIComponent(val)}`;
+        }
+      });
+    }
+  }
+
+  async fetchAndRenderActiveRooms() {
+    const listEl = document.getElementById('active-rooms-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="room-card-loading">Cargando salas activas...</div>';
+
+    try {
+      const res = await fetch('/api/rooms');
+      if (!res.ok) throw new Error('Error al listar salas');
+      const rooms = await res.json();
+      const currentRoom = (this.game.multiplayer.roomId || 'lobby').toLowerCase();
+
+      if (!rooms || rooms.length === 0) {
+        listEl.innerHTML = '<div class="room-card-loading">No hay salas activas en este momento.</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      for (const r of rooms) {
+        const isCurrent = r.id.toLowerCase() === currentRoom;
+        const card = document.createElement('div');
+        card.className = `room-card-item ${isCurrent ? 'room-card-current' : ''}`;
+        card.innerHTML = `
+          <div class="room-card-name">
+            <span>🏠 ${r.id.toUpperCase()}</span>
+            ${isCurrent ? '<span style="color:#10b981; font-size:10px;">(Tu Sala)</span>' : ''}
+          </div>
+          <div class="room-card-meta">👥 ${r.playerCount} jugador(es) • ${r.preset || 'web'}</div>
+          ${!isCurrent ? `<button class="room-card-btn" data-room="${r.id}">🚀 Unirse a esta Sala</button>` : '<span style="font-size:11px;color:#10b981;font-weight:700;">Activa</span>'}
+        `;
+
+        const joinBtn = card.querySelector('.room-card-btn');
+        if (joinBtn) {
+          joinBtn.addEventListener('click', () => {
+            window.location.search = `?room=${encodeURIComponent(r.id)}`;
+          });
+        }
+        listEl.appendChild(card);
+      }
+    } catch (err) {
+      console.warn('Error fetching rooms:', err);
+      listEl.innerHTML = '<div class="room-card-loading" style="color:#ef4444;">Error al cargar salas activas.</div>';
+    }
+  }
+
+  setupAuthModal() {
+    const btnOpen = document.getElementById('btn-open-auth-modal');
+    const modal = document.getElementById('auth-code-modal');
+    const btnClose = document.getElementById('btn-close-auth-modal');
+    const stepEmail = document.getElementById('auth-step-email');
+    const stepCode = document.getElementById('auth-step-code');
+    const stepLogged = document.getElementById('auth-step-logged');
+    const emailInput = document.getElementById('auth-email-input');
+    const codeInput = document.getElementById('auth-code-input');
+    const btnSendCode = document.getElementById('btn-send-auth-code');
+    const btnVerifyCode = document.getElementById('btn-verify-auth-code');
+    const btnBack = document.getElementById('btn-auth-back-to-email');
+    const btnLogout = document.getElementById('btn-logout-auth');
+    const targetEmailLabel = document.getElementById('auth-target-email-label');
+    const loggedEmailDisplay = document.getElementById('auth-logged-email-display');
+    const vipStatusBadge = document.getElementById('auth-vip-status-badge');
+    const btnAuthLabel = document.getElementById('auth-btn-label');
+
+    const checkSavedSession = () => {
+      const savedEmail = localStorage.getItem('apocalipsis_auth_email');
+      if (savedEmail) {
+        if (btnAuthLabel) btnAuthLabel.textContent = savedEmail.split('@')[0];
+        return savedEmail;
+      }
+      return null;
+    };
+
+    checkSavedSession();
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener('click', () => {
+        modal.style.display = 'flex';
+        const currentEmail = localStorage.getItem('apocalipsis_auth_email');
+        if (currentEmail) {
+          if (stepEmail) stepEmail.style.display = 'none';
+          if (stepCode) stepCode.style.display = 'none';
+          if (stepLogged) stepLogged.style.display = 'block';
+          if (loggedEmailDisplay) loggedEmailDisplay.textContent = currentEmail;
+          const isVip = localStorage.getItem('apocalipsis_vip_unlocked') === 'true';
+          if (vipStatusBadge) {
+            vipStatusBadge.textContent = isVip ? '⭐ Arsenal VIP Activado' : 'Operativo Estándar';
+            vipStatusBadge.style.color = isVip ? '#facc15' : '#94a3b8';
+          }
+        } else {
+          if (stepEmail) stepEmail.style.display = 'block';
+          if (stepCode) stepCode.style.display = 'none';
+          if (stepLogged) stepLogged.style.display = 'none';
+        }
+      });
+    }
+
+    if (btnClose && modal) {
+      btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
+    }
+
+    if (btnBack) {
+      btnBack.addEventListener('click', () => {
+        if (stepEmail) stepEmail.style.display = 'block';
+        if (stepCode) stepCode.style.display = 'none';
+      });
+    }
+
+    if (btnSendCode && emailInput) {
+      btnSendCode.addEventListener('click', async () => {
+        const email = emailInput.value.trim().toLowerCase();
+        if (!email || !email.includes('@')) {
+          this.showToast('⚠️ Por favor ingresa un correo electrónico válido');
+          return;
+        }
+
+        btnSendCode.disabled = true;
+        btnSendCode.innerHTML = '<span>⏳ Enviando Código...</span>';
+
+        try {
+          const res = await fetch('/api/auth/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.showToast(`📩 Código OTP enviado a ${email}`);
+            if (targetEmailLabel) targetEmailLabel.textContent = email;
+            if (stepEmail) stepEmail.style.display = 'none';
+            if (stepCode) stepCode.style.display = 'block';
+            if (codeInput) {
+              codeInput.value = '';
+              codeInput.focus();
+            }
+          } else {
+            this.showToast(`❌ Error: ${data.error || 'No se pudo enviar el código'}`);
+          }
+        } catch (err) {
+          this.showToast('❌ Error de conexión al servidor');
+        } finally {
+          btnSendCode.disabled = false;
+          btnSendCode.innerHTML = '<span>📨 Enviar Código de 6 Dígitos</span>';
+        }
+      });
+    }
+
+    if (btnVerifyCode && codeInput && emailInput) {
+      btnVerifyCode.addEventListener('click', async () => {
+        const email = emailInput.value.trim().toLowerCase();
+        const code = codeInput.value.trim();
+
+        if (!code || code.length !== 6) {
+          this.showToast('⚠️ Ingresa el código de 6 dígitos');
+          return;
+        }
+
+        btnVerifyCode.disabled = true;
+        btnVerifyCode.innerHTML = '<span>⏳ Verificando...</span>';
+
+        try {
+          const res = await fetch('/api/auth/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code })
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            localStorage.setItem('apocalipsis_auth_email', email);
+            if (btnAuthLabel) btnAuthLabel.textContent = email.split('@')[0];
+
+            if (data.isVip) {
+              this.game.localPlayer.unlockAllWeaponsVip();
+              this.refreshWeaponLocks();
+              this.showToast(`⭐ ¡Bienvenido VIP! Todas las armas han sido restauradas.`);
+            } else {
+              this.showToast(`✅ ¡Inicio de sesión confirmado!`);
+            }
+
+            if (modal) modal.style.display = 'none';
+          } else {
+            this.showToast(`❌ Código Incorrecto o Expirado: ${data.error || ''}`);
+          }
+        } catch (err) {
+          this.showToast('❌ Error al validar código');
+        } finally {
+          btnVerifyCode.disabled = false;
+          btnVerifyCode.innerHTML = '<span>✅ Confirmar y Entrar</span>';
+        }
+      });
+    }
+
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('apocalipsis_auth_email');
+        if (btnAuthLabel) btnAuthLabel.textContent = 'Iniciar Sesión';
+        if (stepLogged) stepLogged.style.display = 'none';
+        if (stepEmail) stepEmail.style.display = 'block';
+        this.showToast('👋 Sesión cerrada correctamente');
+      });
     }
   }
 

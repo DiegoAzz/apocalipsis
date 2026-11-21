@@ -8,6 +8,8 @@ class MultiplayerManager {
     this.roomId = 'lobby';
     this.selfId = null;
     this.lastEmitTime = 0;
+    this.damageBuffer = [];
+    setInterval(() => this.flushTerrainDamage(), 40);
   }
 
   init(roomId = 'lobby', playerName = 'Operative', skinColor = '#f97316') {
@@ -166,8 +168,17 @@ class MultiplayerManager {
     });
 
     this.socket.on('terrain-damaged', (data) => {
-      const debris = this.game.level.carveHole(data.x, data.y, data.radius, data.weapon);
+      const debris = this.game.level.carveHole(data.x, data.y, data.radius || data.r, data.weapon || data.w);
       this.game.physics.spawnDebris(debris);
+      this.game.ui.updateDestructionBar(this.game.level.getDestructionPercentage());
+    });
+
+    this.socket.on('terrain-damaged-batch', (batch) => {
+      if (!Array.isArray(batch)) return;
+      for (const data of batch) {
+        const debris = this.game.level.carveHole(data.x, data.y, data.r || data.radius, data.w || data.weapon);
+        this.game.physics.spawnDebris(debris);
+      }
       this.game.ui.updateDestructionBar(this.game.level.getDestructionPercentage());
     });
 
@@ -270,9 +281,23 @@ class MultiplayerManager {
   }
 
   emitTerrainDamage(x, y, radius, weapon) {
-    if (this.connected && this.socket) {
-      this.socket.emit('terrain-damage', { x, y, radius, weapon });
+    if (!this.connected || !this.socket) return;
+    this.damageBuffer.push({
+      x: Math.round(x),
+      y: Math.round(y),
+      r: Math.round(radius),
+      w: weapon
+    });
+    if (this.damageBuffer.length >= 8) {
+      this.flushTerrainDamage();
     }
+  }
+
+  flushTerrainDamage() {
+    if (!this.connected || !this.socket || this.damageBuffer.length === 0) return;
+    const batch = this.damageBuffer;
+    this.damageBuffer = [];
+    this.socket.emit('terrain-damage-batch', batch);
   }
 
   emitPlayerHit(targetId, damage, weapon, attackerId) {

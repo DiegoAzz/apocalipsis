@@ -111,7 +111,8 @@ class GameRecorder {
       this.recordedChunks = [];
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
-        videoBitsPerSecond: 6000000 // 6 Mbps high quality
+        videoBitsPerSecond: 25000000, // 25 Mbps ULTRA-HD (Máxima resolución cristalina 60 FPS)
+        audioBitsPerSecond: 192000    // 192 kbps Audio Estéreo de Alta Fidelidad
       });
 
       this.mediaRecorder.ondataavailable = (e) => {
@@ -204,6 +205,30 @@ class GameRecorder {
 
     if (this.modal) {
       this.modal.classList.add('open');
+    }
+
+    // Auto-descargar inmediatamente si fue activado por completar la misión
+    if (this.pendingAutoDownload) {
+      this.pendingAutoDownload = false;
+      setTimeout(() => {
+        if (this.btnDownload) {
+          this.btnDownload.click();
+          if (this.game.ui) {
+            this.game.ui.showToast('💾 ¡Video HD descargado con éxito a tu carpeta de descargas!');
+          }
+        }
+      }, 500);
+    }
+  }
+
+  // Se dispara automáticamente al completar la misión (encontrar los 5 secretos o aniquilar el sitio)
+  onMissionComplete() {
+    if (this.isRecording) {
+      this.pendingAutoDownload = true;
+      if (this.game.ui) {
+        this.game.ui.showToast('🏆 ¡MISIÓN CUMPLIDA! Finalizando grabación y descargando automáticamente...');
+      }
+      this.stopRecording();
     }
   }
 

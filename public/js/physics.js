@@ -389,9 +389,18 @@ class PhysicsEngine {
       }
     }
 
-    // Enforce strict particle limit for buttery smooth 60 FPS
-    if (this.particles.length > 200) {
-      this.particles.splice(0, this.particles.length - 200);
+    // Enforce strict limits for buttery smooth 60 FPS with zero latency
+    if (this.depth3DParticles.length > 50) {
+      this.depth3DParticles.splice(0, this.depth3DParticles.length - 50);
+    }
+    if (this.driveImpactSplatters.length > 30) {
+      this.driveImpactSplatters.splice(0, this.driveImpactSplatters.length - 30);
+    }
+    if (this.particles.length > 160) {
+      this.particles.splice(0, this.particles.length - 160);
+    }
+    if (this.projectiles.length > 60) {
+      this.projectiles.splice(0, this.projectiles.length - 60);
     }
 
     // Update Particles

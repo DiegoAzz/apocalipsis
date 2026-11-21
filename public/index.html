@@ -133,8 +133,14 @@
 
   <!-- Píldoras Flotantes en Esquina Superior Derecha -->
   <div class="floating-pills-top">
+    <button class="pill-btn pill-room" id="btn-open-rooms-hub" title="Ver salas multijugador activas e invitar amigos">
+      <span>🏠 <strong id="hud-room-name">SALA: LOBBY</strong></span>
+    </button>
     <button class="pill-btn pill-record" id="btn-screen-record" title="Graba la partida a 60 FPS lista para TikTok, Shorts y Reels (o pulsa R)">
       <span class="rec-dot">🔴</span> <span id="rec-label">REC (TikTok/Reels)</span>
+    </button>
+    <button class="pill-btn pill-auth" id="btn-open-auth-modal" title="Iniciar Sesión con Código OTP / Restaurar VIP">
+      <span>🔐 <span id="auth-btn-label">Iniciar Sesión</span></span>
     </button>
     <button class="pill-btn pill-vip" id="btn-open-wompi-top" title="Desbloquear Todo el Arsenal con Wompi">
       <span>⭐ Arsenal VIP</span>
@@ -500,29 +506,107 @@
     </div>
   </div>
 
-  <!-- Modal Invitar a un Amigo / Compartir Sala -->
+  <!-- Modal Invitar a un Amigo / Explorador de Salas Multijugador -->
   <div id="share-modal">
-    <div class="modal-card">
+    <div class="modal-card modal-card-wide">
       <div class="modal-head">
-        <h2>🔗 INVITAR A UN AMIGO A TU SALA</h2>
+        <h2>🌐 SALAS MULTIJUGADOR & AMIGOS</h2>
         <button class="close-btn" id="btn-close-share">✕</button>
       </div>
       <div class="modal-body">
-        <p class="desc">Comparte este enlace para que tu amigo entre a la <strong>misma página web</strong> y jueguen juntos en tiempo real:</p>
-        
-        <div class="share-url-box">
-          <input type="text" id="share-room-input" readonly value="">
-          <button class="btn btn-primary" id="btn-copy-share-url">📋 Copiar Enlace</button>
+        <!-- 1. Tu Sala Actual & Enlace de Invitación -->
+        <div class="room-hero-box">
+          <div class="room-code-tag">
+            <span>SALA ACTUAL: <strong id="share-room-code">LOBBY</strong></span>
+            <span class="room-badge-live">● EN VIVO</span>
+          </div>
+          <p class="desc">Comparte este enlace directo con tu amigo para jugar juntos en la <strong>misma página</strong> en tiempo real:</p>
+          <div class="share-url-box">
+            <input type="text" id="share-room-input" readonly value="">
+            <button class="btn btn-primary" id="btn-copy-share-url">📋 Copiar Enlace</button>
+          </div>
+          <div class="share-actions-row">
+            <a class="btn btn-whatsapp" id="btn-whatsapp-share" target="_blank" href="#">
+              <span>💬 Invitar por WhatsApp</span>
+            </a>
+          </div>
         </div>
 
-        <div class="share-actions-row">
-          <a class="btn btn-whatsapp" id="btn-whatsapp-share" target="_blank" href="#">
-            <span>💬 Compartir por WhatsApp</span>
-          </a>
+        <!-- 2. Lista de Salas Activas en Vivo -->
+        <div class="active-rooms-section">
+          <div class="rooms-header-row">
+            <h3>⚡ SALAS ACTIVAS EN EL SERVIDOR</h3>
+            <button class="btn btn-sm" id="btn-refresh-rooms">🔄 Actualizar</button>
+          </div>
+          <div id="active-rooms-list" class="active-rooms-grid">
+            <div class="room-card-loading">Cargando salas activas...</div>
+          </div>
         </div>
 
-        <div class="room-code-tag">
-          <span>Código de sala: <strong id="share-room-code">LOBBY</strong></span>
+        <!-- 3. Unirse a Otra Sala por Nombre -->
+        <div class="custom-room-join-box">
+          <label for="custom-room-input">O escribe el nombre de cualquier sala:</label>
+          <div class="share-url-box">
+            <input type="text" id="custom-room-input" placeholder="Ej: sala_amigos, batalla1, titan..." maxlength="24">
+            <button class="btn btn-secondary" id="btn-join-custom-room">🚀 Unirse / Crear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Iniciar Sesión con Código de Seguridad OTP por Correo -->
+  <div id="auth-code-modal" class="custom-modal">
+    <div class="modal-card auth-card">
+      <div class="modal-head">
+        <h2>🔐 INICIAR SESIÓN CON CÓDIGO</h2>
+        <button class="close-btn" id="btn-close-auth-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="desc">Accede de forma 100% segura mediante un <strong>código OTP de 6 dígitos</strong> enviado a tu correo. No necesitas contraseñas y tu <strong>Arsenal VIP de Wompi</strong> se restaurará al instante.</p>
+
+        <!-- Paso 1: Introducir Email -->
+        <div id="auth-step-email" class="auth-step">
+          <div class="form-group">
+            <label for="auth-email-input">Correo Electrónico:</label>
+            <input type="email" id="auth-email-input" class="auth-input" placeholder="tu-correo@ejemplo.com" autocomplete="email">
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-send-auth-code">
+            <span>📨 Enviar Código de 6 Dígitos</span>
+          </button>
+        </div>
+
+        <!-- Paso 2: Introducir Código de 6 dígitos -->
+        <div id="auth-step-code" class="auth-step" style="display:none;">
+          <div class="alert-info">
+            Código enviado a: <strong id="auth-target-email-label"></strong>
+          </div>
+          <div class="form-group">
+            <label for="auth-code-input">Código de Seguridad (6 dígitos):</label>
+            <input type="text" id="auth-code-input" class="auth-input auth-code-digits" placeholder="123456" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <button class="btn btn-success btn-block" id="btn-verify-auth-code">
+            <span>✅ Confirmar y Entrar</span>
+          </button>
+          <button class="btn btn-link btn-block" id="btn-auth-back-to-email">
+            <span>← Cambiar Correo</span>
+          </button>
+        </div>
+
+        <!-- Estado de Sesión Iniciada -->
+        <div id="auth-step-logged" class="auth-step" style="display:none;">
+          <div class="auth-logged-card">
+            <div class="auth-user-badge">
+              <span class="auth-icon">🛡️</span>
+              <div>
+                <strong id="auth-logged-email-display">usuario@correo.com</strong>
+                <span class="auth-status-vip" id="auth-vip-status-badge">⭐ Arsenal VIP Activado</span>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-block" id="btn-logout-auth">
+              <span>Cerrar Sesión</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

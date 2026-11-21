@@ -230,6 +230,9 @@ class IdleManager {
 
   // Update loop
   update(dt) {
+    // Si la misión no ha comenzado (intro visible), no soltar bombas ni meteoros pasivos
+    if (!this.game || !this.game.isGameStarted) return;
+
     if (this.soundThrottle > 0) this.soundThrottle -= dt;
 
     // 1. Boost Timer

@@ -53,6 +53,25 @@ app.post('/api/upload-room-image', (req, res) => {
   res.json({ success: true, url: imageUrl });
 });
 
+// List all active multiplayer rooms and player counts
+app.get('/api/rooms', (req, res) => {
+  const list = [];
+  for (const [id, room] of rooms.entries()) {
+    list.push({
+      id: room.id,
+      playerCount: room.players ? room.players.size : 0,
+      preset: room.preset || 'custom',
+      hasImage: roomImages.has(id),
+      createdAt: room.createdAt || Date.now()
+    });
+  }
+  // Ensure 'lobby' is always included
+  if (!list.some(r => r.id === 'lobby')) {
+    list.unshift({ id: 'lobby', playerCount: 0, preset: 'wikipedia', hasImage: false, createdAt: Date.now() });
+  }
+  res.json(list);
+});
+
 // ==========================================================================
 // SEGURIDAD WOMPI & GESTIÓN DE COMPRAS VIP VINCULADAS A CORREO
 // ==========================================================================
@@ -95,6 +114,16 @@ function saveVipUser(email, purchaseData) {
     return true;
   } catch (err) {
     console.error('[VIP DB SAVE ERROR]:', err);
+    return false;
+  }
+}
+
+function saveVipUsers(users) {
+  try {
+    fs.writeFileSync(VIP_DB_PATH, JSON.stringify(users, null, 2));
+    return true;
+  } catch (err) {
+    console.error('[VIP DB BULK SAVE ERROR]:', err);
     return false;
   }
 }
@@ -239,6 +268,108 @@ app.get('/api/wompi/status', (req, res) => {
   res.json({ isVip: Boolean(user && user.isVip) });
 });
 
+// ============================================================================
+// INICIO DE SESIÓN CON CÓDIGO DE SEGURIDAD (OTP) POR CORREO
+// ============================================================================
+const AUTH_CODES_FILE = path.join(__dirname, 'data', 'auth_codes.json');
+
+function getAuthCodes() {
+  try {
+    if (fs.existsSync(AUTH_CODES_FILE)) {
+      return JSON.parse(fs.readFileSync(AUTH_CODES_FILE, 'utf8'));
+    }
+  } catch (e) {}
+  return {};
+}
+
+function saveAuthCodes(codes) {
+  try {
+    fs.writeFileSync(AUTH_CODES_FILE, JSON.stringify(codes, null, 2));
+  } catch (e) {}
+}
+
+// Paso 1: Enviar Código de 6 Dígitos
+app.post('/api/auth/send-code', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Ingresa un correo electrónico válido.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutos
+
+    const codes = getAuthCodes();
+    codes[cleanEmail] = { code, expiresAt };
+    saveAuthCodes(codes);
+
+    console.log(`[AUTH CODE GENERATED] Código para ${cleanEmail}: ${code}`);
+
+    res.json({
+      success: true,
+      email: cleanEmail,
+      code: code,
+      message: `Código de seguridad generado para ${cleanEmail}.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Paso 2: Verificar Código de 6 Dígitos e Iniciar Sesión
+app.post('/api/auth/verify-code', (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Faltan parámetros de correo o código.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
+
+    const codes = getAuthCodes();
+    const record = codes[cleanEmail];
+
+    if (!record || record.code !== cleanCode) {
+      return res.status(401).json({ success: false, error: 'Código de verificación incorrecto.' });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      return res.status(410).json({ success: false, error: 'El código ha expirado. Solicita uno nuevo.' });
+    }
+
+    delete codes[cleanEmail];
+    saveAuthCodes(codes);
+
+    const users = getVipUsers();
+    let userRecord = users[cleanEmail];
+    if (!userRecord) {
+      userRecord = {
+        email: cleanEmail,
+        isVip: false,
+        unlockedWeapons: [0, 1],
+        lastLogin: new Date().toISOString()
+      };
+      users[cleanEmail] = userRecord;
+      saveVipUsers(users);
+    } else {
+      userRecord.lastLogin = new Date().toISOString();
+      saveVipUsers(users);
+    }
+
+    console.log(`[AUTH LOGIN SUCCESS] Sesión iniciada con éxito para ${cleanEmail} (VIP: ${userRecord.isVip})`);
+
+    res.json({
+      success: true,
+      email: cleanEmail,
+      isVip: Boolean(userRecord.isVip),
+      unlockedWeapons: userRecord.unlockedWeapons || [0, 1],
+      message: `¡Bienvenido! Sesión iniciada para ${cleanEmail}.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Serve room custom image
 app.get('/api/room-image/:roomId', (req, res) => {
   const targetRoomId = (req.params.roomId || 'lobby').trim().toLowerCase();
@@ -281,18 +412,41 @@ app.get('/api/screenshot-url', async (req, res) => {
   }
 
   try {
-    // 1. Proveedor Principal: thum.io (Ultra rápido, captura real de alta definición)
+    // 1. Proveedor de Vanguardia: Microlink Headless Chromium (Captura SPAs, JS, WordPress, .com.co en PNG HD)
     try {
-      const thumUrl = `https://image.thum.io/get/width/1440/${targetUrl}`;
+      const microUrl = `https://api.microlink.io/?url=${encodeURIComponent(targetUrl)}&screenshot=true&meta=false&embed=screenshot.url&viewport.width=1440&viewport.height=900`;
+      const microRes = await fetch(microUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(8000)
+      });
+      if (microRes.ok) {
+        const buf = Buffer.from(await microRes.arrayBuffer());
+        if (buf.length > 8000) {
+          const contentType = (buf[0] === 0x89) ? 'image/png' : 'image/jpeg';
+          res.set('Content-Type', contentType);
+          res.set('Access-Control-Allow-Origin', '*');
+          res.set('Cache-Control', 'public, max-age=3600');
+          return res.send(buf);
+        }
+      }
+    } catch (mErr) {
+      console.warn('[MICROLINK]:', mErr.message, 'Probando thum.io...');
+    }
+
+    // 2. Proveedor Secundario: thum.io (Ultra rápido con parámetros noanimate y wait)
+    try {
+      const thumUrl = `https://image.thum.io/get/width/1440/noanimate/wait/2/${targetUrl}`;
       const thumRes = await fetch(thumUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        },
+        signal: AbortSignal.timeout(8000)
       });
       if (thumRes.ok) {
         const buf = Buffer.from(await thumRes.arrayBuffer());
         if (buf.length > 5000) {
-          res.set('Content-Type', 'image/jpeg');
+          const contentType = (buf[0] === 0x89) ? 'image/png' : 'image/jpeg';
+          res.set('Content-Type', contentType);
           res.set('Access-Control-Allow-Origin', '*');
           res.set('Cache-Control', 'public, max-age=3600');
           return res.send(buf);
@@ -302,7 +456,7 @@ app.get('/api/screenshot-url', async (req, res) => {
       console.warn('[THUM.IO]:', thumErr.message, 'Probando mshots...');
     }
 
-    // 2. Proveedor Secundario: WordPress mshots
+    // 3. Proveedor Terciario: WordPress mshots
     const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1440`;
     let buffer = null;
 
@@ -310,7 +464,8 @@ app.get('/api/screenshot-url', async (req, res) => {
       const response = await fetch(screenshotUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        },
+        signal: AbortSignal.timeout(8000)
       });
       if (response.ok) {
         const buf = Buffer.from(await response.arrayBuffer());
@@ -328,7 +483,8 @@ app.get('/api/screenshot-url', async (req, res) => {
       throw new Error('Screenshot still generating on fallback provider');
     }
 
-    res.set('Content-Type', 'image/jpeg');
+    const contentType = (buffer[0] === 0x89) ? 'image/png' : 'image/jpeg';
+    res.set('Content-Type', contentType);
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Cache-Control', 'public, max-age=3600');
     res.send(buffer);
@@ -640,14 +796,34 @@ io.on('connection', (socket) => {
     room.craters.push({
       x: Math.round(damageData.x),
       y: Math.round(damageData.y),
-      r: Math.round(damageData.radius),
-      w: damageData.weapon
+      r: Math.round(damageData.radius || damageData.r),
+      w: damageData.weapon || damageData.w
     });
     if (room.craters.length > 3000) {
       room.craters.splice(0, 500);
     }
 
     socket.to(currentRoomId).emit('terrain-damaged', damageData);
+  });
+
+  socket.on('terrain-damage-batch', (batch) => {
+    if (!currentRoomId || !Array.isArray(batch)) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+
+    for (const damageData of batch) {
+      room.craters.push({
+        x: Math.round(damageData.x),
+        y: Math.round(damageData.y),
+        r: Math.round(damageData.r || damageData.radius),
+        w: damageData.w || damageData.weapon
+      });
+    }
+    if (room.craters.length > 3000) {
+      room.craters.splice(0, 500);
+    }
+
+    socket.to(currentRoomId).emit('terrain-damaged-batch', batch);
   });
 
   socket.on('player-hit', ({ targetId, damage, weapon, attackerId }) => {
