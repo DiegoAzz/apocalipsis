@@ -1122,13 +1122,52 @@ class UIManager {
   }
 
   setupUIEvents() {
-    // Presets
+    // Mapa de URLs de webs reales para los presets
+    const presetMap = {
+      google: 'https://www.google.com',
+      youtube: 'https://www.youtube.com',
+      tiktok: 'https://www.tiktok.com',
+      wikipedia: 'https://en.wikipedia.org/wiki/Stick_figure',
+      amazon: 'https://www.amazon.com',
+      facebook: 'https://www.facebook.com'
+    };
+
+    // Captura real de sitios web en vivo
+    const loadLiveWebpage = async (targetUrl, fallbackPreset = 'custom') => {
+      const btn = document.getElementById('btn-destroy-url');
+      if (btn) btn.innerHTML = '<span>⏳ CAPTURANDO WEB...</span>';
+
+      try {
+        const lower = targetUrl.toLowerCase();
+        if (lower.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/)) {
+          await this.game.loadUserImage(targetUrl);
+          return;
+        }
+
+        const ssRes = await fetch(`/api/screenshot-url?url=${encodeURIComponent(targetUrl)}`);
+        if (!ssRes.ok) throw new Error(`Captura no disponible (${ssRes.status})`);
+        const blob = await ssRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        await this.game.loadUserImage(blobUrl);
+        this.game.level.pageUrl = targetUrl;
+        this.setPresetDisplay(fallbackPreset, targetUrl);
+      } catch (err) {
+        console.warn('[SCREENSHOT FALLBACK]:', err.message);
+        this.game.loadMapPreset(fallbackPreset, targetUrl, true);
+      } finally {
+        if (btn) btn.innerHTML = '<span>⚡ DESTRUIR</span>';
+      }
+    };
+
+    // Presets con Captura Real de Páginas
     document.querySelectorAll('[data-preset]').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const preset = btn.getAttribute('data-preset');
-        this.game.loadMapPreset(preset, '', true);
+        const targetUrl = presetMap[preset] || `https://www.${preset}.com`;
+        if (this.urlInput) this.urlInput.value = targetUrl;
+        loadLiveWebpage(targetUrl, preset);
       });
     });
 
@@ -1137,50 +1176,7 @@ class UIManager {
     const handleUrlSubmit = async () => {
       const val = this.urlInput.value.trim();
       if (!val) return;
-
-      const btn = document.getElementById('btn-destroy-url');
-      if (btn) btn.innerHTML = '<span>⏳ CARGANDO...</span>';
-
-      try {
-        const lower = val.toLowerCase();
-        // Check image file extension
-        if (lower.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/)) {
-          await this.game.loadUserImage(val);
-        } else if (lower.includes('amazon')) {
-          this.game.loadMapPreset('amazon', val, true);
-        } else if (lower.includes('facebook') || lower.includes('fb.com')) {
-          this.game.loadMapPreset('facebook', val, true);
-        } else if (lower.includes('wikipedia')) {
-          this.game.loadMapPreset('wikipedia', val, true);
-        } else if (lower.includes('google')) {
-          this.game.loadMapPreset('google', val, true);
-        } else if (lower.includes('youtube') || lower.includes('youtu.be')) {
-          this.game.loadMapPreset('youtube', val, true);
-        } else if (lower.includes('tiktok')) {
-          this.game.loadMapPreset('tiktok', val, true);
-        } else {
-          // Attempt authentic live screenshot capture of the actual webpage first
-          try {
-            const ssRes = await fetch(`/api/screenshot-url?url=${encodeURIComponent(val)}`);
-            if (!ssRes.ok) throw new Error(`Screenshot not ready (${ssRes.status})`);
-            const blob = await ssRes.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            await this.game.loadUserImage(blobUrl);
-            this.game.level.pageUrl = val;
-            this.setPresetDisplay('custom', val);
-          } catch (e) {
-            console.log('[FALLBACK TO HTML PARSER]:', e.message);
-            const res = await fetch(`/api/parse-url?url=${encodeURIComponent(val)}`);
-            const pageData = await res.json();
-            await this.game.loadParsedWebpage(pageData, true);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to parse URL:', err);
-        this.game.loadMapPreset('custom', val, true);
-      } finally {
-        if (btn) btn.innerHTML = '<span>⚡ DESTRUIR</span>';
-      }
+      await loadLiveWebpage(val, 'custom');
     };
 
     if (destroyBtn) {

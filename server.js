@@ -93,10 +93,31 @@ app.get('/api/screenshot-url', async (req, res) => {
   }
 
   try {
+    // 1. Proveedor Principal: thum.io (Ultra rápido, captura real de alta definición)
+    try {
+      const thumUrl = `https://image.thum.io/get/width/1280/${targetUrl}`;
+      const thumRes = await fetch(thumUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      if (thumRes.ok) {
+        const buf = Buffer.from(await thumRes.arrayBuffer());
+        if (buf.length > 5000) {
+          res.set('Content-Type', 'image/jpeg');
+          res.set('Access-Control-Allow-Origin', '*');
+          res.set('Cache-Control', 'public, max-age=3600');
+          return res.send(buf);
+        }
+      }
+    } catch (thumErr) {
+      console.warn('[THUM.IO]:', thumErr.message, 'Probando mshots...');
+    }
+
+    // 2. Proveedor Secundario: WordPress mshots
     const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1280`;
     let buffer = null;
 
-    // Retry up to 3 times (waiting 1.5s) if WordPress is still generating the preview (8737 byte placeholder)
     for (let attempt = 0; attempt < 3; attempt++) {
       const response = await fetch(screenshotUrl, {
         headers: {
@@ -105,19 +126,18 @@ app.get('/api/screenshot-url', async (req, res) => {
       });
       if (response.ok) {
         const buf = Buffer.from(await response.arrayBuffer());
-        // 8737 bytes is the exact size of WordPress's "Generating Preview..." placeholder
         if (buf.length > 9500) {
           buffer = buf;
           break;
         }
       }
       if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 1200));
       }
     }
 
     if (!buffer) {
-      throw new Error('Screenshot still generating on WordPress mshots');
+      throw new Error('Screenshot still generating on fallback provider');
     }
 
     res.set('Content-Type', 'image/jpeg');
