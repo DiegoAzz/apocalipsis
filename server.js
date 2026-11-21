@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = http.createServer(app);
@@ -288,8 +289,52 @@ function saveAuthCodes(codes) {
   } catch (e) {}
 }
 
+// Configuración de Envío de Correos SMTP / Gmail / Resend
+function getEmailTransporter() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = parseInt(process.env.SMTP_PORT || '587');
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: { user, pass }
+    });
+  }
+
+  // Gmail App Password
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD
+      }
+    });
+  }
+
+  // Resend SMTP
+  if (process.env.RESEND_API_KEY) {
+    return nodemailer.createTransport({
+      host: 'smtp.resend.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY
+      }
+    });
+  }
+
+  return null;
+}
+
 // Paso 1: Enviar Código de 6 Dígitos
-app.post('/api/auth/send-code', (req, res) => {
+app.post('/api/auth/send-code', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email || !email.includes('@')) {
@@ -305,11 +350,49 @@ app.post('/api/auth/send-code', (req, res) => {
 
     console.log(`[AUTH CODE GENERATED] Código para ${cleanEmail}: ${code}`);
 
+    const transporter = getEmailTransporter();
+    let emailSent = false;
+    let emailError = null;
+
+    if (transporter) {
+      try {
+        const sender = process.env.SMTP_FROM || `"Apocalipsis Game" <${process.env.SMTP_USER || process.env.GMAIL_USER || 'no-reply@appzplay.online'}>`;
+        await transporter.sendMail({
+          from: sender,
+          to: cleanEmail,
+          subject: `🔐 Tu código de acceso a Apocalipsis: ${code}`,
+          html: `
+            <div style="background:#0f172a; color:#f8fafc; padding:30px; border-radius:12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:520px; margin:auto; border:1px solid #334155;">
+              <h2 style="color:#38bdf8; margin-top:0; font-size:24px; text-align:center;">⚡ APOCALIPSIS</h2>
+              <p style="font-size:15px; color:#cbd5e1; line-height:1.6;">Has solicitado un código de verificación de un solo uso (OTP) para acceder al juego y restaurar tu <strong>Arsenal VIP de Wompi</strong>:</p>
+              <div style="background:#1e293b; border:2px dashed #38bdf8; padding:18px; text-align:center; border-radius:10px; margin:24px 0;">
+                <span style="font-size:36px; font-weight:800; letter-spacing:10px; color:#facc15; font-family:monospace;">${code}</span>
+              </div>
+              <p style="font-size:13px; color:#94a3b8; text-align:center;">Este código es válido durante los próximos <strong>15 minutos</strong>.<br>Si tú no solicitaste este código, puedes ignorar este correo de forma segura.</p>
+              <hr style="border:none; border-top:1px solid #334155; margin:20px 0;">
+              <p style="font-size:11px; color:#64748b; text-align:center;">Apocalipsis Web Obliteration • <a href="https://apocalipsis.appzplay.online" style="color:#38bdf8; text-decoration:none;">apocalipsis.appzplay.online</a></p>
+            </div>
+          `
+        });
+        emailSent = true;
+        console.log(`[EMAIL DISPATCH SUCCESS] Correo con código enviado a ${cleanEmail}`);
+      } catch (err) {
+        console.error('[EMAIL DISPATCH FAILED]:', err);
+        emailError = err.message;
+      }
+    } else {
+      console.log(`[EMAIL NOTICE] No hay servidor SMTP configurado en variables de entorno (SMTP_HOST, GMAIL_USER o RESEND_API_KEY).`);
+    }
+
     res.json({
       success: true,
       email: cleanEmail,
-      code: code,
-      message: `Código de seguridad generado para ${cleanEmail}.`
+      emailSent: emailSent,
+      devCode: emailSent ? undefined : code,
+      emailError: emailError || undefined,
+      message: emailSent
+        ? `Código enviado con éxito a tu bandeja de entrada.`
+        : `Servidor sin SMTP configurado todavía. Tu código de acceso directo es: ${code}`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

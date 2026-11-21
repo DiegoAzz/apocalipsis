@@ -2323,13 +2323,30 @@ class UIManager {
           });
           const data = await res.json();
           if (data.success) {
-            this.showToast(`📩 Código OTP enviado a ${email}`);
             if (targetEmailLabel) targetEmailLabel.textContent = email;
             if (stepEmail) stepEmail.style.display = 'none';
             if (stepCode) stepCode.style.display = 'block';
-            if (codeInput) {
-              codeInput.value = '';
-              codeInput.focus();
+
+            const devHint = document.getElementById('auth-dev-code-hint');
+            if (data.emailSent) {
+              this.showToast(`📩 ¡Código de 6 dígitos enviado a ${email}! Revisa tu bandeja de entrada o spam.`);
+              if (devHint) devHint.style.display = 'none';
+              if (codeInput) {
+                codeInput.value = '';
+                codeInput.focus();
+              }
+            } else {
+              // Si aún no hay SMTP en Coolify, mostrar el código en pantalla y auto-completarlo
+              const directCode = data.devCode || data.code || '';
+              this.showToast(`🔔 Código de Acceso: ${directCode}`);
+              if (devHint) {
+                devHint.innerHTML = `⚠️ <em>Servidor sin SMTP configurado todavía en Coolify</em>.<br>Tu código de acceso directo es: <strong style="font-size:20px; color:#facc15; letter-spacing:4px;">${directCode}</strong>`;
+                devHint.style.display = 'block';
+              }
+              if (codeInput) {
+                codeInput.value = directCode;
+                codeInput.focus();
+              }
             }
           } else {
             this.showToast(`❌ Error: ${data.error || 'No se pudo enviar el código'}`);
