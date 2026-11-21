@@ -19,16 +19,54 @@
     <div class="gta-scanlines"></div>
     
     <div class="gta-container">
-      <div class="gta-header">
-        <div class="gta-badge">⚡ PROTOCOLO DE OBLITERACIÓN & EXCAVACIÓN WEB</div>
-        <h1 class="gta-title">APOCALIPSIS <span class="gta-six">VI</span></h1>
-        <p class="gta-subtitle">DESTROZA CUALQUIER PÁGINA WEB • ENCUENTRA LOS 5 SECRETOS • DESBLOQUEA EL ARSENAL</p>
+      <!-- Botón Rápido para Saltar Intro y Jugar de Inmediato -->
+      <button class="gta-quick-skip-btn" id="btn-gta-skip" title="Saltar intro y entrar a la partida inmediatamente">
+        <span>✕ ENTRAR AL JUEGO</span>
+      </button>
+
+      <!-- COMIC COLLAGE POSTER ESTILO GTA VI CON LAS 5 IMÁGENES HD -->
+      <div class="gta-comic-poster">
+        <!-- Bloque 1: Superior Izquierdo (Metrópolis en Ruinas) -->
+        <div class="gta-comic-cell cell-city">
+          <img src="assets/apocalypse_city_burn.jpg" alt="Metrópolis en Ruinas" class="comic-img">
+          <div class="comic-badge">CAPÍTULO I • METRÓPOLIS EN RUINAS</div>
+        </div>
+
+        <!-- Bloque 2: Centro (Hero Cover Art & Logo GTA VI Apocalipsis) -->
+        <div class="gta-comic-cell cell-hero">
+          <img src="assets/gta_apocalipsis_cover.jpg" alt="Apocalipsis VI Master Cover" class="comic-img hero-img">
+          <div class="gta-logo-card">
+            <span class="gta-logo-sub">GRAND WEB DESTRUCTION</span>
+            <h1 class="gta-logo-title">APOCALIPSIS</h1>
+            <div class="gta-logo-roman">VI</div>
+            <p class="gta-logo-tagline">DESCUBRE LOS SECRETOS • EXCAVA LA RED • ANIQUILACIÓN TOTAL</p>
+          </div>
+        </div>
+
+        <!-- Bloque 3: Superior Derecho (Dragón del Abismo) -->
+        <div class="gta-comic-cell cell-dragon">
+          <img src="assets/apocalypse_dragon.jpg" alt="El Dragón del Abismo" class="comic-img">
+          <div class="comic-badge">CAPÍTULO II • EL DRAGÓN DEL ABISMO</div>
+        </div>
+
+        <!-- Bloque 4: Inferior Izquierdo (Los 4 Jinetes) -->
+        <div class="gta-comic-cell cell-horsemen">
+          <img src="assets/apocalypse_horsemen.jpg" alt="Los Cuatro Jinetes del Apocalipsis" class="comic-img">
+          <div class="comic-badge">CAPÍTULO III • LOS 4 JINETES</div>
+        </div>
+
+        <!-- Bloque 5: Inferior Derecho (Operativo Celestial) -->
+        <div class="gta-comic-cell cell-soldier">
+          <img src="assets/apocalypse_hero_soldier.jpg" alt="Operativo Celestial" class="comic-img">
+          <div class="comic-badge">CAPÍTULO IV • OPERATIVO CELESTIAL</div>
+        </div>
       </div>
 
+      <!-- PANEL DE CONTROL & CONFIGURACIÓN RÁPIDA DE PARTIDA -->
       <div class="gta-panels-grid">
         <!-- Panel 1: Objetivo a Destruir -->
         <div class="gta-panel">
-          <div class="gta-panel-title"><span>🌐 1. OBJETIVO A DESTRUIR</span></div>
+          <div class="gta-panel-title"><span>🌐 1. SELECCIONA EL OBJETIVO A DESTRUIR</span></div>
           <div class="gta-presets-row">
             <button class="gta-preset-btn active" data-gta-preset="tiktok">🎵 TikTok</button>
             <button class="gta-preset-btn" data-gta-preset="youtube">▶️ YouTube</button>
@@ -48,7 +86,7 @@
 
         <!-- Panel 2: Operativo y Modo -->
         <div class="gta-panel">
-          <div class="gta-panel-title"><span>👤 2. OPERATIVO & MODO DE JUEGO</span></div>
+          <div class="gta-panel-title"><span>👤 2. OPERATIVO & MODO DE COMBATE</span></div>
           <div class="gta-name-row">
             <label>Nombre del Operativo:</label>
             <input type="text" id="gta-player-name" maxlength="15" value="Operativo" placeholder="Tu Nombre">
@@ -78,7 +116,7 @@
       <div class="gta-mission-brief">
         <div class="brief-icon">🎯</div>
         <div class="brief-text">
-          <strong>MISIÓN:</strong> Desintegra el sitio con tus armas para desenterrar los <strong>5 Núcleos Secretos</strong> ocultos. A medida que destruyas se irán desbloqueando las 11 armas. ¡Graba clips a 60 FPS listos para TikTok y redes sociales!
+          <strong>MISIÓN:</strong> Desintegra la web para excavar los <strong>5 Secretos Ocultos</strong>. A medida que destruyas se irán desbloqueando las 11 armas. ¡Efectos Super 3D tipo Street Fighter 6 y grabación a 60 FPS con línea de tiempo controlable!
         </div>
       </div>
 
@@ -86,8 +124,8 @@
       <div class="gta-actions">
         <button id="btn-gta-start" class="btn-gta-start">
           <span class="btn-bolt">⚡</span>
-          <span class="btn-text">INICIAR APOCALIPSIS</span>
-          <span class="btn-sub">START MISSION</span>
+          <span class="btn-text">INICIAR APOCALIPSIS VI</span>
+          <span class="btn-sub">START MISSION • DESATAR ARSENAL</span>
         </button>
       </div>
     </div>
@@ -616,6 +654,7 @@
   <script src="js/bot.js?v=4.0"></script>
   <script src="js/multiplayer.js?v=4.0"></script>
   <script src="js/idleManager.js?v=4.0"></script>
+  <script src="js/fix-webm-duration.js?v=4.0"></script>
   <script src="js/videoRecorder.js?v=4.0"></script>
   <script src="js/wompiManager.js?v=4.0"></script>
   <script src="js/game.js?v=4.0"></script>

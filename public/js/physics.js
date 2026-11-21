@@ -7,6 +7,107 @@ class PhysicsEngine {
     this.shockwaves = [];
     this.trauma = 0; // Screen shake trauma (0 to 1)
     this.screenFlash = 0; // Fullscreen white flash on nuclear detonation (0 to 1)
+
+    // Street Fighter 6 3D Super Effects & Drive Impact
+    this.depth3DParticles = [];
+    this.driveImpactSplatters = [];
+    this.superArtBanner = null;
+    this.hitStopTimer = 0;
+  }
+
+  // Street Fighter 6 Dramatic Hit-Stop Freeze
+  triggerHitStop(seconds = 0.08) {
+    this.hitStopTimer = Math.max(this.hitStopTimer, seconds);
+  }
+
+  // Street Fighter 6 Critical Art / Super Art Cut-In Banner
+  triggerSuperArtCutIn(title, subtitle, color = '#ec4899') {
+    this.superArtBanner = {
+      title,
+      subtitle,
+      color,
+      time: 0,
+      duration: 1.45,
+    };
+    this.triggerHitStop(0.10); // 100ms hit-stop freeze!
+    this.addTrauma(0.75);
+    if (window.soundManager && typeof window.soundManager.playCriticalArtCutIn === 'function') {
+      window.soundManager.playCriticalArtCutIn();
+    }
+  }
+
+  // Street Fighter 6 Drive Impact Ink & Neon Paint Splatters
+  spawnDriveImpact(x, y, theme = 'sf6') {
+    const colors = ['#ec4899', '#06b6d4', '#facc15', '#18181b', '#ffffff'];
+    const numRibbons = 10;
+    for (let i = 0; i < numRibbons; i++) {
+      const angle = (i / numRibbons) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const dist = 60 + Math.random() * 120;
+      const cpDist = dist * 0.65;
+      const cpAngle = angle + (Math.random() > 0.5 ? 0.75 : -0.75);
+      this.driveImpactSplatters.push({
+        type: 'ribbon',
+        x,
+        y,
+        color: colors[i % colors.length],
+        width: 10 + Math.random() * 16,
+        cpX: x + Math.cos(cpAngle) * cpDist,
+        cpY: y + Math.sin(cpAngle) * cpDist,
+        endX: x + Math.cos(angle) * dist,
+        endY: y + Math.sin(angle) * dist,
+        progress: 0,
+        life: 1.0,
+        decay: 1.5 + Math.random() * 0.8
+      });
+    }
+
+    // Splatter droplets & ink spots
+    for (let i = 0; i < 24; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 90 + Math.random() * 260;
+      this.driveImpactSplatters.push({
+        type: 'droplet',
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 5 + Math.random() * 10,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1.0,
+        decay: 1.8 + Math.random() * 0.8
+      });
+    }
+
+    if (window.soundManager && typeof window.soundManager.playSuperDriveImpact === 'function') {
+      window.soundManager.playSuperDriveImpact();
+    }
+  }
+
+  // 3D Perspective Debris popping OUT OF THE SCREEN towards the camera
+  spawn3DDepthDebris(x, y, count = 28, themeColor = null) {
+    const defaultColors = ['#f97316', '#ef4444', '#facc15', '#ec4899', '#06b6d4', '#e2e8f0', '#3b82f6'];
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 280;
+      this.depth3DParticles.push({
+        x: x + (Math.random() - 0.5) * 16,
+        y: y + (Math.random() - 0.5) * 16,
+        z: 320 + Math.random() * 120, // starts deep in the world
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 60,
+        vz: -(220 + Math.random() * 380), // flies rapidly towards camera z=0
+        rotX: Math.random() * Math.PI * 2,
+        rotY: Math.random() * Math.PI * 2,
+        rotZ: Math.random() * Math.PI * 2,
+        vRotX: (Math.random() - 0.5) * 8,
+        vRotY: (Math.random() - 0.5) * 8,
+        vRotZ: (Math.random() - 0.5) * 7,
+        size: 7 + Math.random() * 12,
+        color: themeColor || defaultColors[Math.floor(Math.random() * defaultColors.length)],
+        life: 1.3,
+        maxLife: 1.3
+      });
+    }
   }
 
   addTrauma(amount) {
@@ -231,6 +332,22 @@ class PhysicsEngine {
 
   // Update all projectiles, particles, and physics
   update(dt, targets = [], onTerrainDamage, onTargetHit) {
+    // 0. Street Fighter 6 Hit-Stop Freeze Frame
+    if (this.hitStopTimer > 0) {
+      this.hitStopTimer -= dt;
+      if (this.superArtBanner) {
+        this.superArtBanner.time += dt;
+      }
+      return; // Freeze world motion during hit-stop for maximum punch!
+    }
+
+    if (this.superArtBanner) {
+      this.superArtBanner.time += dt;
+      if (this.superArtBanner.time >= this.superArtBanner.duration) {
+        this.superArtBanner = null;
+      }
+    }
+
     // Decay trauma & screen flash
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
     if (this.screenFlash > 0) {
@@ -244,6 +361,31 @@ class PhysicsEngine {
       sw.life -= sw.decay;
       if (sw.life <= 0) {
         this.shockwaves.splice(i, 1);
+      }
+    }
+
+    // Update SF6 3D Depth Particles (debris flying out towards player screen)
+    for (let i = this.depth3DParticles.length - 1; i >= 0; i--) {
+      const p = this.depth3DParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.z += p.vz * dt; // vz is negative, flying toward camera z <= 10
+      p.rotX += p.vRotX * dt;
+      p.rotY += p.vRotY * dt;
+      p.rotZ += p.vRotZ * dt;
+      p.life -= dt;
+      if (p.life <= 0 || p.z <= 8) {
+        this.depth3DParticles.splice(i, 1);
+      }
+    }
+
+    // Update SF6 Drive Impact Splatters
+    for (let i = this.driveImpactSplatters.length - 1; i >= 0; i--) {
+      const s = this.driveImpactSplatters[i];
+      s.life -= dt * s.decay;
+      s.progress += dt * 3.5;
+      if (s.life <= 0) {
+        this.driveImpactSplatters.splice(i, 1);
       }
     }
 
@@ -640,6 +782,11 @@ class PhysicsEngine {
   }
 
   detonateNuke(x, y, radius, damage, attackerId, onTerrainDamage, onTargetHit, targets = []) {
+    // Street Fighter 6 Critical Art Cut-in, Drive Impact Neon Splatters & 3D Depth Debris
+    this.triggerSuperArtCutIn('CRITICAL ART', '☢️ TSAR BOMBA: ANIQUILACIÓN TOTAL', '#ef4444');
+    this.spawnDriveImpact(x, y, 'sf6');
+    this.spawn3DDepthDebris(x, y, 48, '#ef4444');
+
     // 1. Destello cegador en pantalla y máxima sacudida
     this.screenFlash = 1.0;
     this.addTrauma(1.0);
@@ -676,6 +823,16 @@ class PhysicsEngine {
   }
 
   detonateExplosion(x, y, radius, damage, attackerId, weapon, onTerrainDamage, onTargetHit, targets = []) {
+    // Street Fighter 6 Drive Impact & 3D Depth Debris
+    if (weapon === 'neutron') {
+      this.triggerSuperArtCutIn('SUPER ART', '🌌 SINGULARIDAD DE NEUTRONES', '#38bdf8');
+      this.spawnDriveImpact(x, y, 'sf6');
+      this.spawn3DDepthDebris(x, y, 36, '#38bdf8');
+    } else if (radius >= 40) {
+      this.spawnDriveImpact(x, y, 'sf6');
+      this.spawn3DDepthDebris(x, y, 22, '#f97316');
+    }
+
     // 1. Carve terrain crater
     const debris = this.level.carveHole(x, y, radius, weapon);
     this.spawnDebris(debris);
@@ -719,6 +876,31 @@ class PhysicsEngine {
       ctx.beginPath();
       ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
+    }
+
+    // 1.5 Render Street Fighter 6 Drive Impact Ink & Neon Splatters
+    for (const s of this.driveImpactSplatters) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, Math.min(1, s.life));
+      if (s.type === 'ribbon') {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.width * s.life;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.quadraticCurveTo(s.cpX, s.cpY, s.endX, s.endY);
+        ctx.stroke();
+      } else if (s.type === 'droplet') {
+        ctx.fillStyle = s.color;
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
 

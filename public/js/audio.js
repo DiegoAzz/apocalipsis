@@ -577,6 +577,65 @@ class SoundManager {
     osc.start(t);
     osc.stop(t + 1.2);
   }
+
+  // Street Fighter 6: Critical Art Cut-In Sound (Slash whip + Sub-bass boom)
+  playCriticalArtCutIn() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+
+    // 1. High speed sword/laser slash whip (White noise bandpass or high chirp)
+    const whipOsc = this.ctx.createOscillator();
+    const whipGain = this.ctx.createGain();
+    whipOsc.type = 'sawtooth';
+    whipOsc.frequency.setValueAtTime(1800, t);
+    whipOsc.frequency.exponentialRampToValueAtTime(120, t + 0.16);
+
+    whipGain.gain.setValueAtTime(0.65, t);
+    whipGain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    whipOsc.connect(whipGain);
+    whipGain.connect(this.masterGain);
+    whipOsc.start(t);
+    whipOsc.stop(t + 0.22);
+
+    // 2. Heavy Sub-bass arcade impact
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(220, t + 0.04);
+    subOsc.frequency.exponentialRampToValueAtTime(35, t + 0.8);
+
+    subGain.gain.setValueAtTime(0.9, t + 0.04);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+    subOsc.connect(subGain);
+    subGain.connect(this.masterGain);
+    subOsc.start(t + 0.04);
+    subOsc.stop(t + 0.8);
+  }
+
+  // Street Fighter 6: Drive Impact Paint Splatter Sound
+  playSuperDriveImpact() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.35);
+
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
 }
 
 window.soundManager = new SoundManager();

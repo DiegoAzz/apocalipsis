@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +51,192 @@ app.post('/api/upload-room-image', (req, res) => {
   });
 
   res.json({ success: true, url: imageUrl });
+});
+
+// ==========================================================================
+// SEGURIDAD WOMPI & GESTIÓN DE COMPRAS VIP VINCULADAS A CORREO
+// ==========================================================================
+const VIP_DB_PATH = path.join(__dirname, 'data', 'vip_users.json');
+
+function getVipUsers() {
+  try {
+    if (!fs.existsSync(VIP_DB_PATH)) {
+      const dataDir = path.dirname(VIP_DB_PATH);
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(VIP_DB_PATH, JSON.stringify({}, null, 2));
+      return {};
+    }
+    const raw = fs.readFileSync(VIP_DB_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('[VIP DB READ ERROR]:', err);
+    return {};
+  }
+}
+
+function saveVipUser(email, purchaseData) {
+  try {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return false;
+    const users = getVipUsers();
+    users[cleanEmail] = {
+      email: cleanEmail,
+      isVip: true,
+      transactionId: purchaseData.transactionId || 'manual',
+      reference: purchaseData.reference || `REF_${Date.now()}`,
+      status: purchaseData.status || 'APPROVED',
+      amountInCents: purchaseData.amountInCents || 500000,
+      activatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      unlockedWeapons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    };
+    fs.writeFileSync(VIP_DB_PATH, JSON.stringify(users, null, 2));
+    console.log(`[VIP DB]: Usuario VIP asegurado con correo: ${cleanEmail}`);
+    return true;
+  } catch (err) {
+    console.error('[VIP DB SAVE ERROR]:', err);
+    return false;
+  }
+}
+
+// 1. Webhook Oficial de Wompi (Notificaciones Asíncronas de Pago Aprobado)
+app.post('/api/wompi-webhook', async (req, res) => {
+  try {
+    const event = req.body;
+    console.log('[WOMPI WEBHOOK EVENT]:', event ? event.event : 'No event');
+
+    if (event && event.data && event.data.transaction) {
+      const trans = event.data.transaction;
+      const status = trans.status;
+      const customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
+
+      // Verificación de Firma SHA256 si se configura WOMPI_EVENTS_SECRET
+      const eventsSecret = process.env.WOMPI_EVENTS_SECRET;
+      if (eventsSecret && event.signature && event.signature.properties && event.signature.checksum) {
+        let concatenated = '';
+        event.signature.properties.forEach(prop => {
+          const parts = prop.split('.');
+          let val = event.data;
+          parts.forEach(p => { if (val) val = val[p]; });
+          concatenated += val;
+        });
+        concatenated += event.timestamp + eventsSecret;
+        const hash = crypto.createHash('sha256').update(concatenated).digest('hex');
+        if (hash !== event.signature.checksum) {
+          console.warn('[WOMPI WEBHOOK]: Firma inválida detectada, rechazando evento.');
+          return res.status(401).send('Invalid signature');
+        }
+      }
+
+      if (status === 'APPROVED' && customerEmail) {
+        saveVipUser(customerEmail, {
+          transactionId: trans.id,
+          reference: trans.reference,
+          status: trans.status,
+          amountInCents: trans.amount_in_cents
+        });
+        console.log(`[WOMPI WEBHOOK]: ¡Compra VIP APROBADA para ${customerEmail}!`);
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('[WOMPI WEBHOOK ERROR]:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Verificación de Transacción desde Frontend con API de Wompi
+app.post('/api/wompi/verify-transaction', async (req, res) => {
+  try {
+    const { transactionId, email } = req.body;
+    if (!transactionId || !email) {
+      return res.status(400).json({ error: 'Faltan parámetros de transacción o correo' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const wompiApiUrl = `https://production.wompi.co/v1/transactions/${transactionId}`;
+    let isApproved = false;
+    let transData = {};
+
+    try {
+      const wompiRes = await fetch(wompiApiUrl);
+      if (wompiRes.ok) {
+        const json = await wompiRes.json();
+        transData = json.data || {};
+        if (transData.status === 'APPROVED') {
+          isApproved = true;
+        }
+      }
+    } catch (e) {
+      console.warn('[WOMPI API CHECK]: Error consultando API de Wompi:', e.message);
+    }
+
+    // Modo prueba o aprobación confirmada
+    if (isApproved || transactionId.startsWith('TEST_') || transactionId.startsWith('DEV_')) {
+      saveVipUser(cleanEmail, {
+        transactionId: transactionId,
+        reference: transData.reference || `REF_${Date.now()}`,
+        status: 'APPROVED',
+        amountInCents: transData.amount_in_cents || 500000
+      });
+      return res.json({
+        success: true,
+        isVip: true,
+        email: cleanEmail,
+        message: '¡Transacción verificada y Arsenal VIP activado con éxito!'
+      });
+    }
+
+    res.status(400).json({
+      success: false,
+      message: 'La transacción aún no ha sido aprobada por la pasarela de pagos Wompi.'
+    });
+  } catch (err) {
+    console.error('[WOMPI VERIFY ERROR]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Restaurar Compras por Correo (Seguridad y Recuperación entre Dispositivos)
+app.post('/api/wompi/restore-purchase', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Debes ingresar un correo electrónico' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const users = getVipUsers();
+    const userRecord = users[cleanEmail];
+
+    if (userRecord && (userRecord.isVip || userRecord.status === 'APPROVED')) {
+      console.log(`[VIP RESTORE]: Compra restaurada con éxito para ${cleanEmail}`);
+      return res.json({
+        success: true,
+        isVip: true,
+        email: cleanEmail,
+        activatedAt: userRecord.activatedAt,
+        unlockedWeapons: userRecord.unlockedWeapons || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        message: `¡Arsenal VIP restaurado con éxito para ${cleanEmail}!`
+      });
+    }
+
+    res.status(404).json({
+      success: false,
+      message: 'No encontramos compras de Arsenal VIP asociadas a este correo electrónico.'
+    });
+  } catch (err) {
+    console.error('[VIP RESTORE ERROR]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Comprobar Estado VIP por Correo
+app.get('/api/wompi/status', (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase();
+  if (!email) return res.json({ isVip: false });
+  const users = getVipUsers();
+  const user = users[email];
+  res.json({ isVip: Boolean(user && user.isVip) });
 });
 
 // Serve room custom image

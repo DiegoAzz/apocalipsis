@@ -91,13 +91,21 @@ class GameRecorder {
         } catch (e) {}
       }
 
-      // Check supported codecs
-      let mimeType = 'video/webm;codecs=vp9,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm;codecs=vp8,opus';
-      }
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
+      // Check supported codecs (Prefer MP4 for native Windows & Mobile scrubbing, fallback to high-quality WebM)
+      const preferredMimes = [
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/mp4;codecs=avc1',
+        'video/mp4',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      let mimeType = 'video/webm';
+      for (const t of preferredMimes) {
+        if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(t)) {
+          mimeType = t;
+          break;
+        }
       }
 
       this.recordedChunks = [];
@@ -159,20 +167,38 @@ class GameRecorder {
     }
   }
 
-  processRecording() {
-    const mime = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'video/webm';
-    this.currentBlob = new Blob(this.recordedChunks, { type: mime });
-    const videoUrl = URL.createObjectURL(this.currentBlob);
+  async processRecording() {
+    const rawMime = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'video/webm';
+    const rawBlob = new Blob(this.recordedChunks, { type: rawMime });
+    const elapsedMs = Math.max(1000, Date.now() - this.recordingStartTime);
+
+    let finalBlob = rawBlob;
+
+    // Inject exact Duration and Cues header into WebM so Windows Media Player timeline works!
+    if (rawMime.includes('webm') && typeof window.ysFixWebmDuration === 'function') {
+      try {
+        finalBlob = await window.ysFixWebmDuration(rawBlob, elapsedMs);
+      } catch (err) {
+        console.warn('Could not patch WebM duration header:', err);
+        finalBlob = rawBlob;
+      }
+    }
+
+    this.currentBlob = finalBlob;
+    const videoUrl = URL.createObjectURL(finalBlob);
 
     if (this.videoPlayer) {
       this.videoPlayer.src = videoUrl;
+      this.videoPlayer.controls = true;
+      this.videoPlayer.load();
       this.videoPlayer.play().catch(() => {});
     }
 
     if (this.btnDownload) {
       const pageDomain = (this.game.level && this.game.level.presetName) || 'web';
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-      this.btnDownload.download = `apocalipsis_${pageDomain}_${timestamp}.webm`;
+      const ext = rawMime.includes('mp4') ? 'mp4' : 'webm';
+      this.btnDownload.download = `apocalipsis_${pageDomain}_${timestamp}.${ext}`;
       this.btnDownload.href = videoUrl;
     }
 

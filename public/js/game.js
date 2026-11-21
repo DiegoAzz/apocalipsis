@@ -525,6 +525,27 @@ class Game {
         this.ui.showToast('🚀 ¡MISIÓN INICIADA! Excava los 5 núcleos y desata el armamento.');
       }
     });
+
+    // Botón Saltar Intro y entrar directo a jugar
+    const btnSkip = document.getElementById('btn-gta-skip');
+    if (btnSkip) {
+      btnSkip.addEventListener('click', () => {
+        if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
+          window.soundManager.playCinematicBoom();
+        }
+        overlay.classList.add('hidden');
+        this.snapCameraToPlayer();
+      });
+    }
+
+    // Efecto interactivo al tocar los bloques de cómic GTA VI
+    document.querySelectorAll('.gta-comic-cell').forEach((cell) => {
+      cell.addEventListener('click', () => {
+        if (window.soundManager && typeof window.soundManager.playSecretCollect === 'function') {
+          window.soundManager.playSecretCollect();
+        }
+      });
+    });
   }
 
   resizeCanvas() {
@@ -1115,6 +1136,13 @@ class Game {
               window.soundManager.playSecretCollect();
             }
 
+            // Street Fighter 6 Super 3D Effects en Reliquia Excavada
+            if (this.physics) {
+              this.physics.triggerSuperArtCutIn('RELIQUIA ANCESTRAL', `⭐ ${secret.name.toUpperCase()} EXCAVADO`, '#facc15');
+              this.physics.spawnDriveImpact(secret.x, secret.y, 'sf6');
+              this.physics.spawn3DDepthDebris(secret.x, secret.y, 35, '#facc15');
+            }
+
             if (this.ui) {
               this.ui.showToast(`🔍 ¡RELIQUIA EXTRAÍDA: ${secret.name} (+ $${secret.cash.toLocaleString()})!`);
               const pct = this.level.getDestructionPercentage();
@@ -1205,6 +1233,159 @@ class Game {
       ctx.restore();
     }
 
+    // 7.5 Render Street Fighter 6 3D Depth Debris (flying out of the screen at the player)
+    this.render3DDepthDebris(ctx, dpr);
+
+    // 7.8 Render Street Fighter 6 Critical Art / Super Art Cut-In Banner
+    this.renderSuperArtCutIn(ctx, dpr);
+
+    ctx.restore();
+  }
+
+  // Street Fighter 6 Perspective 3D Debris (Particles explode towards the screen)
+  render3DDepthDebris(ctx, dpr) {
+    if (!this.physics || !this.physics.depth3DParticles || this.physics.depth3DParticles.length === 0) return;
+    const fov = 340;
+    const screenW = this.canvas.width / dpr;
+    const screenH = this.canvas.height / dpr;
+    const centerX = screenW / 2;
+    const centerY = screenH / 2;
+
+    for (const p of this.physics.depth3DParticles) {
+      const zClamped = Math.max(8, p.z);
+      const scale = fov / zClamped;
+
+      // Project world coords to camera to screen space
+      const scrX = (p.x - this.camera.x) * this.camera.zoom + centerX;
+      const scrY = (p.y - this.camera.y) * this.camera.zoom + centerY;
+
+      // Radial perspective pop-out towards camera
+      const popFactor = Math.min(2.8, scale * 0.45);
+      const projX = scrX + (scrX - centerX) * (popFactor - 1) * 0.35;
+      const projY = scrY + (scrY - centerY) * (popFactor - 1) * 0.35;
+
+      const renderW = Math.max(2, p.size * scale * Math.abs(Math.cos(p.rotX)));
+      const renderH = Math.max(2, p.size * scale * Math.abs(Math.sin(p.rotY)));
+
+      ctx.save();
+      ctx.translate(projX, projY);
+      ctx.rotate(p.rotZ);
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = scale > 1.8 ? 16 : 4;
+
+      ctx.fillRect(-renderW / 2, -renderH / 2, renderW, renderH);
+
+      // Fast speed trail when flying directly towards player screen
+      if (scale > 2.0) {
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-p.vx * 0.04 * scale, -p.vy * 0.04 * scale);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // Street Fighter 6 Critical Art / Super Art Diagonal Cut-In Banner
+  renderSuperArtCutIn(ctx, dpr) {
+    if (!this.physics || !this.physics.superArtBanner) return;
+    const banner = this.physics.superArtBanner;
+    const w = this.canvas.width / dpr;
+    const h = this.canvas.height / dpr;
+
+    const t = banner.time;
+    const dur = banner.duration;
+    // Enter fast (0 to 0.12s), hold (0.12 to 1.1s), exit (1.1 to 1.45s)
+    let enterProgress = 1;
+    if (t < 0.12) {
+      enterProgress = t / 0.12;
+    } else if (t > dur - 0.25) {
+      enterProgress = Math.max(0, (dur - t) / 0.25);
+    }
+
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, enterProgress * 1.25);
+
+    // 1. Dynamic Speed lines streaming diagonally
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1.5;
+    const numLines = 18;
+    for (let i = 0; i < numLines; i++) {
+      const lineY = (h * (i / numLines) + (t * 850) % h) % h;
+      ctx.beginPath();
+      ctx.moveTo(0, lineY - 50);
+      ctx.lineTo(w, lineY + 50);
+      ctx.stroke();
+    }
+
+    // 2. Diagonal Cut-in Ribbon across screen center (SF6 Style)
+    const ribbonH = Math.min(145, h * 0.26);
+    const centerY = h * 0.46;
+    const skewOffset = 55;
+
+    // Outer glow / chromatic split
+    ctx.save();
+    ctx.fillStyle = banner.color || '#ec4899';
+    ctx.beginPath();
+    ctx.moveTo(0, centerY - ribbonH / 2 - 8);
+    ctx.lineTo(w, centerY - ribbonH / 2 + skewOffset - 8);
+    ctx.lineTo(w, centerY + ribbonH / 2 + skewOffset + 8);
+    ctx.lineTo(0, centerY + ribbonH / 2 + 8);
+    ctx.closePath();
+    ctx.globalAlpha = 0.4 * enterProgress;
+    ctx.fill();
+    ctx.restore();
+
+    // Main dark carbon ribbon
+    ctx.save();
+    ctx.fillStyle = '#09090b';
+    ctx.beginPath();
+    ctx.moveTo(0, centerY - ribbonH / 2);
+    ctx.lineTo(w, centerY - ribbonH / 2 + skewOffset);
+    ctx.lineTo(w, centerY + ribbonH / 2 + skewOffset);
+    ctx.lineTo(0, centerY + ribbonH / 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Neon borders on top and bottom of diagonal ribbon
+    ctx.strokeStyle = banner.color || '#ec4899';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = banner.color || '#ec4899';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.moveTo(0, centerY - ribbonH / 2);
+    ctx.lineTo(w, centerY - ribbonH / 2 + skewOffset);
+    ctx.moveTo(0, centerY + ribbonH / 2);
+    ctx.lineTo(w, centerY + ribbonH / 2 + skewOffset);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Street Fighter 6 Bold Punchy Typography
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const textSlideX = (1 - enterProgress) * 140;
+
+    // Small Top Tag: "★ CRITICAL ART ★" / "★ SUPER ART ★"
+    ctx.font = '900 clamp(12px, 2.5vw, 18px) "Montserrat", "Impact", sans-serif';
+    ctx.fillStyle = banner.color || '#ec4899';
+    ctx.shadowColor = banner.color || '#ec4899';
+    ctx.shadowBlur = 12;
+    ctx.fillText(`★ ${banner.title} ★`, w / 2 + textSlideX, centerY - 24);
+
+    // Giant Main Title: "☢️ TSAR BOMBA: ANIQUILACIÓN TOTAL"
+    ctx.font = '950 clamp(20px, 4.5vw, 38px) "Montserrat", "Impact", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 10;
+    ctx.fillText(banner.subtitle, w / 2 - textSlideX, centerY + 16);
+
+    ctx.restore();
     ctx.restore();
   }
 
