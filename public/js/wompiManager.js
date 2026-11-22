@@ -53,6 +53,43 @@ class WompiManager {
         this.verifyAndActivate(`DEV_TEST_${Date.now()}`, email);
       });
     }
+
+    const btnRestore = document.getElementById('btn-restore-wompi-pass');
+    if (btnRestore) {
+      btnRestore.addEventListener('click', async () => {
+        let email = (this.emailInput && this.emailInput.value.trim().toLowerCase()) || '';
+        if (!email || !email.includes('@')) {
+          email = prompt('Ingresa el correo con el que realizaste tu pago en Wompi:');
+          if (!email || !email.includes('@')) return;
+          if (this.emailInput) this.emailInput.value = email;
+        }
+
+        btnRestore.disabled = true;
+        btnRestore.innerHTML = '<span>⏳ Comprobando compra...</span>';
+
+        try {
+          const res = await fetch('/api/wompi/restore-purchase', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          const data = await res.json();
+          if (data.success && data.isPassActive) {
+            this.activatePass(24, email);
+            if (this.game && this.game.ui) {
+              this.game.ui.showToast('⭐ ¡Pase Restaurado! Tu acceso de 24 horas está activo.');
+            }
+          } else {
+            alert(data.message || 'No se encontró un Pase activo de 24 horas para este correo.');
+          }
+        } catch (e) {
+          alert('Error de conexión al servidor.');
+        } finally {
+          btnRestore.disabled = false;
+          btnRestore.innerHTML = '<span>🔄 ¿Ya pagaste antes? Clic aquí para restaurar con este correo</span>';
+        }
+      });
+    }
   }
 
   // Verifica si el pase de 24 horas está vigente

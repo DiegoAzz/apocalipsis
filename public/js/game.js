@@ -2512,49 +2512,36 @@ class UIManager {
         }
 
         btnSendCode.disabled = true;
-        btnSendCode.innerHTML = '<span>⏳ Enviando Código...</span>';
+        btnSendCode.innerHTML = '<span>⏳ Restaurando...</span>';
 
         try {
-          const res = await fetch('/api/auth/send-code', {
+          const res = await fetch('/api/wompi/restore-purchase', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
           });
           const data = await res.json();
-          if (data.success) {
-            if (targetEmailLabel) targetEmailLabel.textContent = email;
-            if (stepEmail) stepEmail.style.display = 'none';
-            if (stepCode) stepCode.style.display = 'block';
 
-            const devHint = document.getElementById('auth-dev-code-hint');
-            if (data.emailSent) {
-              this.showToast(`📩 ¡Código de 6 dígitos enviado a ${email}! Revisa tu bandeja de entrada o spam.`);
-              if (devHint) devHint.style.display = 'none';
-              if (codeInput) {
-                codeInput.value = '';
-                codeInput.focus();
-              }
-            } else {
-              // Si aún no hay SMTP en Coolify, mostrar el código en pantalla y auto-completarlo
-              const directCode = data.devCode || data.code || '';
-              this.showToast(`🔔 Código de Acceso: ${directCode}`);
-              if (devHint) {
-                devHint.innerHTML = `⚠️ <em>Servidor sin SMTP configurado todavía en Coolify</em>.<br>Tu código de acceso directo es: <strong style="font-size:20px; color:#facc15; letter-spacing:4px;">${directCode}</strong>`;
-                devHint.style.display = 'block';
-              }
-              if (codeInput) {
-                codeInput.value = directCode;
-                codeInput.focus();
-              }
+          if (data.success && data.isPassActive) {
+            localStorage.setItem('apocalipsis_auth_email', email);
+            localStorage.setItem('apocalipsis_user_email', email);
+            if (btnAuthLabel) btnAuthLabel.textContent = '⭐ Pase Activo';
+
+            this.game.localPlayer.unlockAllWeaponsVip();
+            this.refreshWeaponLocks();
+            if (this.game.passManager) {
+              this.game.passManager.activatePass(24, email);
             }
+            this.showToast(`⭐ ¡Pase Restaurado! Tienes acceso total durante 24 horas.`);
+            if (modal) modal.style.display = 'none';
           } else {
-            this.showToast(`❌ Error: ${data.error || 'No se pudo enviar el código'}`);
+            this.showToast(`❌ ${data.message || 'No encontramos un Pase activo de 24 horas para este correo.'}`);
           }
         } catch (err) {
           this.showToast('❌ Error de conexión al servidor');
         } finally {
           btnSendCode.disabled = false;
-          btnSendCode.innerHTML = '<span>📨 Enviar Código de 6 Dígitos</span>';
+          btnSendCode.innerHTML = '<span>🚀 RESTAURAR MI ACCESO 24 HORAS</span>';
         }
       });
     }
