@@ -403,6 +403,12 @@ class WompiManager {
 
     const uploadBtn = document.getElementById('btn-upload-image');
     if (uploadBtn) uploadBtn.innerHTML = active ? '🖼️ Subir Imagen' : '🖼️ Subir Imagen 🔒';
+
+    const roomLabel = document.getElementById('hud-room-name');
+    if (roomLabel) {
+      const baseRoom = this.game && this.game.multiplayer && this.game.multiplayer.roomId ? this.game.multiplayer.roomId.toUpperCase() : 'LOBBY';
+      roomLabel.textContent = active ? `SALA: ${baseRoom}` : `SALA: ${baseRoom} 🔒`;
+    }
   }
 
   async checkSavedPass() {
