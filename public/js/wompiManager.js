@@ -48,6 +48,18 @@ class WompiManager {
       btnCloseActive.addEventListener('click', () => this.closeModal());
     }
 
+    const btnWompiLogout = document.getElementById('btn-wompi-logout');
+    if (btnWompiLogout) {
+      btnWompiLogout.addEventListener('click', () => {
+        this.logout();
+        this.closeModal();
+        if (this.game && this.game.ui) {
+          this.game.ui.showToast('🚪 Sesión cerrada. Has vuelto al modo gratuito.');
+        }
+        window.location.reload();
+      });
+    }
+
     if (this.btnTrigger) {
       this.btnTrigger.addEventListener('click', () => this.startWompiCheckout());
     }
@@ -81,13 +93,17 @@ class WompiManager {
     }
   }
 
-  // Retorna el tiempo restante en formato regresivo exacto (HH:MM:SS)
+  // Retorna el tiempo restante en formato regresivo exacto (HH:MM:SS, máx 24 horas)
   getRemainingFormatted() {
     const expires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
     const diffMs = expires - Date.now();
     if (diffMs <= 0) return null;
 
-    const totalSecs = Math.floor(diffMs / 1000);
+    // Máximo 24 horas exactas para el reloj de visualización
+    const max24hMs = 24 * 3600 * 1000;
+    const effectiveMs = Math.min(diffMs, max24hMs);
+
+    const totalSecs = Math.floor(effectiveMs / 1000);
     const hours = Math.floor(totalSecs / 3600);
     const mins = Math.floor((totalSecs % 3600) / 60);
     const secs = totalSecs % 60;
@@ -125,8 +141,8 @@ class WompiManager {
 
       const codeEl = document.getElementById('wompi-active-pass-code');
       if (codeEl) {
-        const savedCode = localStorage.getItem('apocalipsis_pass_code') || '602951';
-        codeEl.textContent = savedCode;
+        const savedCode = localStorage.getItem('apocalipsis_pass_code') || '';
+        codeEl.textContent = savedCode || '------';
       }
     } else {
       // SI NO TIENE PASE: Mostrar pasarela de compra de $1 USD con Wompi
@@ -156,6 +172,29 @@ class WompiManager {
 
   closeModal() {
     if (this.modal) this.modal.classList.remove('open');
+  }
+
+  logout() {
+    localStorage.removeItem(this.STORAGE_KEY);
+    localStorage.removeItem(this.STORAGE_EMAIL);
+    localStorage.removeItem('apocalipsis_creator_pass_expires');
+    localStorage.removeItem('apocalipsis_creator_pass');
+    localStorage.removeItem('apocalipsis_pass_code');
+    localStorage.removeItem('apocalipsis_auth_email');
+    localStorage.removeItem('apocalipsis_user_email');
+    localStorage.removeItem('apocalipsis_player_data');
+
+    if (this.game && this.game.localPlayer) {
+      this.game.localPlayer.isVip = false;
+      this.game.localPlayer.unlockedWeapons = [0];
+      this.game.localPlayer.currentWeaponIndex = 0;
+      this.game.localPlayer.savePersistence();
+    }
+    if (this.game && this.game.ui) {
+      this.game.ui.refreshWeaponLocks();
+      this.game.ui.updateActiveWeapon(0);
+    }
+    this.updateHUD();
   }
 
   async startWompiCheckout() {
@@ -335,15 +374,14 @@ class WompiManager {
   async checkSavedPass() {
     this.updateHUD();
 
-    // 1. Detectar retorno automático de Wompi / Bancolombia
+    // 1. Detectar retorno automático de Wompi tras pago exitoso
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const isReturn = urlParams.get('payment') === 'success' || urlParams.get('id') || urlParams.get('env');
+      const isReturn = urlParams.get('payment') === 'success';
       const returnedEmail = urlParams.get('email');
 
-      if (isReturn) {
-        const emailToActivate = returnedEmail || localStorage.getItem(this.STORAGE_EMAIL) || 'diego.zuniga.plazas@gmail.com';
-        this.activatePass(24, emailToActivate);
+      if (isReturn && returnedEmail) {
+        this.activatePass(24, returnedEmail);
         if (this.game && this.game.ui) {
           this.game.ui.showToast('⭐ ¡PAGO APROBADO CON ÉXITO! Tu Pase Creador de 24 Horas está activo.');
         }

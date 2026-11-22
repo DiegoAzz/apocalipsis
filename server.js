@@ -153,8 +153,8 @@ function getCreatorPasses() {
           code: (passes[vEmail] && passes[vEmail].code) || v.code,
           pin: (passes[vEmail] && passes[vEmail].pin) || '1234',
           activatedAt: new Date().toISOString(),
-          expiresAt: Date.now() + (365 * 24 * 3600 * 1000),
-          durationHours: 8760,
+          expiresAt: Date.now() + (24 * 3600 * 1000),
+          durationHours: 24,
           priceUSD: 1.00,
           paymentMethod: 'wompi_checkout',
           reference: '1570221-1795358369-14441'
@@ -464,7 +464,7 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
           isVip: true,
           code: inputVal,
           email: 'diego.zuniga.plazas@gmail.com',
-          expiresAt: dPass ? dPass.expiresAt : Date.now() + 8760 * 3600 * 1000,
+          expiresAt: dPass ? dPass.expiresAt : Date.now() + 24 * 3600 * 1000,
           message: `¡Pase Creador activado para Diego Zuniga!`
         });
       }

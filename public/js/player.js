@@ -188,20 +188,21 @@ class Player {
         const d = JSON.parse(raw);
         if (d.name) this.name = d.name;
         if (d.color) this.color = d.color;
-        if (d.isVip) {
-          this.isVip = true;
-          this.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        } else {
-          this.isVip = false;
-          this.unlockedWeapons = [0];
-        }
+      }
+      const passExpires = parseInt(localStorage.getItem('apocalipsis_creator_pass_expires') || '0', 10);
+      const isPassActive = passExpires > Date.now();
+      if (isPassActive) {
+        this.isVip = true;
+        this.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       } else {
         this.isVip = false;
         this.unlockedWeapons = [0];
+        this.currentWeaponIndex = 0;
       }
     } catch (e) {
       this.isVip = false;
       this.unlockedWeapons = [0];
+      this.currentWeaponIndex = 0;
     }
   }
 

@@ -2641,9 +2641,16 @@ class UIManager {
 
     if (btnLogout) {
       btnLogout.addEventListener('click', () => {
-        localStorage.removeItem('apocalipsis_auth_email');
-        localStorage.removeItem('apocalipsis_pass_code');
-        localStorage.removeItem('apocalipsis_creator_pass');
+        if (this.game && this.game.wompi) {
+          this.game.wompi.logout();
+        } else {
+          localStorage.removeItem('apocalipsis_creator_pass_expires');
+          localStorage.removeItem('apocalipsis_creator_pass');
+          localStorage.removeItem('apocalipsis_pass_code');
+          localStorage.removeItem('apocalipsis_auth_email');
+          localStorage.removeItem('apocalipsis_user_email');
+          localStorage.removeItem('apocalipsis_player_data');
+        }
         if (btnAuthLabel) btnAuthLabel.textContent = 'Código de Pase';
         if (modal) modal.style.display = 'none';
         this.showToast('Sesión cerrada en este navegador');

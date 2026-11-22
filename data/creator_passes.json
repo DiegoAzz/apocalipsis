@@ -4,8 +4,8 @@
     "code": "602951",
     "isPassActive": true,
     "activatedAt": "2026-11-22T09:41:00.000Z",
-    "expiresAt": 1895444897163,
-    "durationHours": 8760,
+    "expiresAt": 1795452384525,
+    "durationHours": 24,
     "priceUSD": 1.0,
     "paymentMethod": "wompi_checkout",
     "reference": "1570221-1795358369-14441"
@@ -15,8 +15,8 @@
     "code": "814208",
     "isPassActive": true,
     "activatedAt": "2026-11-22T09:41:00.000Z",
-    "expiresAt": 1895444897163,
-    "durationHours": 8760,
+    "expiresAt": 1795452384525,
+    "durationHours": 24,
     "priceUSD": 1.0,
     "paymentMethod": "wompi_checkout",
     "reference": "1570221-1795358369-14441"
