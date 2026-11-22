@@ -571,6 +571,21 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
         reference: transData.reference || `WOMPI_${Date.now()}`
       });
 
+      // Si Wompi / Banco registró un correo diferente (ej: si el usuario cometió un error tipográfico en el juego)
+      const wompiCustomerEmail = (transData.customer_email || (transData.customer_data && transData.customer_data.email) || '').trim().toLowerCase();
+      if (wompiCustomerEmail && wompiCustomerEmail.includes('@') && wompiCustomerEmail !== cleanEmail) {
+        saveCreatorPass(wompiCustomerEmail, {
+          code: pass ? pass.code : undefined,
+          durationHours: effHours,
+          priceUSD: effPrice,
+          planName: effPlanName,
+          paymentMethod: 'wompi_widget_sync',
+          pin: cleanPin,
+          reference: transData.reference || `WOMPI_${Date.now()}`
+        });
+        console.log(`[PASS DUAL SYNC]: Pase vinculado a ambos correos (${cleanEmail} y ${wompiCustomerEmail}) con código [${pass ? pass.code : ''}]`);
+      }
+
       return res.json({
         success: true,
         isPassActive: true,

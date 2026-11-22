@@ -101,6 +101,27 @@ class WompiManager {
       return null;
     }
 
+    // Detección de errores comunes en dominios de correo (ej: gmai.com, hotmial.com)
+    const typoDomains = {
+      'gmai.com': 'gmail.com',
+      'gnail.com': 'gmail.com',
+      'gamil.com': 'gmail.com',
+      'gmial.com': 'gmail.com',
+      'hotmial.com': 'hotmail.com',
+      'hotmaill.com': 'hotmail.com',
+      'outlok.com': 'outlook.com',
+      'yaho.com': 'yahoo.com'
+    };
+    const domain = email.split('@')[1] ? email.split('@')[1].toLowerCase() : '';
+    if (typoDomains[domain]) {
+      const suggested = email.split('@')[0] + '@' + typoDomains[domain];
+      const fix = confirm(`⚠️ Posible error en tu correo:\n\nEscribiste: "${email}"\n¿Quisiste escribir: "${suggested}"?\n\nHaz clic en "Aceptar" para corregirlo automáticamente.`);
+      if (fix) {
+        if (this.emailInput) this.emailInput.value = suggested;
+        return { email: suggested, pin };
+      }
+    }
+
     if (!pin || pin.length < 4) {
       if (this.pinInput) {
         this.pinInput.style.borderColor = '#ef4444';
@@ -344,6 +365,10 @@ class WompiManager {
     if (!creds) return; // BLOQUEO ESTRICTO: Si no pone correo y PIN, no lo deja pasar a pagar
 
     const { email, pin } = creds;
+
+    const confirmBuy = confirm(`⭐ CONFIRMACIÓN DE DATOS ANTES DE PAGAR:\n\n📧 Correo: ${email}\n🔒 PIN Secreto: ${pin}\n\n¿Confirmas que tu correo está bien escrito?\nA este correo y PIN se vinculará tu pase para que puedas recuperarlo en cualquier otro dispositivo sin volver a pagar.`);
+    if (!confirmBuy) return;
+
     localStorage.setItem(this.STORAGE_EMAIL, email);
     localStorage.setItem('apocalipsis_user_pin', pin);
 
@@ -493,7 +518,7 @@ class WompiManager {
 
     if (active && remaining) {
       const savedCode = localStorage.getItem('apocalipsis_pass_code') || '';
-      const isAdmin = remaining.includes('VITALICIO') || savedCode === '7914' || savedCode === 'ANDRES10' || savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
+      const isAdmin = remaining.includes('VITALICIO') || localStorage.getItem('apocalipsis_is_admin') === 'true';
 
       if (this.badgeTop) {
         this.badgeTop.classList.add('pass-active');
