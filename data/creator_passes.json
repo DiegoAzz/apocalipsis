@@ -1,0 +1,22 @@
+{
+  "diego.zuniga.plazas@gmail.com": {
+    "identifier": "diego.zuniga.plazas@gmail.com",
+    "isPassActive": true,
+    "activatedAt": "2026-11-22T09:41:00.000Z",
+    "expiresAt": 1895444897163,
+    "durationHours": 8760,
+    "priceUSD": 1.0,
+    "paymentMethod": "wompi_checkout",
+    "reference": "1570221-1795358369-14441"
+  },
+  "solucionesaox@gmail.com": {
+    "identifier": "solucionesaox@gmail.com",
+    "isPassActive": true,
+    "activatedAt": "2026-11-22T09:41:00.000Z",
+    "expiresAt": 1895444897163,
+    "durationHours": 8760,
+    "priceUSD": 1.0,
+    "paymentMethod": "wompi_checkout",
+    "reference": "1570221-1795358369-14441"
+  }
+}

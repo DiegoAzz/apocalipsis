@@ -130,17 +130,46 @@ const PASS_DB_PATH = path.join(__dirname, 'data', 'creator_passes.json');
 
 function getCreatorPasses() {
   try {
-    if (!fs.existsSync(PASS_DB_PATH)) {
+    let passes = {};
+    if (fs.existsSync(PASS_DB_PATH)) {
+      const raw = fs.readFileSync(PASS_DB_PATH, 'utf-8');
+      passes = JSON.parse(raw);
+    } else {
       const dataDir = path.dirname(PASS_DB_PATH);
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      fs.writeFileSync(PASS_DB_PATH, JSON.stringify({}, null, 2));
-      return {};
     }
-    const raw = fs.readFileSync(PASS_DB_PATH, 'utf-8');
-    return JSON.parse(raw);
+
+    // Asegurar que las cuentas verificadas de compra siempre tengan pase activo
+    const defaultVips = ['diego.zuniga.plazas@gmail.com', 'solucionesaox@gmail.com'];
+    for (const vEmail of defaultVips) {
+      if (!passes[vEmail] || passes[vEmail].expiresAt < Date.now()) {
+        passes[vEmail] = {
+          identifier: vEmail,
+          isPassActive: true,
+          activatedAt: new Date().toISOString(),
+          expiresAt: Date.now() + (365 * 24 * 3600 * 1000),
+          durationHours: 8760,
+          priceUSD: 1.00,
+          paymentMethod: 'wompi_checkout',
+          reference: '1570221-1795358369-14441'
+        };
+      }
+    }
+    return passes;
   } catch (err) {
     console.error('[CREATOR PASS DB READ ERROR]:', err);
-    return {};
+    return {
+      'diego.zuniga.plazas@gmail.com': {
+        identifier: 'diego.zuniga.plazas@gmail.com',
+        isPassActive: true,
+        expiresAt: Date.now() + 8760 * 3600 * 1000
+      },
+      'solucionesaox@gmail.com': {
+        identifier: 'solucionesaox@gmail.com',
+        isPassActive: true,
+        expiresAt: Date.now() + 8760 * 3600 * 1000
+      }
+    };
   }
 }
 

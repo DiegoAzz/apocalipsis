@@ -284,9 +284,9 @@ class WompiManager {
       this.badgeTop.classList.remove('pass-active');
       this.badgeTop.classList.add('pass-inactive');
       if (this.badgeLabel) {
-        this.badgeLabel.innerHTML = `⭐ Pase 24h ($1 USD)`;
+        this.badgeLabel.innerHTML = `⭐ Comprar Pase ($1 USD)`;
       } else {
-        this.badgeTop.innerHTML = `<span>⭐ Pase 24h ($1 USD)</span>`;
+        this.badgeTop.innerHTML = `<span>⭐ Comprar Pase ($1 USD)</span>`;
       }
       this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($1 USD) para fotos y webs.';
 
