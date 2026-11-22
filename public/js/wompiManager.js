@@ -15,24 +15,105 @@ class WompiManager {
     this.btnTrigger = document.getElementById('btn-pay-wompi-trigger') || document.getElementById('btn-pay-paypal-1usd');
     this.btnTestUnlock = document.getElementById('btn-wompi-test-unlock') || document.getElementById('btn-pass-test-unlock');
     this.emailInput = document.getElementById('wompi-user-email');
+    this.pinInput = document.getElementById('wompi-user-pin');
     this.badgeTop = document.getElementById('btn-creator-pass-top') || document.getElementById('btn-open-wompi-top');
     this.badgeLabel = document.getElementById('creator-pass-badge-label');
     this.featureNotice = document.getElementById('pass-feature-notice');
 
+    this.trmData = null;
+
     this.currentPlan = {
       id: 'day',
       usd: 1,
-      cents: 400000,
+      cents: 346200,
       hours: 24,
       name: '1 Día (24 Horas)'
     };
 
     this.setupListeners();
     this.setupPlanSelector();
+    this.fetchLiveTRM();
     this.checkSavedPass();
 
     // Verificación periódica cada 1 segundo (conteo regresivo en vivo)
     setInterval(() => this.updateHUD(), 1000);
+  }
+
+  async fetchLiveTRM() {
+    try {
+      const res = await fetch('/api/currency/trm');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.success || !data.rate) return;
+
+      this.trmData = data;
+      console.log(`[TRM EN VIVO]: $${data.rate} COP por USD (${data.source})`);
+
+      const liveBadge = document.getElementById('wompi-trm-live-badge');
+      if (liveBadge) {
+        liveBadge.innerHTML = `🟢 <strong>Dólar Oficial TRM (Superfinanciera):</strong> $${Math.round(data.rate).toLocaleString('es-CO')} COP • En Vivo`;
+      }
+
+      if (data.plans) {
+        const container = document.getElementById('wompi-plans-container');
+        if (container) {
+          const cards = container.querySelectorAll('.wompi-plan-card');
+          cards.forEach((card) => {
+            const planId = card.getAttribute('data-plan');
+            const planInfo = data.plans[planId];
+            if (planInfo) {
+              card.setAttribute('data-cents', planInfo.cents);
+              const copEl = card.querySelector('.plan-cop');
+              if (copEl) {
+                copEl.textContent = `~$${planInfo.cop.toLocaleString('es-CO')} COP`;
+              }
+            }
+          });
+        }
+
+        if (this.currentPlan && data.plans[this.currentPlan.id]) {
+          this.currentPlan.cents = data.plans[this.currentPlan.id].cents;
+          const summaryPrice = document.getElementById('wompi-summary-price');
+          if (summaryPrice) {
+            summaryPrice.textContent = `$ ${this.currentPlan.usd}.00 USD (~$${data.plans[this.currentPlan.id].cop.toLocaleString('es-CO')} COP)`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[TRM FETCH FAILED]:', e);
+    }
+  }
+
+  validateCredentials() {
+    const email = this.emailInput ? this.emailInput.value.trim() : '';
+    const pin = this.pinInput ? this.pinInput.value.trim() : '';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email || !emailRegex.test(email)) {
+      if (this.emailInput) {
+        this.emailInput.style.borderColor = '#ef4444';
+        this.emailInput.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.7)';
+        this.emailInput.classList.add('input-error-shake');
+        setTimeout(() => this.emailInput.classList.remove('input-error-shake'), 450);
+        this.emailInput.focus();
+      }
+      alert('⚠️ CORREO ELECTRÓNICO REQUERIDO:\n\nDebes ingresar un correo electrónico válido antes de pagar para vincular tu pase y jugar en otros dispositivos.');
+      return null;
+    }
+
+    if (!pin || pin.length < 4) {
+      if (this.pinInput) {
+        this.pinInput.style.borderColor = '#ef4444';
+        this.pinInput.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.7)';
+        this.pinInput.classList.add('input-error-shake');
+        setTimeout(() => this.pinInput.classList.remove('input-error-shake'), 450);
+        this.pinInput.focus();
+      }
+      alert('⚠️ CÓDIGO / PIN SECRETO REQUERIDO:\n\nDebes crear un PIN o código secreto de mínimo 4 caracteres antes de pagar.\n\nCon este código podrás abrir tu pase en tu celular, portátil o trabajo sin pagar de nuevo.');
+      return null;
+    }
+
+    return { email, pin };
   }
 
   setupPlanSelector() {
@@ -47,7 +128,7 @@ class WompiManager {
 
         const planId = card.getAttribute('data-plan') || 'day';
         const usd = parseFloat(card.getAttribute('data-usd') || '1');
-        const cents = parseInt(card.getAttribute('data-cents') || '400000', 10);
+        const cents = parseInt(card.getAttribute('data-cents') || '346200', 10);
         const hours = parseInt(card.getAttribute('data-hours') || '24', 10);
         const name = card.getAttribute('data-name') || '1 Día (24 Horas)';
 
@@ -58,7 +139,11 @@ class WompiManager {
         const payLabel = document.getElementById('btn-pay-wompi-label');
         const testBtn = document.getElementById('btn-wompi-test-unlock');
 
-        if (summaryPrice) summaryPrice.textContent = `$ ${usd}.00 USD`;
+        const copStr = this.trmData && this.trmData.plans && this.trmData.plans[planId]
+          ? ` (~$${this.trmData.plans[planId].cop.toLocaleString('es-CO')} COP)`
+          : '';
+
+        if (summaryPrice) summaryPrice.textContent = `$ ${usd}.00 USD${copStr}`;
         if (summaryDesc) summaryDesc.textContent = `${name} • Acceso Total e Ilimitado`;
         if (payLabel) payLabel.textContent = `💳 PAGAR $${usd} USD CON WOMPI (${name.toUpperCase()})`;
         if (testBtn) testBtn.textContent = `⚡ ACTIVAR MODO PRUEBA (${name.toUpperCase()})`;
@@ -100,15 +185,30 @@ class WompiManager {
       });
     }
 
+    if (this.emailInput) {
+      this.emailInput.addEventListener('input', () => {
+        this.emailInput.style.borderColor = '#334155';
+        this.emailInput.style.boxShadow = 'none';
+      });
+    }
+
+    if (this.pinInput) {
+      this.pinInput.addEventListener('input', () => {
+        this.pinInput.style.borderColor = '#334155';
+        this.pinInput.style.boxShadow = 'none';
+      });
+    }
+
     if (this.btnTrigger) {
       this.btnTrigger.addEventListener('click', () => this.startWompiCheckout());
     }
 
     if (this.btnTestUnlock) {
       this.btnTestUnlock.addEventListener('click', () => {
-        const email = (this.emailInput && this.emailInput.value.trim()) || 'creador@apocalipsis.com';
+        const creds = this.validateCredentials();
+        if (!creds) return;
         const plan = this.currentPlan || { hours: 24, usd: 1, name: '1 Día (24 Horas)' };
-        this.verifyAndActivate(`DEV_TEST_${Date.now()}`, email, plan.hours, plan.usd, plan.name);
+        this.verifyAndActivate(`DEV_TEST_${Date.now()}`, creds.email, plan.hours, plan.usd, plan.name, creds.pin);
       });
     }
 
@@ -240,16 +340,14 @@ class WompiManager {
   }
 
   async startWompiCheckout() {
-    let email = this.emailInput ? this.emailInput.value.trim() : '';
-    if (!email || !email.includes('@')) {
-      email = prompt('Por favor ingresa tu correo para vincular tu Pase multidispositivo y poder restaurarlo:');
-      if (!email || !email.includes('@')) return;
-      if (this.emailInput) this.emailInput.value = email;
-    }
+    const creds = this.validateCredentials();
+    if (!creds) return; // BLOQUEO ESTRICTO: Si no pone correo y PIN, no lo deja pasar a pagar
 
+    const { email, pin } = creds;
     localStorage.setItem(this.STORAGE_EMAIL, email);
+    localStorage.setItem('apocalipsis_user_pin', pin);
 
-    const plan = this.currentPlan || { id: 'day', usd: 1, cents: 400000, hours: 24, name: '1 Día (24 Horas)' };
+    const plan = this.currentPlan || { id: 'day', usd: 1, cents: 346200, hours: 24, name: '1 Día (24 Horas)' };
     const reference = `APOC_${plan.id.toUpperCase()}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const amountInCents = plan.cents;
 
@@ -292,7 +390,7 @@ class WompiManager {
           const transaction = result.transaction;
           console.log('[WOMPI TRANSACTION]:', transaction);
           if (transaction && (transaction.status === 'APPROVED' || transaction.status === 'PENDING')) {
-            await this.verifyAndActivate(transaction.id, email, plan.hours, plan.usd, plan.name);
+            await this.verifyAndActivate(transaction.id, email, plan.hours, plan.usd, plan.name, pin);
           } else {
             alert('Transacción no completada o cancelada.');
           }
@@ -301,18 +399,18 @@ class WompiManager {
         console.warn('Wompi Widget error:', err);
         const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del ${plan.name} ($${plan.usd} USD) para ${email}?`);
         if (confirmBuy) {
-          this.verifyAndActivate(`DEV_FALLBACK_${Date.now()}`, email, plan.hours, plan.usd, plan.name);
+          this.verifyAndActivate(`DEV_FALLBACK_${Date.now()}`, email, plan.hours, plan.usd, plan.name, pin);
         }
       }
     } else {
       const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del ${plan.name} ($${plan.usd} USD) para ${email}?`);
       if (confirmBuy) {
-        this.verifyAndActivate(`DIRECT_CONFIRM_${Date.now()}`, email, plan.hours, plan.usd, plan.name);
+        this.verifyAndActivate(`DIRECT_CONFIRM_${Date.now()}`, email, plan.hours, plan.usd, plan.name, pin);
       }
     }
   }
 
-  async verifyAndActivate(transactionId, email, hours = 24, priceUSD = 1.00, planName = '') {
+  async verifyAndActivate(transactionId, email, hours = 24, priceUSD = 1.00, planName = '', pin = '') {
     let serverExpiresAt = null;
     let serverPlanName = planName || 'Pase VIP';
     try {
@@ -322,6 +420,7 @@ class WompiManager {
         body: JSON.stringify({
           transactionId,
           email,
+          pin,
           durationHours: hours,
           priceUSD: priceUSD,
           planName: planName
@@ -394,7 +493,7 @@ class WompiManager {
 
     if (active && remaining) {
       const savedCode = localStorage.getItem('apocalipsis_pass_code') || '';
-      const isAdmin = remaining.includes('VITALICIO') || savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
+      const isAdmin = remaining.includes('VITALICIO') || savedCode === '7914' || savedCode === 'ANDRES10' || savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
 
       if (this.badgeTop) {
         this.badgeTop.classList.add('pass-active');

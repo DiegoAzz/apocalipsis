@@ -2513,7 +2513,7 @@ class UIManager {
       const now = Date.now();
 
       if (savedPass && parseInt(savedPass, 10) > now) {
-        const isAdmin = savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
+        const isAdmin = savedCode === '7914' || savedCode === 'ANDRES10' || savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
         if (btnAuthLabel) btnAuthLabel.textContent = isAdmin ? '👑 SUPER ADMIN' : (savedCode ? `⭐ Código: ${savedCode}` : '⭐ Pase Activo');
         return true;
       }
@@ -2536,7 +2536,7 @@ class UIManager {
         const now = Date.now();
 
         if (savedPass && parseInt(savedPass, 10) > now) {
-          const isAdmin = savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
+          const isAdmin = savedCode === '7914' || savedCode === 'ANDRES10' || savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
           if (stepEmail) stepEmail.style.display = 'none';
           if (stepLogged) stepLogged.style.display = 'block';
           if (loggedEmailDisplay) {
@@ -2563,12 +2563,12 @@ class UIManager {
       });
     }
 
-    // 1. Canjear con CÓDIGO DE ACCESO (6 dígitos)
+    // 1. Canjear con CÓDIGO DE ACCESO / ADMINISTRADOR
     if (btnRedeemCode && codeDirectInput) {
       btnRedeemCode.addEventListener('click', async () => {
         const code = codeDirectInput.value.trim().toUpperCase();
-        if (!code || code.length < 5) {
-          this.showToast('⚠️ Ingresa tu código de acceso de 6 dígitos (ej: 123456)');
+        if (!code || code.length < 3) {
+          this.showToast('⚠️ Ingresa tu código de acceso (ej: 7914 o ANDRES10)');
           return;
         }
 
@@ -2584,7 +2584,7 @@ class UIManager {
           const data = await res.json();
 
           if (data.success && data.isPassActive) {
-            const isAdmin = Boolean(data.isAdmin || code === '999999' || code === 'DIEGO1');
+            const isAdmin = Boolean(data.isAdmin || code === '7914' || code === 'ANDRES10' || code === '999999' || code === 'DIEGO1');
             localStorage.setItem('apocalipsis_pass_code', code);
             localStorage.setItem('apocalipsis_auth_email', data.email || 'diego.zuniga.plazas@gmail.com');
             localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());

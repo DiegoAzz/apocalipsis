@@ -2121,8 +2121,32 @@ body.ui-hidden #idle-hud-widget {
 
 @media (max-width: 900px) {
   .floating-pills-top {
-    top: 58px;
-    right: 12px;
+    top: 54px;
+    right: 8px;
+    left: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .pill-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-pills-top {
+    top: 50px;
+    right: 4px;
+    left: 4px;
+    gap: 4px;
+  }
+  .pill-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+    min-height: 30px;
+    gap: 4px;
   }
 }
 
@@ -2303,11 +2327,14 @@ body.ui-hidden #idle-hud-widget {
   position: fixed;
   inset: 0;
   z-index: 100000;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(8px);
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .custom-modal.open {
@@ -2317,6 +2344,50 @@ body.ui-hidden #idle-hud-widget {
 .video-card, .pass-card {
   max-width: 580px;
   width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+  .custom-modal {
+    padding: 8px;
+    align-items: flex-start;
+  }
+  .video-card, .pass-card, .modal-card, .auth-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 95vh;
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+    margin: auto 0;
+  }
+  .modal-head {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .modal-head h2 {
+    font-size: 14px !important;
+  }
+  .close-btn {
+    padding: 4px 8px;
+    font-size: 22px;
+  }
+  .pass-perks-list {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    gap: 5px !important;
+    margin: 8px 0 !important;
+  }
+  .btn-pass-main {
+    padding: 12px 8px !important;
+    font-size: 12.5px !important;
+    min-height: 44px;
+  }
+  .auth-input {
+    font-size: 16px !important; /* Evita que Safari en iPhone haga zoom involuntario */
+  }
 }
 
 .pass-card {
@@ -2378,10 +2449,54 @@ body.ui-hidden #idle-hud-widget {
   margin: 14px 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 540px) {
+  .wompi-plans-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin: 8px 0;
+  }
+  .wompi-plan-card {
+    padding: 8px 5px !important;
+    min-height: 85px;
+    touch-action: manipulation;
+  }
+  .wompi-plan-card .plan-badge {
+    font-size: 8px !important;
+    padding: 2px 5px !important;
+    margin-bottom: 2px !important;
+  }
+  .wompi-plan-card .plan-name {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+  }
+  .wompi-plan-card .plan-price {
+    font-size: 17px !important;
+    margin: 2px 0 !important;
+  }
+  .wompi-plan-card .plan-cop {
+    font-size: 9px !important;
+  }
+  .wompi-plan-card .plan-rate {
+    font-size: 8px !important;
+    padding: 1px 3px !important;
+    margin-top: 2px !important;
+  }
+}
+
+@media (max-width: 320px) {
   .wompi-plans-grid {
     grid-template-columns: 1fr;
   }
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+.input-error-shake {
+  animation: inputShake 0.4s ease-in-out !important;
 }
 
 .wompi-plan-card {

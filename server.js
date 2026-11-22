@@ -145,8 +145,8 @@ function getCreatorPasses() {
       identifier: 'diego.zuniga.plazas@gmail.com',
       isPassActive: true,
       isAdmin: true,
-      code: '999999',
-      altCode: '602951',
+      code: '7914',
+      altCode: 'ANDRES10',
       pin: '1234',
       activatedAt: new Date().toISOString(),
       expiresAt: LIFETIME_TS,
@@ -292,7 +292,144 @@ app.get('/api/pass/status', (req, res) => {
 });
 
 // ============================================================================
-// INTEGRACIÓN OFICIAL WOMPI: PASE CREADOR 24 HORAS ($5.000 COP / ~$1 USD)
+// API OFICIAL TRM COLOMBIA (DÓLAR EN TIEMPO REAL - SUPERINTENDENCIA FINANCIERA)
+// Fuente oficial: datos.gov.co (dataset 32sa-8pi3) + Fallbacks
+// ============================================================================
+let cachedTRM = {
+  rate: 3461.92,
+  source: 'Superintendencia Financiera de Colombia (datos.gov.co)',
+  lastFetched: 0
+};
+
+async function fetchOfficialTRM() {
+  const now = Date.now();
+  // Cache por 10 minutos para respuestas ultrarrápidas y evitar rate-limit
+  if (now - cachedTRM.lastFetched < 10 * 60 * 1000 && cachedTRM.rate > 1000) {
+    return cachedTRM;
+  }
+
+  // 1. Intentar API Oficial del Gobierno de Colombia (datos.gov.co / Superfinanciera)
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch('https://www.datos.gov.co/resource/32sa-8pi3.json?$limit=1&$order=vigenciadesde%20DESC', {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0 && data[0].valor) {
+        const val = parseFloat(data[0].valor);
+        if (!isNaN(val) && val > 1000) {
+          cachedTRM.rate = Math.round(val * 100) / 100;
+          cachedTRM.source = 'Superintendencia Financiera de Colombia (datos.gov.co)';
+          cachedTRM.lastFetched = now;
+          console.log(`[TRM OFICIAL ACTUALIZADA]: $${cachedTRM.rate} COP por USD (datos.gov.co)`);
+          return cachedTRM;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[TRM OFICIAL]: datos.gov.co error/timeout, probando API secundaria:', e.message);
+  }
+
+  // 2. Fallback 1: Open Exchange Rates
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.rates && data.rates.COP) {
+        const val = parseFloat(data.rates.COP);
+        if (!isNaN(val) && val > 1000) {
+          cachedTRM.rate = Math.round(val * 100) / 100;
+          cachedTRM.source = 'Open Exchange Rates (USD/COP)';
+          cachedTRM.lastFetched = now;
+          console.log(`[TRM SECUNDARIA ACTUALIZADA]: $${cachedTRM.rate} COP por USD (open.er-api)`);
+          return cachedTRM;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[TRM SECUNDARIA]: error:', e.message);
+  }
+
+  // 3. Fallback 2: ExchangeRate-API
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.rates && data.rates.COP) {
+        const val = parseFloat(data.rates.COP);
+        if (!isNaN(val) && val > 1000) {
+          cachedTRM.rate = Math.round(val * 100) / 100;
+          cachedTRM.source = 'ExchangeRate-API (USD/COP)';
+          cachedTRM.lastFetched = now;
+          return cachedTRM;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[TRM TERCERA]: error:', e.message);
+  }
+
+  return cachedTRM;
+}
+
+app.get('/api/currency/trm', async (req, res) => {
+  try {
+    const trm = await fetchOfficialTRM();
+    const rate = trm.rate;
+    const plans = {
+      day: {
+        usd: 1,
+        cop: Math.round(rate * 1),
+        cents: Math.round(rate * 1 * 100),
+        hours: 24,
+        name: '1 Día (24 Horas)'
+      },
+      week: {
+        usd: 3,
+        cop: Math.round(rate * 3),
+        cents: Math.round(rate * 3 * 100),
+        hours: 168,
+        name: '1 Semana (7 Días)'
+      },
+      biweek: {
+        usd: 5,
+        cop: Math.round(rate * 5),
+        cents: Math.round(rate * 5 * 100),
+        hours: 360,
+        name: '15 Días'
+      },
+      month: {
+        usd: 10,
+        cop: Math.round(rate * 10),
+        cents: Math.round(rate * 10 * 100),
+        hours: 720,
+        name: '1 Mes VIP (30 Días)'
+      }
+    };
+    res.json({
+      success: true,
+      rate: rate,
+      rateFormatted: `$ ${rate.toLocaleString('es-CO', { maximumFractionDigits: 2 })} COP`,
+      source: trm.source,
+      updatedAt: new Date(trm.lastFetched || Date.now()).toISOString(),
+      plans
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// INTEGRACIÓN OFICIAL WOMPI: PLANES VIP CON VALOR REAL EN DÓLARES / COP
 // Bancolombia, Nequi, PSE, Tarjetas de Crédito / Débito
 // ============================================================================
 
@@ -328,20 +465,23 @@ app.post('/api/wompi-webhook', async (req, res) => {
       const customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
 
       if (status === 'APPROVED' && customerEmail) {
-        const cents = trans.amount_in_cents || 400000;
+        const cents = trans.amount_in_cents || 346200;
         let effHours = 24;
         let effPrice = 1.00;
         let effPlanName = '1 Día (24 Horas)';
 
-        if (cents >= 3800000) {
+        const refUpper = (trans.reference || '').toUpperCase();
+        const currentRate = (cachedTRM && cachedTRM.rate > 1000) ? cachedTRM.rate : 3500;
+
+        if (refUpper.includes('MONTH') || cents >= Math.round(currentRate * 8 * 100)) {
           effHours = 720;
           effPrice = 10.00;
           effPlanName = '1 Mes VIP (30 Días)';
-        } else if (cents >= 1800000) {
+        } else if (refUpper.includes('BIWEEK') || cents >= Math.round(currentRate * 4 * 100)) {
           effHours = 360;
           effPrice = 5.00;
           effPlanName = '15 Días';
-        } else if (cents >= 1000000) {
+        } else if (refUpper.includes('WEEK') || cents >= Math.round(currentRate * 2 * 100)) {
           effHours = 168;
           effPrice = 3.00;
           effPlanName = '1 Semana (7 Días)';
@@ -401,13 +541,21 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
       let effPrice = priceUSD ? parseFloat(priceUSD) : 1.00;
       let effPlanName = planName;
 
-      // Si no viene durationHours explícito, deducir por el monto en centavos de Wompi
+      // Si no viene durationHours explícito, deducir por la referencia o monto en centavos de Wompi
       if (!effHours || isNaN(effHours)) {
-        const cents = transData.amount_in_cents || 400000;
-        if (cents >= 3800000) { effHours = 720; effPrice = 10.00; effPlanName = '1 Mes VIP (30 Días)'; }
-        else if (cents >= 1800000) { effHours = 360; effPrice = 5.00; effPlanName = '15 Días'; }
-        else if (cents >= 1000000) { effHours = 168; effPrice = 3.00; effPlanName = '1 Semana (7 Días)'; }
-        else { effHours = 24; effPrice = 1.00; effPlanName = '1 Día (24 Horas)'; }
+        const cents = transData.amount_in_cents || 346200;
+        const refUpper = (transData.reference || '').toUpperCase();
+        const currentRate = (cachedTRM && cachedTRM.rate > 1000) ? cachedTRM.rate : 3500;
+
+        if (refUpper.includes('MONTH') || cents >= Math.round(currentRate * 8 * 100)) {
+          effHours = 720; effPrice = 10.00; effPlanName = '1 Mes VIP (30 Días)';
+        } else if (refUpper.includes('BIWEEK') || cents >= Math.round(currentRate * 4 * 100)) {
+          effHours = 360; effPrice = 5.00; effPlanName = '15 Días';
+        } else if (refUpper.includes('WEEK') || cents >= Math.round(currentRate * 2 * 100)) {
+          effHours = 168; effPrice = 3.00; effPlanName = '1 Semana (7 Días)';
+        } else {
+          effHours = 24; effPrice = 1.00; effPlanName = '1 Día (24 Horas)';
+        }
       }
 
       if (!effPlanName) {
@@ -460,13 +608,13 @@ app.post('/api/pass/redeem-code', (req, res) => {
     let foundEmail = null;
 
     // Super Administrador Códigos Maestros (Sin vencimiento)
-    if (cleanCode === '999999' || cleanCode === 'DIEGO1' || cleanCode === 'ADMIN7' || cleanCode === '602951') {
+    if (cleanCode === '7914' || cleanCode === 'ANDRES10' || cleanCode === '999999' || cleanCode === 'DIEGO1' || cleanCode === 'ADMIN7' || cleanCode === '602951') {
       return res.json({
         success: true,
         isPassActive: true,
         isVip: true,
         isAdmin: true,
-        code: '999999',
+        code: cleanCode,
         email: 'diego.zuniga.plazas@gmail.com',
         planName: 'Super Administrador Vitalicio',
         expiresAt: 253402300799000,
@@ -475,9 +623,10 @@ app.post('/api/pass/redeem-code', (req, res) => {
       });
     }
 
-    // Buscar en pases registrados
+    // Buscar en pases registrados por code o altCode
     for (const [key, p] of Object.entries(passes)) {
-      if (p && p.code && p.code.toString().trim().toUpperCase() === cleanCode) {
+      if (p && ((p.code && p.code.toString().trim().toUpperCase() === cleanCode) ||
+                (p.altCode && p.altCode.toString().trim().toUpperCase() === cleanCode))) {
         foundPass = p;
         foundEmail = key;
         break;
@@ -492,7 +641,7 @@ app.post('/api/pass/redeem-code', (req, res) => {
     if (!foundPass || foundPass.expiresAt <= Date.now()) {
       return res.status(404).json({
         success: false,
-        message: '❌ Código de acceso inválido o expirado. Verifica que sean los 6 dígitos correctos.'
+        message: '❌ Código de acceso inválido o expirado. Verifica que sea el código correcto.'
       });
     }
 
@@ -500,72 +649,76 @@ app.post('/api/pass/redeem-code', (req, res) => {
       success: true,
       isPassActive: true,
       isVip: true,
+      isAdmin: Boolean(foundPass.isAdmin),
       code: cleanCode,
       email: foundPass.identifier || foundEmail,
       expiresAt: foundPass.expiresAt,
       remainingMs: Math.max(0, foundPass.expiresAt - Date.now()),
-      message: '⭐ ¡Código de Pase verificado con éxito! Acceso VIP 24 Horas activado en este navegador.'
+      message: '⭐ ¡Código de Pase verificado con éxito! Acceso VIP activado en este navegador.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 6. Restaurar Pase 24h Wompi por Correo o Código
+// 6. Restaurar Pase Wompi por Correo, Código o PIN
 app.post('/api/wompi/restore-purchase', (req, res) => {
   try {
     const { email, code, pin } = req.body;
-    const inputVal = (email || code || '').trim();
-    if (!inputVal) return res.status(400).json({ error: 'Debes ingresar tu código de 6 dígitos o tu correo' });
+    const inputVal = (code || email || '').trim().toUpperCase();
+    if (!inputVal) return res.status(400).json({ error: 'Debes ingresar tu código de acceso o tu correo' });
+
+    // Super Administrador Códigos Maestros (Sin vencimiento)
+    if (inputVal === '7914' || inputVal === 'ANDRES10' || inputVal === '999999' || inputVal === 'DIEGO1' || inputVal === 'ADMIN7' || inputVal === '602951') {
+      return res.json({
+        success: true,
+        isPassActive: true,
+        isVip: true,
+        isAdmin: true,
+        code: inputVal,
+        email: 'diego.zuniga.plazas@gmail.com',
+        planName: 'Super Administrador Vitalicio',
+        expiresAt: 253402300799000,
+        remainingMs: 253402300799000 - Date.now(),
+        message: `👑 ¡Pase Super Administrador Vitalicio Sin Vencimiento activado para Diego Zuniga!`
+      });
+    }
 
     const passes = getCreatorPasses();
 
-    // 1. Si el usuario ingresó un código de 6 dígitos numéricos
-    if (/^\d{6}$/.test(inputVal)) {
-      for (const [key, p] of Object.entries(passes)) {
-        if (p && p.code && p.code.toString().trim() === inputVal) {
-          if (p.expiresAt > Date.now()) {
-            return res.json({
-              success: true,
-              isPassActive: true,
-              isVip: true,
-              code: inputVal,
-              email: p.identifier || key,
-              expiresAt: p.expiresAt,
-              message: `¡Pase Creador de 24 Horas activado con éxito!`
-            });
-          }
+    // 1. Buscar coincidencia exacta por código o altCode
+    for (const [key, p] of Object.entries(passes)) {
+      if (p && ((p.code && p.code.toString().trim().toUpperCase() === inputVal) ||
+                (p.altCode && p.altCode.toString().trim().toUpperCase() === inputVal))) {
+        if (p.expiresAt > Date.now() || p.isAdmin) {
+          return res.json({
+            success: true,
+            isPassActive: true,
+            isVip: true,
+            isAdmin: Boolean(p.isAdmin),
+            code: inputVal,
+            email: p.identifier || key,
+            expiresAt: p.expiresAt,
+            message: `¡Pase Creador activado con éxito!`
+          });
         }
-      }
-      if (inputVal === '999999' || inputVal === 'DIEGO1' || inputVal === 'ADMIN7' || inputVal === '602951') {
-        return res.json({
-          success: true,
-          isPassActive: true,
-          isVip: true,
-          isAdmin: true,
-          code: '999999',
-          email: 'diego.zuniga.plazas@gmail.com',
-          planName: 'Super Administrador Vitalicio',
-          expiresAt: 253402300799000,
-          remainingMs: 253402300799000 - Date.now(),
-          message: `👑 ¡Pase Super Administrador Vitalicio Sin Vencimiento activado para Diego Zuniga!`
-        });
-      }
-      if (inputVal === '814208') {
-        const dPass = passes['solucionesaox@gmail.com'];
-        return res.json({
-          success: true,
-          isPassActive: true,
-          isVip: true,
-          code: inputVal,
-          email: 'solucionesaox@gmail.com',
-          expiresAt: dPass ? dPass.expiresAt : Date.now() + 24 * 3600 * 1000,
-          message: `¡Pase Creador activado!`
-        });
       }
     }
 
-    // 2. Si el usuario ingresó un Número de Transacción o Referencia de Wompi (el que le llega a su correo)
+    if (inputVal === '814208') {
+      const dPass = passes['solucionesaox@gmail.com'];
+      return res.json({
+        success: true,
+        isPassActive: true,
+        isVip: true,
+        code: inputVal,
+        email: 'solucionesaox@gmail.com',
+        expiresAt: dPass ? dPass.expiresAt : Date.now() + 24 * 3600 * 1000,
+        message: `¡Pase Creador activado!`
+      });
+    }
+
+    // 2. Si el usuario ingresó un Número de Transacción o Referencia de Wompi
     for (const [key, p] of Object.entries(passes)) {
       if (p && p.reference && (p.reference === inputVal || inputVal.includes(p.reference) || p.reference.includes(inputVal))) {
         if (p.expiresAt > Date.now()) {

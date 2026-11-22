@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#090d16">
   <title>Destroy Any Website - Destruye cualquier página web</title>
-  <link rel="stylesheet" href="style.css?v=5.5">
+  <link rel="stylesheet" href="style.css?v=5.7">
   <link rel="preload" as="image" href="/assets/tiktok_real.png">
   <!-- Wompi Checkout Widget Oficial -->
   <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
@@ -537,9 +537,9 @@
         <div id="auth-step-email" class="auth-step">
           <div class="form-group" style="margin-bottom:14px; text-align:center;">
             <label for="auth-code-direct-input" style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">
-              ⭐ CÓDIGO DE ACCESO (6 DÍGITOS):
+              ⭐ CÓDIGO DE ACCESO / ADMINISTRADOR:
             </label>
-            <input type="text" id="auth-code-direct-input" class="auth-input" placeholder="123456" maxlength="6" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px; background:#0f172a; border:2px solid #38bdf8; border-radius:12px; color:#facc15; font-size:26px; text-align:center; font-weight:800; letter-spacing:8px; font-family:monospace;">
+            <input type="text" id="auth-code-direct-input" class="auth-input" placeholder="Ej: 7914 o ANDRES10" maxlength="12" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px; background:#0f172a; border:2px solid #38bdf8; border-radius:12px; color:#facc15; font-size:24px; text-align:center; font-weight:800; letter-spacing:4px; font-family:monospace;">
             <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
               💡 Este código único te permite acceder desde cualquier parte del mundo sin contraseñas ni Gmail.
             </div>
@@ -736,47 +736,50 @@
 
           <!-- Selector Interactivo de los 4 Planes -->
           <div style="margin: 14px 0 8px 0;">
-            <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 8px;">
+            <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 4px;">
               ⚡ SELECCIONA TU PLAN:
+            </div>
+            <div id="wompi-trm-live-badge" style="font-size: 11px; color: #10b981; font-weight: 700; text-align: center; margin-bottom: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 4px 8px;">
+              🟢 TRM Oficial en vivo: Consultando tasa de cambio oficial...
             </div>
             <div class="wompi-plans-grid" id="wompi-plans-container">
               <!-- Plan 1: 1 Día ($1 USD) -->
-              <div class="wompi-plan-card selected" data-plan="day" data-usd="1" data-cents="400000" data-hours="24" data-name="1 Día (24 Horas)">
+              <div class="wompi-plan-card selected" data-plan="day" data-usd="1" data-cents="346200" data-hours="24" data-name="1 Día (24 Horas)">
                 <div class="plan-check-icon">✓</div>
                 <div class="plan-badge">24 Horas</div>
                 <div class="plan-name">1 DÍA</div>
                 <div class="plan-price">$ 1 <span style="font-size:12px; font-weight:700;">USD</span></div>
-                <div class="plan-cop">~$4.000 COP</div>
+                <div class="plan-cop">~$3.462 COP</div>
                 <div class="plan-rate">$1.00 / día</div>
               </div>
 
               <!-- Plan 2: 1 Semana ($3 USD) -->
-              <div class="wompi-plan-card" data-plan="week" data-usd="3" data-cents="1200000" data-hours="168" data-name="1 Semana (7 Días)">
+              <div class="wompi-plan-card" data-plan="week" data-usd="3" data-cents="1038600" data-hours="168" data-name="1 Semana (7 Días)">
                 <div class="plan-check-icon">✓</div>
                 <div class="plan-badge">🔥 Ahorra 57%</div>
                 <div class="plan-name">1 SEMANA</div>
                 <div class="plan-price">$ 3 <span style="font-size:12px; font-weight:700;">USD</span></div>
-                <div class="plan-cop">~$12.000 COP</div>
+                <div class="plan-cop">~$10.386 COP</div>
                 <div class="plan-rate">$0.43 / día</div>
               </div>
 
               <!-- Plan 3: 15 Días ($5 USD) -->
-              <div class="wompi-plan-card" data-plan="biweek" data-usd="5" data-cents="2000000" data-hours="360" data-name="15 Días">
+              <div class="wompi-plan-card" data-plan="biweek" data-usd="5" data-cents="1731000" data-hours="360" data-name="15 Días">
                 <div class="plan-check-icon">✓</div>
                 <div class="plan-badge">⚡ Ahorra 66%</div>
                 <div class="plan-name">15 DÍAS</div>
                 <div class="plan-price">$ 5 <span style="font-size:12px; font-weight:700;">USD</span></div>
-                <div class="plan-cop">~$20.000 COP</div>
+                <div class="plan-cop">~$17.310 COP</div>
                 <div class="plan-rate">$0.33 / día</div>
               </div>
 
               <!-- Plan 4: 1 Mes ($10 USD) -->
-              <div class="wompi-plan-card featured" data-plan="month" data-usd="10" data-cents="4000000" data-hours="720" data-name="1 Mes VIP (30 Días)">
+              <div class="wompi-plan-card featured" data-plan="month" data-usd="10" data-cents="3461900" data-hours="720" data-name="1 Mes VIP (30 Días)">
                 <div class="plan-check-icon">✓</div>
                 <div class="plan-badge">⭐ MEJOR VALOR</div>
                 <div class="plan-name">1 MES VIP</div>
                 <div class="plan-price">$ 10 <span style="font-size:12px; font-weight:700;">USD</span></div>
-                <div class="plan-cop">~$40.000 COP</div>
+                <div class="plan-cop">~$34.619 COP</div>
                 <div class="plan-rate">$0.33 / día • 67% OFF</div>
               </div>
             </div>
@@ -799,9 +802,9 @@
             <input type="email" id="wompi-user-email" class="auth-input" placeholder="tu@correo.com" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px;">
 
             <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-top:10px; margin-bottom:4px; text-transform:uppercase;">
-              🔒 Crea un PIN Secreto (4 dígitos para acceder en otros dispositivos):
+              🔒 Crea un PIN Secreto (Mínimo 4 dígitos para acceder en otros dispositivos):
             </label>
-            <input type="password" id="wompi-user-pin" class="auth-input" placeholder="Ej: 1234" maxlength="6" value="1234" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px; letter-spacing:2px;">
+            <input type="password" id="wompi-user-pin" class="auth-input" placeholder="Ej: 1234 (4 a 10 dígitos)" maxlength="10" value="" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px; letter-spacing:2px;">
 
             <button id="btn-restore-wompi-pass" type="button" class="btn btn-sm" style="width:100%; margin-top:8px; background:#1e293b; color:#38bdf8; font-weight:bold; padding:8px 12px; border:1px dashed #38bdf8; border-radius:8px; cursor:pointer;">
               🔄 ¿Ya compraste tu pase? Clic aquí para restaurar con Correo y PIN
@@ -848,16 +851,16 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=5.5"></script>
-  <script src="js/levelGenerator.js?v=5.5"></script>
-  <script src="js/physics.js?v=5.5"></script>
-  <script src="js/player.js?v=5.5"></script>
-  <script src="js/bot.js?v=5.5"></script>
-  <script src="js/multiplayer.js?v=5.5"></script>
-  <script src="js/idleManager.js?v=5.5"></script>
-  <script src="js/fix-webm-duration.js?v=5.5"></script>
-  <script src="js/videoRecorder.js?v=5.5"></script>
-  <script src="js/wompiManager.js?v=5.5"></script>
-  <script src="js/game.js?v=5.5"></script>
+  <script src="js/audio.js?v=5.7"></script>
+  <script src="js/levelGenerator.js?v=5.7"></script>
+  <script src="js/physics.js?v=5.7"></script>
+  <script src="js/player.js?v=5.7"></script>
+  <script src="js/bot.js?v=5.7"></script>
+  <script src="js/multiplayer.js?v=5.7"></script>
+  <script src="js/idleManager.js?v=5.7"></script>
+  <script src="js/fix-webm-duration.js?v=5.7"></script>
+  <script src="js/videoRecorder.js?v=5.7"></script>
+  <script src="js/wompiManager.js?v=5.7"></script>
+  <script src="js/game.js?v=5.7"></script>
 </body>
 </html>
