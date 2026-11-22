@@ -1756,11 +1756,28 @@ class LevelEngine {
     this.presetName = 'custom';
     this.pageUrl = urlInput.startsWith('http') ? urlInput : `https://${urlInput}`;
     let domain = 'Website';
+    let pathDisplay = '';
+    let subfolderTitle = '';
+
     try {
-      domain = new URL(this.pageUrl).hostname;
+      const parsed = new URL(this.pageUrl);
+      domain = parsed.hostname.replace('www.', '');
+      if (parsed.pathname && parsed.pathname !== '/') {
+        const parts = parsed.pathname.split('/').filter(Boolean).map(p => decodeURIComponent(p).replace(/[-_]/g, ' '));
+        if (parts.length > 0) {
+          pathDisplay = parts.join(' > ');
+          subfolderTitle = parts[parts.length - 1];
+        }
+      }
+      if (parsed.search) {
+        pathDisplay += (pathDisplay ? ' ' : '') + parsed.search;
+      }
     } catch (e) {
       domain = urlInput;
     }
+
+    const bannerTitle = subfolderTitle ? subfolderTitle.toUpperCase() : domain.toUpperCase();
+    const breadcrumb = pathDisplay ? `${domain} > ${pathDisplay}` : domain;
 
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
@@ -1778,8 +1795,8 @@ class LevelEngine {
     ctx.fillText(`⚡ ${domain.toUpperCase()}`, 120, 85);
 
     ctx.fillStyle = '#a1a1aa';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('Features    Docs    Blog    Showcase    Pricing    Login', this.width - 550, 85);
+    ctx.font = '13px sans-serif';
+    ctx.fillText(breadcrumb.slice(0, 65), 120 + ctx.measureText(`⚡ ${domain.toUpperCase()}`).width + 25, 85);
 
     // Big Hero Banner
     ctx.fillStyle = '#09090b';
@@ -1789,16 +1806,16 @@ class LevelEngine {
     ctx.strokeRect(110, 140, this.width - 220, 320);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 44px sans-serif';
-    ctx.fillText(`WELCOME TO ${domain.toUpperCase()}`, 150, 220);
+    ctx.font = 'bold 38px sans-serif';
+    ctx.fillText(`EXPLORING: ${bannerTitle}`, 150, 220);
 
     ctx.fillStyle = '#f97316';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('Fully Destructible Web Environment Ready for Battle', 150, 270);
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(pathDisplay ? `Ruta / Artículo: ${pathDisplay.slice(0, 60)}` : 'Fully Destructible Web Environment Ready for Battle', 150, 265);
 
     ctx.fillStyle = '#d4d4d8';
     ctx.font = '16px/1.6 sans-serif';
-    this.renderWrappedText(ctx, `You have loaded "${this.pageUrl}". Every header, navigation bar, card, and paragraph on this page has been compiled into a solid physical terrain. Pick your weapon and obliterate it!`, 150, 310, this.width - 320, 24);
+    this.renderWrappedText(ctx, `Has cargado "${this.pageUrl}". Cada sección, subcarpeta, título y párrafo de esta dirección ha sido compilado en terreno físico destructible. ¡Selecciona tu arma y destrúyelo con tus amigos!`, 150, 310, this.width - 320, 24);
 
     // 4 Content Cards Grid
     const cardY = 500;

@@ -1051,25 +1051,89 @@ body.touch-active #mobile-controls {
     display: none !important;
   }
 
-  /* Botón flotante para abrir Chat en Móvil */
+  /* Botón flotante para abrir Chat en Móvil (Ubicado abajo para no tapar los controles) */
   .btn-mobile-chat-toggle {
     display: inline-flex !important;
     position: fixed;
-    top: 52px;
-    left: 8px;
+    bottom: 80px;
+    left: 14px;
     z-index: 105;
     background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(10px);
     border: 1px solid #38bdf8;
     color: #e0f2fe;
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 700;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* HUD INCREMENTAL / DINERO EN MÓVIL: Cápsula compacta a la izquierda */
+  #idle-hud-widget {
+    top: 52px;
+    left: 8px;
+    gap: 4px;
+    z-index: 90;
+  }
+  .idle-money-card {
+    padding: 3px 8px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    border-radius: 999px;
+  }
+  .idle-money-main {
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .idle-coin-icon {
+    font-size: 12px;
+    margin-right: 3px;
+  }
+  .idle-rate-sub,
+  .btn-idle-boost {
+    display: none !important;
+  }
+  .btn-idle-store {
+    padding: 3px 8px;
+    height: 28px;
+    font-size: 11px;
+    border-radius: 999px;
+  }
+
+  /* PÍLDORAS FLOTANTES EN MÓVIL: Limpias, compactas, solo REC y VIP a la derecha */
+  .floating-pills-top {
+    top: 52px;
+    right: 8px;
+    gap: 5px;
+    z-index: 90;
+  }
+  .floating-pills-top .pill-room,
+  .floating-pills-top .pill-auth {
+    display: none !important;
+  }
+  .floating-pills-top .pill-btn {
+    padding: 3px 8px;
+    height: 28px;
+    font-size: 11px;
+    border-radius: 999px;
+  }
+
+  /* CONTADOR DE SECRETOS: En móvil se fusiona con la barra de destrucción */
+  #secret-meter-container {
+    display: none !important;
+  }
+
+  /* Barra de Destrucción Superior */
+  #destruction-meter-container {
+    top: 48px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 10px;
   }
 
   .chat-unread-badge {
@@ -2940,4 +3004,97 @@ body.ui-hidden #idle-hud-widget {
   color: #facc15;
   font-weight: 700;
   margin-top: 3px;
+}
+
+/* ==========================================================================
+   CONTEO REGRESIVO GIGANTE DE 3 SEGUNDOS (PANTALLA NEGRA ALPHA)
+   ========================================================================== */
+.countdown-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 7, 14, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 999999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  pointer-events: all;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.countdown-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.countdown-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  animation: countdownPulse 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.countdown-sub {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #38bdf8;
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  text-transform: uppercase;
+}
+
+.countdown-target-url {
+  font-size: 13px;
+  font-family: monospace;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 16px;
+  border-radius: 999px;
+  max-width: 85vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countdown-number {
+  font-size: 140px;
+  line-height: 1;
+  font-weight: 950;
+  color: #facc15;
+  text-shadow: 0 0 45px rgba(250, 204, 21, 0.85), 0 8px 24px rgba(0, 0, 0, 0.95);
+  font-family: -apple-system, BlinkMacSystemFont, 'Impact', 'Segoe UI', sans-serif;
+  transform: scale(1);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 10px 0;
+}
+
+.countdown-number.pop {
+  transform: scale(1.35);
+  color: #f97316;
+}
+
+.countdown-number.go {
+  font-size: 85px;
+  color: #22c55e;
+  text-shadow: 0 0 50px rgba(34, 197, 94, 0.95);
+}
+
+.countdown-status {
+  font-size: 13px;
+  color: #cbd5e1;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+@keyframes countdownPulse {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }

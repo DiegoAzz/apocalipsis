@@ -1,0 +1,12 @@
+{
+  "lobby": {
+    "preset": "wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Stick_figure",
+    "pageUrl": "",
+    "pageData": null,
+    "craters": [],
+    "chatHistory": [],
+    "seed": 824334,
+    "createdAt": 1795307790195
+  }
+}

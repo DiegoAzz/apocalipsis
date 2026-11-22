@@ -636,6 +636,56 @@ class SoundManager {
     osc.start(t);
     osc.stop(t + 0.35);
   }
+
+  // Conteo Regresivo 3.. 2.. 1.. Beep
+  playCountdownTick() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(580, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + 0.08);
+
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  }
+
+  // ¡A DESTRUIR! Boom
+  playCountdownGo() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t + 0.7);
+
+    gain.gain.setValueAtTime(0.85, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.7);
+
+    if (typeof this.playCinematicBoom === 'function') {
+      this.playCinematicBoom();
+    }
+  }
 }
 
 window.soundManager = new SoundManager();

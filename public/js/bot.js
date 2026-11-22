@@ -10,10 +10,11 @@ class BotController {
     // Grant demolition bot access to full arsenal
     this.player.unlockAllWeaponsVip();
 
-    // Pool of heavy demolition weapons:
-    // 1: SMG, 2: Shotgun, 3: Rocket Launcher, 4: Railgun, 5: Flamethrower, 
-    // 6: Too Much (Cluster), 7: The Magic Wand, 8: PSR B0531+21, 9: Tsar Bomba, 10: Grenade Launcher
-    this.demolitionWeapons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    // Pool of visible, fluid and kinetic demolition weapons:
+    // 1: SMG, 2: Shotgun, 3: Rocket Launcher, 4: Railgun, 5: Flamethrower
+    // We intentionally exclude screen-blinding weapons (Nuke, Black Hole, Giant Banners)
+    // so recordings clearly show stickmen running and carving satisfying holes in the website!
+    this.demolitionWeapons = [1, 2, 3, 4, 5];
     this.currentDemoWeaponIdx = Math.floor(Math.random() * this.demolitionWeapons.length);
     this.player.selectWeapon(this.demolitionWeapons[this.currentDemoWeaponIdx]);
 

@@ -820,21 +820,100 @@ class Game {
     this.clampCamera();
   }
 
+  // Conteo Regresivo Gigante de 3 Segundos con Pantalla Negra Alpha
+  triggerDestructionCountdown(targetUrl, onReadyAction) {
+    const overlay = document.getElementById('destruction-countdown-overlay');
+    const numEl = document.getElementById('countdown-number');
+    const urlEl = document.getElementById('countdown-target-url');
+    const statusEl = document.getElementById('countdown-status');
+
+    if (!overlay || !numEl) {
+      if (typeof onReadyAction === 'function') onReadyAction();
+      return;
+    }
+
+    if (urlEl) urlEl.textContent = targetUrl || 'Arena Web Destructible';
+    if (statusEl) statusEl.textContent = '⚡ Sincronizando terreno y armamento...';
+
+    overlay.classList.add('active');
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+
+    // Ejecutar la carga, captura o sincronización de inmediato en segundo plano
+    if (typeof onReadyAction === 'function') {
+      try {
+        onReadyAction();
+      } catch (err) {
+        console.warn('[COUNTDOWN TASK ERROR]:', err);
+      }
+    }
+
+    let count = 3;
+    numEl.textContent = count;
+    numEl.className = 'countdown-number pop';
+    setTimeout(() => numEl && numEl.classList.remove('pop'), 200);
+
+    if (window.soundManager) {
+      window.soundManager.ensureContext();
+      window.soundManager.playCountdownTick();
+    }
+
+    const interval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        numEl.textContent = count;
+        numEl.className = 'countdown-number pop';
+        setTimeout(() => numEl && numEl.classList.remove('pop'), 200);
+        if (window.soundManager) window.soundManager.playCountdownTick();
+      } else if (count === 0) {
+        numEl.textContent = '¡A DESTRUIR!';
+        numEl.className = 'countdown-number go pop';
+        if (statusEl) statusEl.textContent = '🚀 ¡FUEGO A DISCRECIÓN!';
+        if (window.soundManager) window.soundManager.playCountdownGo();
+      } else {
+        clearInterval(interval);
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          overlay.style.display = 'none';
+          overlay.style.opacity = '1';
+          this.snapCameraToPlayer();
+        }, 250);
+      }
+    }, 1000);
+  }
+
   loadMapPreset(preset, url = '', notifyServer = true) {
     const lowerUrl = (url || preset).toLowerCase();
 
-    if (lowerUrl.includes('amazon')) {
-      this.level.generateAmazon();
-    } else if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
-      this.level.generateFacebook();
-    } else if (preset === 'wikipedia' || lowerUrl.includes('wikipedia')) {
-      this.level.generateWikipedia();
-    } else if (preset === 'google' || lowerUrl.includes('google')) {
-      this.level.generateGoogle();
-    } else if (preset === 'youtube' || lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be')) {
-      this.level.generateYouTube();
-    } else if (preset === 'tiktok' || lowerUrl.includes('tiktok')) {
-      this.level.generateTikTok();
+    // Comprobar si la URL tiene subcarpetas específicas (ej: /wiki/..., /watch?v=..., /noticias/...)
+    let hasSubpath = false;
+    try {
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+        const parsed = new URL(url);
+        if (parsed.pathname && parsed.pathname !== '/' && parsed.pathname.length > 1) {
+          hasSubpath = true;
+        }
+      }
+    } catch (e) {}
+
+    // Si tiene subcarpetas, no forzar plantillas raíz genéricas sino generar el nivel con la ruta real
+    if (!hasSubpath) {
+      if (lowerUrl.includes('amazon')) {
+        this.level.generateAmazon();
+      } else if (lowerUrl.includes('facebook') || lowerUrl.includes('fb.com')) {
+        this.level.generateFacebook();
+      } else if (preset === 'wikipedia' || lowerUrl.includes('wikipedia')) {
+        this.level.generateWikipedia();
+      } else if (preset === 'google' || lowerUrl.includes('google')) {
+        this.level.generateGoogle();
+      } else if (preset === 'youtube' || lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be')) {
+        this.level.generateYouTube();
+      } else if (preset === 'tiktok' || lowerUrl.includes('tiktok')) {
+        this.level.generateTikTok();
+      } else {
+        this.level.generateCustom(url || preset);
+      }
     } else {
       this.level.generateCustom(url || preset);
     }
@@ -1601,15 +1680,18 @@ class UIManager {
       facebook: 'https://www.facebook.com'
     };
 
-    // Captura real de sitios web en vivo
+    // Captura real de sitios web en vivo con sincronización multijugador y soporte total de subcarpetas
     const loadLiveWebpage = async (targetUrl, fallbackPreset = 'custom') => {
       const btn = document.getElementById('btn-destroy-url');
-      if (btn) btn.innerHTML = '<span>⏳ CAPTURANDO WEB...</span>';
+      if (btn) btn.innerHTML = '<span>⏳ CAPTURANDO...</span>';
 
       try {
         const lower = targetUrl.toLowerCase();
         if (lower.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/)) {
           await this.game.loadUserImage(targetUrl);
+          if (!this.game.isSoloMode) {
+            this.game.multiplayer.emitChangeMap('image', targetUrl);
+          }
           return;
         }
 
@@ -1625,15 +1707,47 @@ class UIManager {
         await this.game.loadUserImage(dataUrl);
         this.game.level.pageUrl = targetUrl;
         this.setPresetDisplay(fallbackPreset, targetUrl);
+
+        // Sincronizar captura a la sala multijugador para que todos jueguen sobre la misma web
+        if (!this.game.isSoloMode) {
+          const roomId = this.game.multiplayer.roomId || 'lobby';
+          try {
+            await fetch('/api/upload-room-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                roomId,
+                imageBase64: dataUrl,
+                pageUrl: targetUrl,
+                preset: 'image'
+              })
+            });
+          } catch (syncErr) {
+            console.warn('[SYNC ROOM IMAGE ERR]:', syncErr);
+          }
+        }
       } catch (err) {
         console.warn('[SCREENSHOT FALLBACK]:', err.message);
+        // Fallback Inteligente: Extraer HTML estructurado y subcarpetas reales del artículo/página
+        try {
+          const parseRes = await fetch(`/api/parse-url?url=${encodeURIComponent(targetUrl)}`);
+          if (parseRes.ok) {
+            const pageData = await parseRes.json();
+            if (pageData && (pageData.title || (pageData.headings && pageData.headings.length))) {
+              await this.game.loadParsedWebpage(pageData, true);
+              return;
+            }
+          }
+        } catch (pErr) {
+          console.warn('[PARSE FALLBACK ERROR]:', pErr.message);
+        }
         this.game.loadMapPreset(fallbackPreset, targetUrl, true);
       } finally {
         if (btn) btn.innerHTML = '<span>⚡ DESTRUIR</span>';
       }
     };
 
-    // Presets con Captura Real de Páginas
+    // Presets con Conteo Regresivo de 3s y Sincronización Multijugador
     document.querySelectorAll('[data-preset]').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
@@ -1641,16 +1755,20 @@ class UIManager {
         const preset = btn.getAttribute('data-preset');
         const targetUrl = presetMap[preset] || `https://www.${preset}.com`;
         if (this.urlInput) this.urlInput.value = targetUrl;
-        loadLiveWebpage(targetUrl, preset);
+        this.game.triggerDestructionCountdown(targetUrl, () => {
+          this.game.loadMapPreset(preset, targetUrl, true);
+        });
       });
     });
 
-    // Destroy button
+    // Destroy button con Conteo Regresivo de 3 Segundos
     const destroyBtn = document.getElementById('btn-destroy-url');
-    const handleUrlSubmit = async () => {
+    const handleUrlSubmit = () => {
       const val = this.urlInput.value.trim();
       if (!val) return;
-      await loadLiveWebpage(val, 'custom');
+      this.game.triggerDestructionCountdown(val, () => {
+        loadLiveWebpage(val, 'custom');
+      });
     };
 
     if (destroyBtn) {
@@ -1663,7 +1781,7 @@ class UIManager {
       });
     }
 
-    // Image Upload Button & Input
+    // Image Upload Button & Input con Conteo Regresivo
     const uploadBtn = document.getElementById('btn-upload-image');
     const fileInput = document.getElementById('image-upload-input');
     if (uploadBtn && fileInput) {
@@ -1672,35 +1790,43 @@ class UIManager {
         const file = e.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = async (ev) => {
+          reader.onload = (ev) => {
             const dataUrl = ev.target.result;
-            await this.game.loadUserImage(dataUrl);
+            this.game.triggerDestructionCountdown(`Imagen: ${file.name}`, async () => {
+              await this.game.loadUserImage(dataUrl);
 
-            // Sync image to multiplayer room so all friends joining receive the picture!
-            try {
-              let currentRoom = this.game.multiplayer.roomId || 'lobby';
-              if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
-                currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
-                this.game.isSoloMode = false;
-                this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+              // Sincronizar imagen a la sala multijugador persistente
+              try {
+                let currentRoom = this.game.multiplayer.roomId || 'lobby';
+                if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
+                  currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
+                  this.game.isSoloMode = false;
+                  this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+                }
+
+                await fetch('/api/upload-room-image', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ roomId: currentRoom, imageBase64: dataUrl, preset: 'image' })
+                });
+                this.setPresetDisplay('image', file.name);
+              } catch (err) {
+                console.warn('[IMAGE UPLOAD ROOM ERROR]:', err);
               }
-
-              const res = await fetch('/api/upload-room-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ roomId: currentRoom, imageBase64: dataUrl })
-              });
-              const resData = await res.json();
-              console.log('[ROOM IMAGE SYNCED]:', resData);
-              this.setPresetDisplay('image', 'Imagen Personalizada');
-            } catch (err) {
-              console.error('Failed to sync room image:', err);
-            }
+            });
           };
           reader.readAsDataURL(file);
         }
       });
     }
+
+    // Atajos de Salas y Mi Cuenta dentro del cajón móvil de Opciones
+    const drawerRooms = document.getElementById('btn-open-rooms-hub-drawer');
+    const drawerAuth = document.getElementById('btn-open-auth-drawer');
+    const btnRoomsHub = document.getElementById('btn-open-rooms-hub');
+    const btnAuth = document.getElementById('btn-open-auth-modal');
+    if (drawerRooms && btnRoomsHub) drawerRooms.addEventListener('click', () => btnRoomsHub.click());
+    if (drawerAuth && btnAuth) drawerAuth.addEventListener('click', () => btnAuth.click());
 
     // Rooms Hub & Authentication Modals
     this.setupRoomsHub();
@@ -2071,7 +2197,8 @@ class UIManager {
       this.destructionBar.style.width = `${percent.toFixed(1)}%`;
     }
     if (this.destructionText) {
-      this.destructionText.textContent = `${percent.toFixed(1)}% DESTRUIDO`;
+      const secrets = this.game.secretsFoundCount || 0;
+      this.destructionText.textContent = `${percent.toFixed(1)}% DESTRUIDO • 🔍 ${secrets}/5`;
     }
 
     // Comprobar progresión de desbloqueo de armas
@@ -2263,7 +2390,8 @@ class UIManager {
     const checkSavedSession = () => {
       const savedEmail = localStorage.getItem('apocalipsis_auth_email');
       if (savedEmail) {
-        if (btnAuthLabel) btnAuthLabel.textContent = savedEmail.split('@')[0];
+        const isVip = localStorage.getItem('apocalipsis_vip_unlocked') === 'true';
+        if (btnAuthLabel) btnAuthLabel.textContent = isVip ? '⭐ VIP' : 'Mi Cuenta';
         return savedEmail;
       }
       return null;
@@ -2383,7 +2511,7 @@ class UIManager {
 
           if (data.success) {
             localStorage.setItem('apocalipsis_auth_email', email);
-            if (btnAuthLabel) btnAuthLabel.textContent = email.split('@')[0];
+            if (btnAuthLabel) btnAuthLabel.textContent = data.isVip ? '⭐ VIP' : 'Mi Cuenta';
 
             if (data.isVip) {
               this.game.localPlayer.unlockAllWeaponsVip();

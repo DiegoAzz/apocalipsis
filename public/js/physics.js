@@ -791,14 +791,16 @@ class PhysicsEngine {
   }
 
   detonateNuke(x, y, radius, damage, attackerId, onTerrainDamage, onTargetHit, targets = []) {
-    // Street Fighter 6 Critical Art Cut-in, Drive Impact Neon Splatters & 3D Depth Debris
-    this.triggerSuperArtCutIn('CRITICAL ART', '☢️ TSAR BOMBA: ANIQUILACIÓN TOTAL', '#ef4444');
+    // Street Fighter 6 Critical Art Cut-in, Drive Impact Neon Splatters & 3D Depth Debris (Only for human players)
+    if (!attackerId || !attackerId.startsWith('bot_')) {
+      this.triggerSuperArtCutIn('CRITICAL ART', '☢️ TSAR BOMBA: ANIQUILACIÓN TOTAL', '#ef4444');
+      this.screenFlash = 1.0;
+    }
     this.spawnDriveImpact(x, y, 'sf6');
     this.spawn3DDepthDebris(x, y, 48, '#ef4444');
 
-    // 1. Destello cegador en pantalla y máxima sacudida
-    this.screenFlash = 1.0;
-    this.addTrauma(1.0);
+    // 1. Sacudida de cámara y sonido
+    this.addTrauma(0.8);
     window.soundManager.playNukeExplosion();
 
     // 2. Cráter gigante en el terreno de la web
@@ -834,7 +836,9 @@ class PhysicsEngine {
   detonateExplosion(x, y, radius, damage, attackerId, weapon, onTerrainDamage, onTargetHit, targets = []) {
     // Street Fighter 6 Drive Impact & 3D Depth Debris
     if (weapon === 'neutron') {
-      this.triggerSuperArtCutIn('SUPER ART', '🌌 SINGULARIDAD DE NEUTRONES', '#38bdf8');
+      if (!attackerId || !attackerId.startsWith('bot_')) {
+        this.triggerSuperArtCutIn('SUPER ART', '🌌 SINGULARIDAD DE NEUTRONES', '#38bdf8');
+      }
       this.spawnDriveImpact(x, y, 'sf6');
       this.spawn3DDepthDebris(x, y, 36, '#38bdf8');
     } else if (radius >= 40) {

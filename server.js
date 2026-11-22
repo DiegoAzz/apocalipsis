@@ -21,36 +21,84 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
-// Store custom room images in memory so any player joining a room sees the uploaded picture
+// Store custom room images in memory and disk so any player joining a room sees the uploaded picture
 const roomImages = new Map();
+const ROOM_IMAGES_DIR = path.join(__dirname, 'data', 'room_images');
+if (!fs.existsSync(ROOM_IMAGES_DIR)) fs.mkdirSync(ROOM_IMAGES_DIR, { recursive: true });
 
-// Upload room image for shared multiplayer obliteration
+function getRoomImageFromDisk(roomId) {
+  try {
+    const cleanId = (roomId || '').trim().toLowerCase();
+    if (!cleanId) return null;
+    if (roomImages.has(cleanId)) return roomImages.get(cleanId);
+
+    const pngPath = path.join(ROOM_IMAGES_DIR, `${cleanId}.png`);
+    const jpgPath = path.join(ROOM_IMAGES_DIR, `${cleanId}.jpg`);
+    if (fs.existsSync(pngPath)) {
+      const buffer = fs.readFileSync(pngPath);
+      const data = { mimeType: 'image/png', buffer };
+      roomImages.set(cleanId, data);
+      return data;
+    }
+    if (fs.existsSync(jpgPath)) {
+      const buffer = fs.readFileSync(jpgPath);
+      const data = { mimeType: 'image/jpeg', buffer };
+      roomImages.set(cleanId, data);
+      return data;
+    }
+  } catch (err) {
+    console.error('[ROOM IMAGE DISK READ ERROR]:', err);
+  }
+  return null;
+}
+
+// Upload room image for shared multiplayer obliteration (Persistent)
 app.post('/api/upload-room-image', (req, res) => {
-  const { roomId, imageBase64 } = req.body;
+  const { roomId, imageBase64, pageUrl, preset } = req.body;
   if (!roomId || !imageBase64) return res.status(400).json({ error: 'Missing roomId or image' });
 
   const targetRoomId = (roomId || 'lobby').trim().toLowerCase();
   const room = getOrCreateRoom(targetRoomId);
 
   const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  let mimeType = 'image/jpeg';
+  let buffer;
   if (matches && matches.length === 3) {
-    const mimeType = matches[1];
-    const buffer = Buffer.from(matches[2], 'base64');
-    roomImages.set(targetRoomId, { mimeType, buffer });
+    mimeType = matches[1];
+    buffer = Buffer.from(matches[2], 'base64');
   } else {
-    roomImages.set(targetRoomId, { mimeType: 'image/jpeg', buffer: Buffer.from(imageBase64, 'base64') });
+    buffer = Buffer.from(imageBase64, 'base64');
+  }
+  roomImages.set(targetRoomId, { mimeType, buffer });
+
+  // Persist to disk
+  try {
+    const ext = mimeType.includes('png') ? 'png' : 'jpg';
+    fs.writeFileSync(path.join(ROOM_IMAGES_DIR, `${targetRoomId}.${ext}`), buffer);
+    fs.writeFileSync(path.join(ROOM_IMAGES_DIR, `${targetRoomId}.meta.json`), JSON.stringify({
+      mimeType,
+      pageUrl: pageUrl || '',
+      preset: preset || 'image',
+      updatedAt: Date.now()
+    }));
+  } catch (diskErr) {
+    console.error('[ROOM IMAGE DISK SAVE ERROR]:', diskErr);
   }
 
   const imageUrl = `/api/room-image/${targetRoomId}?t=${Date.now()}`;
   room.preset = 'image';
   room.url = imageUrl;
+  room.pageUrl = pageUrl || '';
   room.craters = [];
+  saveRoomsToDisk();
 
   io.to(targetRoomId).emit('map-changed', {
     preset: 'image',
-    url: imageUrl
+    url: imageUrl,
+    pageUrl: pageUrl || ''
   });
 
+  console.log(`[ROOM IMAGE SYNC] Sala '${targetRoomId}' sincronizada con imagen compartida.`);
   res.json({ success: true, url: imageUrl });
 });
 
@@ -62,7 +110,7 @@ app.get('/api/rooms', (req, res) => {
       id: room.id,
       playerCount: room.players ? room.players.size : 0,
       preset: room.preset || 'custom',
-      hasImage: roomImages.has(id),
+      hasImage: roomImages.has(id) || fs.existsSync(path.join(ROOM_IMAGES_DIR, `${id}.jpg`)) || fs.existsSync(path.join(ROOM_IMAGES_DIR, `${id}.png`)),
       createdAt: room.createdAt || Date.now()
     });
   }
@@ -453,10 +501,10 @@ app.post('/api/auth/verify-code', (req, res) => {
   }
 });
 
-// Serve room custom image
+// Serve room custom image (From Memory or Disk)
 app.get('/api/room-image/:roomId', (req, res) => {
   const targetRoomId = (req.params.roomId || 'lobby').trim().toLowerCase();
-  const data = roomImages.get(targetRoomId);
+  const data = getRoomImageFromDisk(targetRoomId);
   if (!data) return res.status(404).send('No image for this room');
 
   res.set('Content-Type', data.mimeType || 'image/jpeg');
@@ -715,15 +763,96 @@ app.get('/api/parse-url', async (req, res) => {
   }
 });
 
-// In-memory rooms state
+// ==========================================================================
+// PERSISTENCIA TOTAL DE SALAS & ESTADO MULTIJUGADOR EN DISCO
+// ==========================================================================
 const rooms = new Map();
+const ROOMS_DB_PATH = path.join(__dirname, 'data', 'rooms.json');
+
+function loadRoomsFromDisk() {
+  try {
+    if (fs.existsSync(ROOMS_DB_PATH)) {
+      const data = JSON.parse(fs.readFileSync(ROOMS_DB_PATH, 'utf8'));
+      for (const [id, rData] of Object.entries(data)) {
+        rooms.set(id, {
+          id,
+          preset: rData.preset || 'wikipedia',
+          url: rData.url || 'https://en.wikipedia.org/wiki/Stick_figure',
+          pageUrl: rData.pageUrl || '',
+          pageData: rData.pageData || null,
+          craters: rData.craters || [],
+          players: new Map(),
+          bots: new Map(),
+          chatHistory: rData.chatHistory || [],
+          seed: rData.seed || Math.floor(Math.random() * 1000000),
+          createdAt: rData.createdAt || Date.now()
+        });
+      }
+      console.log(`[ROOMS PERSISTENCE]: Se cargaron ${rooms.size} salas persistentes de disco.`);
+    }
+  } catch (err) {
+    console.error('[ROOMS LOAD ERROR]:', err);
+  }
+}
+
+let saveRoomsTimeout = null;
+function saveRoomsToDisk() {
+  if (saveRoomsTimeout) return;
+  saveRoomsTimeout = setTimeout(() => {
+    saveRoomsTimeout = null;
+    try {
+      const out = {};
+      for (const [id, r] of rooms.entries()) {
+        out[id] = {
+          preset: r.preset,
+          url: r.url,
+          pageUrl: r.pageUrl || '',
+          pageData: r.pageData || null,
+          craters: r.craters ? r.craters.slice(-2000) : [],
+          chatHistory: r.chatHistory ? r.chatHistory.slice(-50) : [],
+          seed: r.seed,
+          createdAt: r.createdAt
+        };
+      }
+      const dataDir = path.dirname(ROOMS_DB_PATH);
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(ROOMS_DB_PATH, JSON.stringify(out, null, 2));
+    } catch (err) {
+      console.error('[ROOMS SAVE ERROR]:', err);
+    }
+  }, 1000);
+}
+
+loadRoomsFromDisk();
 
 function getOrCreateRoom(roomId) {
-  if (!rooms.has(roomId)) {
-    rooms.set(roomId, {
-      id: roomId,
-      preset: 'wikipedia',
-      url: 'https://en.wikipedia.org/wiki/Stick_figure',
+  const cleanId = (roomId || 'lobby').trim().toLowerCase();
+  if (!rooms.has(cleanId)) {
+    let preset = 'wikipedia';
+    let url = 'https://en.wikipedia.org/wiki/Stick_figure';
+    let pageUrl = '';
+    let pageData = null;
+
+    // Check if custom image or meta exists on disk for this room
+    const metaPath = path.join(ROOM_IMAGES_DIR, `${cleanId}.meta.json`);
+    if (fs.existsSync(metaPath)) {
+      try {
+        const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        preset = meta.preset || 'image';
+        url = `/api/room-image/${cleanId}`;
+        pageUrl = meta.pageUrl || '';
+      } catch (e) {}
+    } else if (fs.existsSync(path.join(ROOM_IMAGES_DIR, `${cleanId}.png`)) || fs.existsSync(path.join(ROOM_IMAGES_DIR, `${cleanId}.jpg`))) {
+      preset = 'image';
+      url = `/api/room-image/${cleanId}`;
+    }
+
+    rooms.set(cleanId, {
+      id: cleanId,
+      preset,
+      url,
+      pageUrl,
+      pageData,
       craters: [],
       players: new Map(),
       bots: new Map(),
@@ -731,18 +860,22 @@ function getOrCreateRoom(roomId) {
       seed: Math.floor(Math.random() * 1000000),
       createdAt: Date.now()
     });
+    saveRoomsToDisk();
   }
-  return rooms.get(roomId);
+  return rooms.get(cleanId);
 }
 
-// Clean empty rooms periodically
+// Clean empty ephemeral rooms periodically (keeping custom and persistent ones)
 setInterval(() => {
   const now = Date.now();
+  let modified = false;
   for (const [roomId, room] of rooms.entries()) {
-    if (roomId !== 'lobby' && room.players.size === 0 && now - room.createdAt > 300000) {
+    if (roomId !== 'lobby' && room.players.size === 0 && now - room.createdAt > 3600000 && !roomImages.has(roomId) && room.preset === 'wikipedia') {
       rooms.delete(roomId);
+      modified = true;
     }
   }
+  if (modified) saveRoomsToDisk();
 }, 60000);
 
 getOrCreateRoom('lobby');
@@ -804,6 +937,8 @@ io.on('connection', (socket) => {
       assignedColor: assignedColor,
       preset: roomData.preset,
       url: roomData.url,
+      pageUrl: roomData.pageUrl || roomData.url,
+      pageData: roomData.pageData || null,
       seed: roomData.seed,
       craters: roomData.craters.slice(-500),
       players: Array.from(roomData.players.values()),
@@ -887,6 +1022,7 @@ io.on('connection', (socket) => {
     }
 
     socket.to(currentRoomId).emit('terrain-damaged', damageData);
+    saveRoomsToDisk();
   });
 
   socket.on('terrain-damage-batch', (batch) => {
@@ -907,6 +1043,7 @@ io.on('connection', (socket) => {
     }
 
     socket.to(currentRoomId).emit('terrain-damaged-batch', batch);
+    saveRoomsToDisk();
   });
 
   socket.on('player-hit', ({ targetId, damage, weapon, attackerId }) => {
@@ -996,8 +1133,11 @@ io.on('connection', (socket) => {
 
     room.preset = preset || 'wikipedia';
     room.url = url || '';
+    room.pageUrl = (pageData && pageData.url) || url || '';
+    room.pageData = pageData || null;
     room.craters = [];
     room.seed = Math.floor(Math.random() * 1000000);
+    saveRoomsToDisk();
 
     for (const player of room.players.values()) {
       player.health = 100;
@@ -1013,9 +1153,11 @@ io.on('connection', (socket) => {
     io.to(currentRoomId).emit('map-changed', {
       preset: room.preset,
       url: room.url,
+      pageUrl: room.pageUrl,
       seed: room.seed,
       pageData
     });
+    console.log(`[MAP SYNC]: Sala '${currentRoomId}' cambió mapa a '${room.preset}' (${room.url})`);
   });
 
   socket.on('disconnect', () => {

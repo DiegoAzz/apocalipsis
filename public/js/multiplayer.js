@@ -58,8 +58,12 @@ class MultiplayerManager {
       // Load Map
       if (data.preset === 'image' && data.url) {
         this.game.loadUserImage(data.url, false);
+        if (data.pageUrl) this.game.level.pageUrl = data.pageUrl;
+        if (this.game.ui) this.game.ui.setPresetDisplay('image', data.pageUrl || 'Imagen Personalizada');
+      } else if (data.pageData) {
+        this.game.loadParsedWebpage(data.pageData, false);
       } else {
-        this.game.loadMapPreset(data.preset, data.url, false);
+        this.game.loadMapPreset(data.preset || 'wikipedia', data.url, false);
       }
 
       // Replay recent craters
@@ -222,9 +226,11 @@ class MultiplayerManager {
       this.game.addBotFromData(botData);
     });
 
-    this.socket.on('map-changed', ({ preset, url, pageData }) => {
+    this.socket.on('map-changed', ({ preset, url, pageData, pageUrl }) => {
       if (preset === 'image' && url) {
         this.game.loadUserImage(url, false);
+        if (pageUrl) this.game.level.pageUrl = pageUrl;
+        if (this.game.ui) this.game.ui.setPresetDisplay('image', pageUrl || 'Imagen Personalizada');
       } else if (pageData) {
         this.game.loadParsedWebpage(pageData, false);
       } else {

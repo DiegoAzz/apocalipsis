@@ -198,6 +198,8 @@
         <button class="btn btn-sm" id="btn-toggle-fullscreen" title="Pantalla Completa (Ideal para TikTok Live y pantalla completa)">📺 Pantalla Completa</button>
         <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
         <button class="btn btn-sm" id="btn-center-camera" title="Centrar cámara en tu personaje (o pulsa C)">🎯 Centrar</button>
+        <button class="btn btn-sm btn-drawer-room" id="btn-open-rooms-hub-drawer" title="Ver salas e invitar amigos">🏠 Salas</button>
+        <button class="btn btn-sm btn-drawer-auth" id="btn-open-auth-drawer" title="Iniciar Sesión / VIP">🔐 Mi Cuenta</button>
         <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
         <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
         <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
@@ -277,6 +279,16 @@
     <span class="secret-icon">🔍</span>
     <span class="secret-label">SECRETOS:</span>
     <span id="secrets-found-count" class="secret-count">0</span><span class="secret-total">/5</span>
+  </div>
+
+  <!-- Pantalla Negra Alpha con Conteo Regresivo de 3 Segundos para Destruir Sitios -->
+  <div id="destruction-countdown-overlay" class="countdown-overlay">
+    <div class="countdown-content">
+      <div class="countdown-sub">⚡ APOCALIPSIS • PREPARANDO TERRENO FÍSICO ⚡</div>
+      <div class="countdown-target-url" id="countdown-target-url">https://...</div>
+      <div class="countdown-number" id="countdown-number">3</div>
+      <div class="countdown-status" id="countdown-status">Sincronizando arena de combate...</div>
+    </div>
   </div>
 
   <!-- Canvas Principal del Videojuego -->
