@@ -270,6 +270,7 @@ class WompiManager {
   }
 
   async verifyAndActivate(transactionId, email) {
+    let serverExpiresAt = null;
     try {
       const res = await fetch('/api/wompi/verify-transaction', {
         method: 'POST',
@@ -282,20 +283,36 @@ class WompiManager {
         localStorage.setItem('apocalipsis_pass_code', data.code);
         alert(`⭐ ¡PAGO APROBADO EXITOSAMENTE!\n\nTu CÓDIGO DE ACCESO DE 24 HORAS es:\n\n👉  ${data.code}  👈\n\nGuarda este código para ingresar desde cualquier computador, celular o trabajo durante las próximas 24 horas.`);
       }
+      if (data && data.expiresAt) {
+        serverExpiresAt = data.expiresAt;
+      }
     } catch (err) {
       console.warn('Backend verification call failed, proceeding locally:', err);
     }
-    this.activatePass(24, email);
+    this.activatePass(serverExpiresAt || 24, email);
   }
 
-  activatePass(hours = 24, email = '') {
+  activatePass(expiresAtOrHours = 24, email = '') {
     const now = Date.now();
-    const currentExpires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
-    const baseTime = currentExpires > now ? currentExpires : now;
-    const newExpires = baseTime + (hours * 60 * 60 * 1000);
+    let newExpires;
+
+    // Si recibimos un timestamp absoluto del servidor (en milisegundos, ej: > 1600000000000)
+    const numericVal = typeof expiresAtOrHours === 'number' ? expiresAtOrHours : parseInt(expiresAtOrHours, 10);
+    if (!isNaN(numericVal) && numericVal > 1600000000000) {
+      newExpires = numericVal;
+    } else {
+      const hours = !isNaN(numericVal) && numericVal > 0 ? numericVal : 24;
+      const currentExpires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
+      const baseTime = currentExpires > now ? currentExpires : now;
+      newExpires = baseTime + (hours * 60 * 60 * 1000);
+    }
 
     localStorage.setItem(this.STORAGE_KEY, newExpires.toString());
-    if (email) localStorage.setItem(this.STORAGE_EMAIL, email);
+    localStorage.setItem('apocalipsis_creator_pass', newExpires.toString());
+    if (email) {
+      localStorage.setItem(this.STORAGE_EMAIL, email);
+      localStorage.setItem('apocalipsis_auth_email', email);
+    }
 
     if (this.game && this.game.localPlayer) {
       this.game.localPlayer.unlockAllWeaponsVip();
@@ -305,7 +322,7 @@ class WompiManager {
     this.updateHUD();
 
     if (this.game && this.game.ui) {
-      this.game.ui.showToast('⭐ ¡PASE CREADOR DE 24 HORAS ACTIVADO CON WOMPI! Tienes acceso ilimitado a fotos, webs y armas.');
+      this.game.ui.showToast('⭐ ¡PASE CREADOR DE 24 HORAS VINCULADO! Tienes acceso ilimitado a fotos, webs y armas.');
     }
     if (window.soundManager && typeof window.soundManager.playWeaponUnlocked === 'function') {
       window.soundManager.playWeaponUnlocked();
@@ -421,7 +438,21 @@ class WompiManager {
       const returnedEmail = urlParams.get('email');
 
       if (isReturn && returnedEmail) {
-        this.activatePass(24, returnedEmail);
+        try {
+          const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(returnedEmail)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.isPassActive && data.expiresAt) {
+              this.activatePass(data.expiresAt, returnedEmail);
+            } else {
+              this.activatePass(24, returnedEmail);
+            }
+          } else {
+            this.activatePass(24, returnedEmail);
+          }
+        } catch (e) {
+          this.activatePass(24, returnedEmail);
+        }
         if (this.game && this.game.ui) {
           this.game.ui.showToast('⭐ ¡PAGO APROBADO CON ÉXITO! Tu Pase Creador de 24 Horas está activo.');
         }
@@ -433,7 +464,7 @@ class WompiManager {
     // 2. Comprobar sesión guardada en este navegador (por código o pase local)
     try {
       const savedCode = localStorage.getItem('apocalipsis_pass_code');
-      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
+      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL) || localStorage.getItem('apocalipsis_auth_email');
 
       if (savedCode) {
         const res = await fetch('/api/pass/redeem-code', {
@@ -445,11 +476,14 @@ class WompiManager {
           const data = await res.json();
           if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
+            localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
             this.updateHUD();
             if (this.game && this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
               if (this.game.ui) this.game.ui.refreshWeaponLocks();
             }
+          } else if (data && !data.isPassActive) {
+            this.logout();
           }
         }
       } else if (savedEmail) {
@@ -458,11 +492,14 @@ class WompiManager {
           const data = await res.json();
           if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
+            localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
             this.updateHUD();
             if (this.game && this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
               if (this.game.ui) this.game.ui.refreshWeaponLocks();
             }
+          } else if (data && !data.isPassActive) {
+            this.logout();
           }
         }
       }

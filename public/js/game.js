@@ -2507,9 +2507,9 @@ class UIManager {
     const btnAuthLabel = document.getElementById('auth-btn-label');
 
     const checkSavedSession = () => {
-      const savedPass = localStorage.getItem('apocalipsis_creator_pass');
+      const savedPass = localStorage.getItem('apocalipsis_creator_pass') || localStorage.getItem('apocalipsis_creator_pass_expires');
       const savedCode = localStorage.getItem('apocalipsis_pass_code');
-      const savedEmail = localStorage.getItem('apocalipsis_auth_email');
+      const savedEmail = localStorage.getItem('apocalipsis_auth_email') || localStorage.getItem('apocalipsis_user_email');
       const now = Date.now();
 
       if (savedPass && parseInt(savedPass, 10) > now) {
@@ -2530,7 +2530,7 @@ class UIManager {
     if (btnOpen && modal) {
       btnOpen.addEventListener('click', () => {
         modal.style.display = 'flex';
-        const savedPass = localStorage.getItem('apocalipsis_creator_pass');
+        const savedPass = localStorage.getItem('apocalipsis_creator_pass') || localStorage.getItem('apocalipsis_creator_pass_expires');
         const savedCode = localStorage.getItem('apocalipsis_pass_code');
         const now = Date.now();
 
@@ -2592,7 +2592,7 @@ class UIManager {
             }
             this.refreshWeaponLocks();
             if (this.game.passManager) {
-              this.game.passManager.activatePass(24, data.email);
+              this.game.passManager.activatePass(data.expiresAt, data.email);
             }
             this.showToast(`⭐ ¡CÓDIGO ${code} VÁLIDO! Pase 24 Horas y Arsenal activados.`);
             if (modal) modal.style.display = 'none';
@@ -2644,7 +2644,7 @@ class UIManager {
             }
             this.refreshWeaponLocks();
             if (this.game.passManager) {
-              this.game.passManager.activatePass(24, email);
+              this.game.passManager.activatePass(data.expiresAt, email);
             }
             const accessCode = data.code || '';
             alert(`⭐ ¡PASE ENCONTRADO CON ÉXITO!\n\nTu CÓDIGO DE ACCESO es:\n👉  ${accessCode}  👈\n\nTu Pase Creador de 24 Horas y Arsenal VIP han sido activados en este navegador.`);
