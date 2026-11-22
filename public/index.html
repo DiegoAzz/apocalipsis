@@ -134,7 +134,7 @@
       <!-- Subir Imagen Propia (Requiere Pase 24h) -->
       <div class="preset-group">
         <input type="file" id="image-upload-input" accept="image/*" style="display: none">
-        <button class="btn btn-sm btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos (Requiere Pase 24h)">🖼️ Subir Imagen</button>
+        <button class="btn btn-sm btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos (Requiere Pase 24h)">🖼️ Subir Imagen 🔒</button>
       </div>
 
       <!-- Controles de Modo & Jugador -->
@@ -144,16 +144,16 @@
           <span class="name-icon">👤</span>
           <input type="text" id="player-name-input" maxlength="15" value="Operativo" placeholder="Tu Nombre">
         </div>
-        <button class="btn btn-mode" id="btn-mode-solo">👤 Modo Solo</button>
-        <button class="btn btn-mode active" id="btn-mode-multi">🌐 Online</button>
-        <button class="btn btn-sm btn-live" id="btn-toggle-live" title="Modo Live: ralentiza la acción a cámara lenta (0.35x) para streaming y directos (Pulsa L)">🔴 Modo Live</button>
+        <button class="btn btn-mode active" id="btn-mode-solo" title="Modo Solo Local (Gratis para jugar en TikTok)">👤 Modo Solo</button>
+        <button class="btn btn-mode" id="btn-mode-multi" title="Partida Multijugador Online (Requiere Pase 24h)">🌐 Online 🔒</button>
+        <button class="btn btn-sm btn-live" id="btn-toggle-live" title="Modo Live: ralentiza la acción a cámara lenta (0.35x) para streaming y directos (Requiere Pase 24h)">🔴 Modo Live 🔒</button>
         <button class="btn btn-sm" id="btn-toggle-fullscreen" title="Pantalla Completa (Ideal para TikTok Live y pantalla completa)">📺 Pantalla Completa</button>
         <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
         <button class="btn btn-sm" id="btn-center-camera" title="Centrar cámara en tu personaje (o pulsa C)">🎯 Centrar</button>
-        <button class="btn btn-sm btn-drawer-room" id="btn-open-rooms-hub-drawer" title="Ver salas e invitar amigos">🏠 Salas</button>
+        <button class="btn btn-sm btn-drawer-room" id="btn-open-rooms-hub-drawer" title="Ver salas e invitar amigos (Requiere Pase 24h)">🏠 Salas 🔒</button>
         <button class="btn btn-sm btn-drawer-auth" id="btn-open-auth-drawer" title="Iniciar Sesión / VIP">🔐 Mi Cuenta</button>
-        <button class="btn btn-sm" id="btn-share-room">🔗 Invitar Amigo</button>
-        <button class="btn btn-sm" id="btn-add-bot">+ Añadir Bot 🤖</button>
+        <button class="btn btn-sm" id="btn-share-room" title="Invitar amigos a tu sala privada (Requiere Pase 24h)">🔗 Invitar Amigo 🔒</button>
+        <button class="btn btn-sm" id="btn-add-bot" title="Añadir bot de demolición (Requiere Pase 24h)">+ Añadir Bot 🤖 🔒</button>
         <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
         <button class="btn btn-sm" id="btn-toggle-sound">🔊 Sonido</button>
         <button class="btn btn-sm btn-help" id="btn-help">❓ ¿Cómo jugar?</button>
@@ -700,9 +700,11 @@
           </div>
 
           <div class="pass-perks-list" style="margin-bottom: 16px; text-align: left;">
-            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Cohetes...)</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Cohetes, Cañón de Riel...)</div>
             <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Destrucción Ilimitada</strong> de cualquier URL del mundo</div>
             <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Subida de Fotos y Memes</strong> ilimitada</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Modo Multijugador Online</strong> y Salas Privadas con Amigos</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Modo Live</strong> (Cámara Lenta Cinematográfica para Directos)</div>
             <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Invocación de Bots de Demolición</strong> activada</div>
           </div>
 
@@ -733,11 +735,12 @@
           </p>
 
           <div class="pass-perks-list">
-            <div class="perk-item"><span>🖼️</span> <strong>Subir Fotos, Memes e Imágenes Ilimitadas</strong> para destruir en video</div>
-            <div class="perk-item"><span>🔗</span> <strong>Destruir Cualquier Sitio Web del Mundo</strong> (Noticias, Wikipedia, Tiendas...)</div>
-            <div class="perk-item"><span>🤖</span> <strong>Invocación de Bots de Demolición Cinética</strong> para grabaciones dinámicas</div>
             <div class="perk-item"><span>☢️</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Lanzallamas, Cohetes...)</div>
-            <div class="perk-item"><span>🌐</span> <strong>Salas Multijugador Privadas</strong> para jugar y grabar con amigos</div>
+            <div class="perk-item"><span>🔗</span> <strong>Destruir Cualquier Sitio Web del Mundo</strong> (Noticias, Wikipedia, Tiendas...)</div>
+            <div class="perk-item"><span>🖼️</span> <strong>Subir Fotos, Memes e Imágenes Ilimitadas</strong> para destruir en video</div>
+            <div class="perk-item"><span>🌐</span> <strong>Modo Multijugador Online</strong> y Salas Privadas con Amigos</div>
+            <div class="perk-item"><span>🔴</span> <strong>Modo Live</strong> (Cámara Lenta Cinematográfica para Directos)</div>
+            <div class="perk-item"><span>🤖</span> <strong>Invocación de Bots de Demolición Cinética</strong> para grabaciones</div>
           </div>
 
           <!-- Entrada de Correo y PIN para Vincular el Pase -->
@@ -797,16 +800,16 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=5.1"></script>
-  <script src="js/levelGenerator.js?v=5.1"></script>
-  <script src="js/physics.js?v=5.1"></script>
-  <script src="js/player.js?v=5.1"></script>
-  <script src="js/bot.js?v=5.1"></script>
-  <script src="js/multiplayer.js?v=5.1"></script>
-  <script src="js/idleManager.js?v=5.1"></script>
-  <script src="js/fix-webm-duration.js?v=5.1"></script>
-  <script src="js/videoRecorder.js?v=5.1"></script>
-  <script src="js/wompiManager.js?v=5.1"></script>
-  <script src="js/game.js?v=5.1"></script>
+  <script src="js/audio.js?v=5.2"></script>
+  <script src="js/levelGenerator.js?v=5.2"></script>
+  <script src="js/physics.js?v=5.2"></script>
+  <script src="js/player.js?v=5.2"></script>
+  <script src="js/bot.js?v=5.2"></script>
+  <script src="js/multiplayer.js?v=5.2"></script>
+  <script src="js/idleManager.js?v=5.2"></script>
+  <script src="js/fix-webm-duration.js?v=5.2"></script>
+  <script src="js/videoRecorder.js?v=5.2"></script>
+  <script src="js/wompiManager.js?v=5.2"></script>
+  <script src="js/game.js?v=5.2"></script>
 </body>
 </html>

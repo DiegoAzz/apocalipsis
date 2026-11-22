@@ -368,7 +368,41 @@ class WompiManager {
           this.game.ui.showToast('⏳ Tu Pase Creador de 24 Horas ha finalizado. ¡TikTok sigue disponible gratis!');
         }
       }
+
+      if (this.game && !this.game.isSoloMode) {
+        this.game.isSoloMode = true;
+        const btnMulti = document.getElementById('btn-mode-multi');
+        const btnSolo = document.getElementById('btn-mode-solo');
+        if (btnMulti) btnMulti.classList.remove('active');
+        if (btnSolo) btnSolo.classList.add('active');
+        const chatCont = document.getElementById('chat-container');
+        if (chatCont) chatCont.style.display = 'none';
+      }
     }
+
+    this.updateLockBadges(active);
+  }
+
+  updateLockBadges(active) {
+    const multiBtn = document.getElementById('btn-mode-multi');
+    if (multiBtn) multiBtn.innerHTML = active ? '🌐 Online' : '🌐 Online 🔒';
+
+    const liveBtn = document.getElementById('btn-toggle-live');
+    if (liveBtn && (!this.game || !this.game.isLiveMode)) {
+      liveBtn.innerHTML = active ? '🔴 Modo Live' : '🔴 Modo Live 🔒';
+    }
+
+    const drawerRooms = document.getElementById('btn-open-rooms-hub-drawer');
+    if (drawerRooms) drawerRooms.innerHTML = active ? '🏠 Salas' : '🏠 Salas 🔒';
+
+    const shareBtn = document.getElementById('btn-share-room');
+    if (shareBtn) shareBtn.innerHTML = active ? '🔗 Invitar Amigo' : '🔗 Invitar Amigo 🔒';
+
+    const botBtn = document.getElementById('btn-add-bot');
+    if (botBtn) botBtn.innerHTML = active ? '+ Añadir Bot 🤖' : '+ Añadir Bot 🤖 🔒';
+
+    const uploadBtn = document.getElementById('btn-upload-image');
+    if (uploadBtn) uploadBtn.innerHTML = active ? '🖼️ Subir Imagen' : '🖼️ Subir Imagen 🔒';
   }
 
   async checkSavedPass() {

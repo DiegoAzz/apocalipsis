@@ -51,6 +51,12 @@ class Game {
   }
 
   toggleLiveMode() {
+    if (this.wompi && !this.wompi.isPassActive()) {
+      this.wompi.openModal('Modo Live (Cámara Lenta Cinematográfica)');
+      if (this.ui) this.ui.showToast('🔒 Modo Live Cámara Lenta requiere Pase Creador 24 Horas ($1 USD)');
+      return;
+    }
+
     this.isLiveMode = !this.isLiveMode;
     this.timeScale = this.isLiveMode ? 0.35 : 1.0;
 
@@ -164,12 +170,13 @@ class Game {
       this.ui.refreshWeaponLocks();
     }
 
-    // Auto-connect to Online Multiplayer (room parameter or default 'lobby')
+    // Auto-connect to Online Multiplayer (Solo para usuarios con Pase Activo)
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room') || 'lobby';
     const soloParam = urlParams.get('solo');
+    const isPassActive = Boolean(this.wompi && this.wompi.isPassActive());
 
-    if (soloParam === '1' || soloParam === 'true') {
+    if (!isPassActive || soloParam === '1' || soloParam === 'true') {
       this.isSoloMode = true;
       const btnMulti = document.getElementById('btn-mode-multi');
       const btnSolo = document.getElementById('btn-mode-solo');
@@ -508,6 +515,11 @@ class Game {
     if (btnRooms) {
       btnRooms.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (this.passManager && !this.passManager.isPassActive()) {
+          this.passManager.openModal('Salas Multijugador Online');
+          if (this.ui) this.ui.showToast('🔒 Modo Multijugador Online requiere Pase Creador 24 Horas ($1 USD)');
+          return;
+        }
         overlay.classList.add('hidden');
         this.isGameStarted = true;
         this.snapCameraToPlayer();
@@ -1984,6 +1996,11 @@ class UIManager {
       });
 
       btnMulti.addEventListener('click', () => {
+        if (this.game.passManager && !this.game.passManager.isPassActive()) {
+          this.game.passManager.openModal('Modo Multijugador Online');
+          this.showToast('🔒 Modo Multijugador Online requiere Pase Creador 24 Horas ($1 USD). ¡Modo Solo en TikTok es 100% gratis!');
+          return;
+        }
         this.game.isSoloMode = false;
         btnMulti.classList.add('active');
         btnSolo.classList.remove('active');
@@ -2369,6 +2386,11 @@ class UIManager {
     const customInput = document.getElementById('custom-room-input');
 
     const openRoomsModal = () => {
+      if (this.game.passManager && !this.game.passManager.isPassActive()) {
+        this.game.passManager.openModal('Salas Multijugador Privadas');
+        this.showToast('🔒 Crear o unirte a Salas Multijugador requiere Pase Creador 24 Horas ($1 USD)');
+        return;
+      }
       let currentRoom = this.game.multiplayer.roomId || 'lobby';
       if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
         currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
