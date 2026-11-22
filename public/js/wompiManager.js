@@ -112,7 +112,7 @@ class WompiManager {
     if (this.modal) this.modal.classList.remove('open');
   }
 
-  startWompiCheckout() {
+  async startWompiCheckout() {
     let email = this.emailInput ? this.emailInput.value.trim() : '';
     if (!email || !email.includes('@')) {
       email = prompt('Por favor ingresa tu correo para vincular tu Pase de 24 Horas y poder restaurarlo:');
@@ -125,9 +125,22 @@ class WompiManager {
     const reference = `APOC_PASS_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const amountInCents = 500000; // $5.000 COP (~$1 USD)
 
+    let integrityHash = null;
+    try {
+      const sigRes = await fetch(`/api/wompi/signature?reference=${encodeURIComponent(reference)}&amountInCents=${amountInCents}&currency=COP`);
+      if (sigRes.ok) {
+        const sigData = await sigRes.json();
+        if (sigData && sigData.integrity) {
+          integrityHash = sigData.integrity;
+        }
+      }
+    } catch (e) {
+      console.warn('[WOMPI INTEGRITY FETCH]:', e);
+    }
+
     if (typeof WidgetCheckout !== 'undefined') {
       try {
-        const checkout = new WidgetCheckout({
+        const widgetConfig = {
           currency: 'COP',
           amountInCents: amountInCents,
           reference: reference,
@@ -136,7 +149,15 @@ class WompiManager {
             email: email,
             fullName: (this.game.localPlayer && this.game.localPlayer.name) || 'Creador Apocalipsis'
           }
-        });
+        };
+
+        if (integrityHash) {
+          widgetConfig.signature = {
+            integrity: integrityHash
+          };
+        }
+
+        const checkout = new WidgetCheckout(widgetConfig);
 
         checkout.open(async (result) => {
           const transaction = result.transaction;

@@ -227,6 +227,26 @@ app.get('/api/pass/status', (req, res) => {
 // Bancolombia, Nequi, PSE, Tarjetas de Crédito / Débito
 // ============================================================================
 
+// 1. Generación de Firma de Integridad Wompi (Obligatoria si hay secreto de integridad)
+app.get('/api/wompi/signature', (req, res) => {
+  try {
+    const { reference, amountInCents, currency = 'COP', secret } = req.query;
+    if (!reference || !amountInCents) {
+      return res.status(400).json({ error: 'Faltan parámetros reference o amountInCents' });
+    }
+    const integritySecret = secret || process.env.WOMPI_INTEGRITY_SECRET || '';
+    if (!integritySecret) {
+      return res.json({ integrity: null, warning: 'WOMPI_INTEGRITY_SECRET no configurado' });
+    }
+    const crypto = require('crypto');
+    const raw = `${reference}${amountInCents}${currency}${integritySecret.trim()}`;
+    const hash = crypto.createHash('sha256').update(raw).digest('hex');
+    res.json({ integrity: hash, reference, amountInCents, currency });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 3. Webhook de Wompi (Aprobación Asíncrona)
 app.post('/api/wompi-webhook', async (req, res) => {
   try {

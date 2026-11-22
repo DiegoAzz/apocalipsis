@@ -946,7 +946,10 @@ class Game {
       } else if (preset === 'youtube' || lowerUrl.includes('youtube') || lowerUrl.includes('youtu.be')) {
         this.level.generateYouTube();
       } else if (preset === 'tiktok' || lowerUrl.includes('tiktok')) {
-        this.level.generateTikTok();
+        this.level.generateTikTok(() => {
+          this.localPlayer.respawn(this.level);
+          this.adaptZoomForCurrentMap();
+        });
       } else {
         this.level.generateCustom(url || preset);
       }
