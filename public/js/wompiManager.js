@@ -187,6 +187,10 @@ class WompiManager {
       this.modal.addEventListener('click', (e) => {
         if (e.target === this.modal) this.closeModal();
       });
+      const passCard = this.modal.querySelector('.modal-card, .pass-card');
+      if (passCard) {
+        passCard.addEventListener('click', (e) => e.stopPropagation());
+      }
     }
 
     const btnCloseActive = document.getElementById('btn-close-active-view');
@@ -206,19 +210,23 @@ class WompiManager {
       });
     }
 
-    if (this.emailInput) {
-      this.emailInput.addEventListener('input', () => {
-        this.emailInput.style.borderColor = '#334155';
-        this.emailInput.style.boxShadow = 'none';
-      });
-    }
-
-    if (this.pinInput) {
-      this.pinInput.addEventListener('input', () => {
-        this.pinInput.style.borderColor = '#334155';
-        this.pinInput.style.boxShadow = 'none';
-      });
-    }
+    [this.emailInput, this.pinInput].forEach((inp) => {
+      if (inp) {
+        inp.addEventListener('input', () => {
+          inp.style.borderColor = '#334155';
+          inp.style.boxShadow = 'none';
+        });
+        inp.addEventListener('keydown', (e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (this.btnTrigger) this.btnTrigger.click();
+          }
+        });
+        inp.addEventListener('keyup', (e) => e.stopPropagation());
+        inp.addEventListener('keypress', (e) => e.stopPropagation());
+      }
+    });
 
     if (this.btnTrigger) {
       this.btnTrigger.addEventListener('click', () => this.startWompiCheckout());

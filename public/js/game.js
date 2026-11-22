@@ -657,11 +657,34 @@ class Game {
 
   setupInputListeners() {
     window.addEventListener('keydown', (e) => {
-      // Ignore input if typing in chat or url bar
-      if (document.activeElement === document.getElementById('chat-input') ||
-          document.activeElement === document.getElementById('webpage-url-input')) {
-        if (e.code === 'Enter' && document.activeElement === document.getElementById('chat-input')) {
+      // 1. Ignorar si el usuario está enfocado en CUALQUIER input, textarea o contenido editable
+      const activeEl = document.activeElement;
+      const targetEl = e.target;
+      const isInput = (
+        (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) ||
+        (targetEl && (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA' || targetEl.isContentEditable)) ||
+        (e.composedPath && e.composedPath().some(el => el && el.tagName && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')))
+      );
+
+      // 2. Ignorar si hay algún modal abierto en pantalla (código de acceso, wompi, salas, ayuda)
+      const isModalOpen = !!(
+        document.querySelector('.custom-modal.open') ||
+        (document.getElementById('auth-code-modal') && document.getElementById('auth-code-modal').style.display === 'flex') ||
+        (document.getElementById('share-modal') && document.getElementById('share-modal').style.display === 'flex') ||
+        (document.getElementById('help-modal') && !document.getElementById('help-modal').classList.contains('hidden'))
+      );
+
+      if (isInput || isModalOpen) {
+        if (e.code === 'Enter' && activeEl === document.getElementById('chat-input')) {
           this.ui.sendChat();
+        }
+        if (e.key === 'Escape') {
+          const authModal = document.getElementById('auth-code-modal');
+          if (authModal && authModal.style.display !== 'none') authModal.style.display = 'none';
+          const wompiModal = document.getElementById('wompi-modal');
+          if (wompiModal && wompiModal.classList.contains('open')) wompiModal.classList.remove('open');
+          const shareModal = document.getElementById('share-modal');
+          if (shareModal && shareModal.style.display !== 'none') shareModal.style.display = 'none';
         }
         return;
       }
@@ -748,6 +771,20 @@ class Game {
     });
 
     window.addEventListener('keyup', (e) => {
+      const activeEl = document.activeElement;
+      const targetEl = e.target;
+      const isInput = (
+        (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) ||
+        (targetEl && (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA' || targetEl.isContentEditable))
+      );
+      const isModalOpen = !!(
+        document.querySelector('.custom-modal.open') ||
+        (document.getElementById('auth-code-modal') && document.getElementById('auth-code-modal').style.display === 'flex') ||
+        (document.getElementById('share-modal') && document.getElementById('share-modal').style.display === 'flex') ||
+        (document.getElementById('help-modal') && !document.getElementById('help-modal').classList.contains('hidden'))
+      );
+      if (isInput || isModalOpen) return;
+
       if (e.code === 'Tab') {
         this.ui.showScoreboard(false);
       }
@@ -2561,6 +2598,10 @@ class UIManager {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.style.display = 'none';
       });
+      const authCard = modal.querySelector('.modal-card, .auth-card');
+      if (authCard) {
+        authCard.addEventListener('click', (e) => e.stopPropagation());
+      }
     }
 
     // 1. Canjear con CÓDIGO DE ACCESO
@@ -2615,10 +2656,16 @@ class UIManager {
         }
       });
 
-      // Permitir pulsar Enter en el campo de código
+      // Permitir pulsar Enter en el campo de código y evitar que se disparen teclas del juego
       codeDirectInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') btnRedeemCode.click();
+        e.stopPropagation();
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          btnRedeemCode.click();
+        }
       });
+      codeDirectInput.addEventListener('keyup', (e) => e.stopPropagation());
+      codeDirectInput.addEventListener('keypress', (e) => e.stopPropagation());
     }
 
     // 2. Restaurar por correo electrónico (alternativa)
