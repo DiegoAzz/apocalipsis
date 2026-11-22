@@ -426,11 +426,14 @@ class Game {
       this.input.isMouseDown = false;
       this.input.isRightMouseDown = false;
 
+      // Ocultar de inmediato el overlay de GTA
+      overlay.classList.add('hidden');
+      overlay.style.display = 'none';
+      overlay.style.pointerEvents = 'none';
+
       if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
         window.soundManager.playCinematicBoom();
       }
-
-      overlay.classList.add('hidden');
 
       if (isFriendInvite) {
         this.snapCameraToPlayer();
@@ -448,6 +451,15 @@ class Game {
       const destUrl = targetUrl || presetMap[presetName] || 'https://www.tiktok.com';
       const topUrlInput = document.getElementById('webpage-url-input');
       if (topUrlInput) topUrlInput.value = destUrl;
+
+      // Si es TikTok (la demo por defecto ya cargada), entrar de inmediato sin pantalla de espera
+      if ((presetName === 'tiktok' || !presetName) && this.level && this.level.preset === 'tiktok') {
+        this.snapCameraToPlayer();
+        if (this.ui) {
+          this.ui.showToast('🚀 ¡MISIÓN INICIADA! TikTok 100% Gratis.');
+        }
+        return;
+      }
 
       this.triggerDestructionCountdown(destUrl, () => {
         this.loadMapPreset(presetName || 'custom', destUrl, true);
@@ -608,6 +620,15 @@ class Game {
     const btnSkip = document.getElementById('btn-gta-skip');
     if (btnSkip) {
       btnSkip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame('https://www.tiktok.com', 'tiktok');
+      });
+    }
+
+    // Botón Principal Estratégico Inferior "ENTRAR A JUGAR AHORA"
+    const btnMainStart = document.getElementById('btn-gta-main-start');
+    if (btnMainStart) {
+      btnMainStart.addEventListener('click', (e) => {
         e.stopPropagation();
         startGame('https://www.tiktok.com', 'tiktok');
       });

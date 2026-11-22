@@ -1726,9 +1726,10 @@ body.ui-hidden #idle-hud-widget {
 }
 
 .gta-intro-overlay.hidden {
-  opacity: 0;
-  transform: scale(1.1);
-  pointer-events: none;
+  opacity: 0 !important;
+  transform: scale(1.05);
+  pointer-events: none !important;
+  display: none !important;
 }
 
 .gta-bg-grid {
@@ -1835,13 +1836,52 @@ body.ui-hidden #idle-hud-widget {
 /* El Poster de Cómic GTA VI en su proporción original exacta (764x1024) */
 .gta-master-poster {
   position: relative;
-  height: min(92vh, 900px);
+  height: min(82vh, 760px);
   aspect-ratio: 764 / 1024;
   border-radius: 16px;
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.98), 0 0 40px rgba(236, 72, 153, 0.35);
   border: 3.5px solid #000000;
   overflow: hidden;
   background: #000000;
+  flex-shrink: 0;
+}
+
+/* Barra Estratégica Inferior para Iniciar Juego */
+.gta-cta-bar {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  width: 100%;
+}
+
+.gta-main-cta-btn {
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #8b5cf6 100%);
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  padding: 14px 34px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 0 35px rgba(236, 72, 153, 0.7), 0 4px 20px rgba(0, 0, 0, 0.85);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gta-main-cta-btn:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 0 50px rgba(249, 115, 22, 0.9), 0 6px 25px rgba(0, 0, 0, 0.95);
+  border-color: #facc15;
+}
+
+.gta-main-cta-btn:active {
+  transform: scale(0.97);
 }
 
 .gta-poster-img {
