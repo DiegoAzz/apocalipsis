@@ -22,8 +22,8 @@ class WompiManager {
     this.setupListeners();
     this.checkSavedPass();
 
-    // Verificación periódica cada 30 segundos
-    setInterval(() => this.updateHUD(), 30000);
+    // Verificación periódica cada 1 segundo (conteo regresivo en vivo HH:MM:SS)
+    setInterval(() => this.updateHUD(), 1000);
   }
 
   setupListeners() {
@@ -41,6 +41,11 @@ class WompiManager {
       this.modal.addEventListener('click', (e) => {
         if (e.target === this.modal) this.closeModal();
       });
+    }
+
+    const btnCloseActive = document.getElementById('btn-close-active-view');
+    if (btnCloseActive) {
+      btnCloseActive.addEventListener('click', () => this.closeModal());
     }
 
     if (this.btnTrigger) {
@@ -76,17 +81,19 @@ class WompiManager {
     }
   }
 
-  // Retorna el tiempo restante en formato legible (ej: 23h 45m)
+  // Retorna el tiempo restante en formato regresivo exacto (HH:MM:SS)
   getRemainingFormatted() {
     const expires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
     const diffMs = expires - Date.now();
     if (diffMs <= 0) return null;
 
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const totalSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const mins = Math.floor((totalSecs % 3600) / 60);
+    const secs = totalSecs % 60;
 
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
   }
 
   // Requiere pase activo para ejecutar una función
@@ -101,19 +108,47 @@ class WompiManager {
 
   openModal(featureName) {
     if (!this.modal) return;
-    if (this.featureNotice) {
-      if (featureName) {
-        this.featureNotice.innerHTML = `🔒 <strong>${featureName.toUpperCase()}</strong> requiere el <strong>Pase Creador de 24 Horas</strong> ($1 USD). ¡TikTok es 100% gratis!`;
-        this.featureNotice.style.display = 'block';
-      } else {
-        this.featureNotice.style.display = 'none';
+
+    const active = this.isPassActive();
+    const purchaseView = document.getElementById('wompi-purchase-view');
+    const activeView = document.getElementById('wompi-active-view');
+    const modalTitle = document.getElementById('wompi-modal-title');
+
+    if (active) {
+      // SI YA TIENE EL PASE ACTIVO: Mostrar panel informativo con conteo regresivo y código
+      if (purchaseView) purchaseView.style.display = 'none';
+      if (activeView) activeView.style.display = 'block';
+      if (modalTitle) modalTitle.textContent = '⭐ TU PASE DE 24 HORAS ESTÁ ACTIVO';
+
+      const countdownEl = document.getElementById('wompi-active-countdown');
+      if (countdownEl) countdownEl.textContent = this.getRemainingFormatted() || '24:00:00';
+
+      const codeEl = document.getElementById('wompi-active-pass-code');
+      if (codeEl) {
+        const savedCode = localStorage.getItem('apocalipsis_pass_code') || '602951';
+        codeEl.textContent = savedCode;
+      }
+    } else {
+      // SI NO TIENE PASE: Mostrar pasarela de compra de $1 USD con Wompi
+      if (activeView) activeView.style.display = 'none';
+      if (purchaseView) purchaseView.style.display = 'block';
+      if (modalTitle) modalTitle.textContent = '⭐ PASE CREADOR 24 HORAS ($1 USD)';
+
+      if (this.featureNotice) {
+        if (featureName) {
+          this.featureNotice.innerHTML = `🔒 <strong>${featureName.toUpperCase()}</strong> requiere el <strong>Pase Creador de 24 Horas</strong> ($1 USD). ¡TikTok es 100% gratis!`;
+          this.featureNotice.style.display = 'block';
+        } else {
+          this.featureNotice.style.display = 'none';
+        }
+      }
+      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
+      if (savedEmail && this.emailInput && !this.emailInput.value) {
+        this.emailInput.value = savedEmail;
       }
     }
+
     this.modal.classList.add('open');
-    const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
-    if (savedEmail && this.emailInput && !this.emailInput.value) {
-      this.emailInput.value = savedEmail;
-    }
     if (window.soundManager && typeof window.soundManager.playSecretCollect === 'function') {
       window.soundManager.playSecretCollect();
     }
@@ -242,35 +277,55 @@ class WompiManager {
 
   updateHUD() {
     const active = this.isPassActive();
-    if (!this.badgeTop) return;
+    const remaining = this.getRemainingFormatted();
 
-    if (active) {
-      const remaining = this.getRemainingFormatted();
-      this.badgeTop.classList.add('pass-active');
-      this.badgeTop.classList.remove('pass-inactive');
-      if (this.badgeLabel) {
-        this.badgeLabel.innerHTML = `⭐ <strong>PASE 24H:</strong> ${remaining}`;
-      } else {
-        this.badgeTop.innerHTML = `<span>⭐ <strong>PASE 24H:</strong> ${remaining}</span>`;
+    if (active && remaining) {
+      if (this.badgeTop) {
+        this.badgeTop.classList.add('pass-active');
+        this.badgeTop.classList.remove('pass-inactive');
+        if (this.badgeLabel) {
+          this.badgeLabel.innerHTML = `⭐ <strong>PASE 24H:</strong> ${remaining}`;
+        } else {
+          this.badgeTop.innerHTML = `<span>⭐ <strong>PASE 24H:</strong> ${remaining}</span>`;
+        }
+        this.badgeTop.title = `Pase Creador Activo (${remaining} restantes). Acceso total a fotos, webs y arsenal.`;
       }
-      this.badgeTop.title = `Pase Creador Activo (${remaining} restantes). Acceso total a fotos, webs y arsenal.`;
+
+      // Actualizar contador del modal si está abierto
+      const countdownEl = document.getElementById('wompi-active-countdown');
+      if (countdownEl) {
+        countdownEl.textContent = remaining;
+      }
+
+      const codeEl = document.getElementById('wompi-active-pass-code');
+      if (codeEl) {
+        const savedCode = localStorage.getItem('apocalipsis_pass_code');
+        if (savedCode) codeEl.textContent = savedCode;
+      }
 
       if (this.game && this.game.localPlayer) {
-        this.game.localPlayer.isVip = true;
+        if (!this.game.localPlayer.isVip) {
+          this.game.localPlayer.unlockAllWeaponsVip();
+          if (this.game.ui) this.game.ui.refreshWeaponLocks();
+        }
       }
     } else {
-      this.badgeTop.classList.remove('pass-active');
-      this.badgeTop.classList.add('pass-inactive');
-      if (this.badgeLabel) {
-        this.badgeLabel.innerHTML = `⭐ Comprar Pase ($1 USD)`;
-      } else {
-        this.badgeTop.innerHTML = `<span>⭐ Comprar Pase ($1 USD)</span>`;
+      if (this.badgeTop) {
+        this.badgeTop.classList.remove('pass-active');
+        this.badgeTop.classList.add('pass-inactive');
+        if (this.badgeLabel) {
+          this.badgeLabel.innerHTML = `⭐ Comprar Pase ($1 USD)`;
+        } else {
+          this.badgeTop.innerHTML = `<span>⭐ Comprar Pase ($1 USD)</span>`;
+        }
+        this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($1 USD) para fotos y webs.';
       }
-      this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($1 USD) para fotos y webs.';
 
       if (this.game && this.game.localPlayer && this.game.localPlayer.isVip) {
         this.game.localPlayer.isVip = false;
+        this.game.localPlayer.unlockedWeapons = [0];
         if (this.game.ui) {
+          this.game.ui.refreshWeaponLocks();
           this.game.ui.showToast('⏳ Tu Pase Creador de 24 Horas ha finalizado. ¡TikTok sigue disponible gratis!');
         }
       }

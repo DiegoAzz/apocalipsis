@@ -710,7 +710,8 @@ class Game {
           this.ui.updateActiveWeapon(10);
         } else {
           if (window.soundManager && window.soundManager.playLockedBuzz) window.soundManager.playLockedBuzz();
-          this.ui.showToast('🔒 Lanzagranadas Bloqueado: Requiere 10% de Destrucción');
+          this.ui.showToast('🔒 Lanzagranadas VIP: Requiere Pase Creador 24 Horas ($1 USD)');
+          if (this.wompi) this.wompi.openModal('Desbloquear Arsenal VIP');
         }
       }
 
@@ -727,9 +728,9 @@ class Game {
           this.ui.updateActiveWeapon(targetIdx);
         } else {
           const w = this.localPlayer.weapons[targetIdx];
-          const rule = this.localPlayer.weaponUnlockRules.find(r => r.index === targetIdx);
           if (window.soundManager && window.soundManager.playLockedBuzz) window.soundManager.playLockedBuzz();
-          this.ui.showToast(`🔒 ${w ? w.name : 'Arma'} Bloqueada: ${rule ? rule.desc : 'bloqueada'}`);
+          this.ui.showToast(`🔒 ${w ? w.name : 'Arma'} VIP: Requiere Pase Creador 24 Horas ($1 USD)`);
+          if (this.wompi) this.wompi.openModal('Desbloquear Arsenal VIP');
         }
       }
     });
@@ -1834,19 +1835,24 @@ class UIManager {
       });
     });
 
-    // Destroy button con Conteo Regresivo de 3 Segundos (Requiere Pase 24h)
+    // Destroy button con Conteo Regresivo de 3 Segundos (TikTok gratis; otras URLs requieren Pase 24h)
     const destroyBtn = document.getElementById('btn-destroy-url');
     const handleUrlSubmit = () => {
       const val = this.urlInput.value.trim();
       if (!val) return;
+      const isTikTok = val.toLowerCase().includes('tiktok.com');
       const doDestroy = () => {
         this.game.triggerDestructionCountdown(val, () => {
           loadLiveWebpage(val, 'custom');
         });
       };
-      if (this.game.passManager) {
-        this.game.passManager.requirePass('Destruir Cualquier URL', doDestroy);
+      if (isTikTok) {
+        doDestroy();
       } else {
+        if (this.game.passManager && !this.game.passManager.isPassActive()) {
+          this.game.passManager.openModal('Destruir Cualquier Sitio Web');
+          return;
+        }
         doDestroy();
       }
     };
@@ -2206,14 +2212,14 @@ class UIManager {
             this.updateActiveWeapon(idx);
           } else {
             const w = this.game.localPlayer.weapons[idx];
-            const rule = this.game.localPlayer.weaponUnlockRules.find(r => r.index === idx);
             if (window.soundManager && typeof window.soundManager.playLockedBuzz === 'function') {
               window.soundManager.playLockedBuzz();
             }
             slot.classList.remove('shake-error');
             void slot.offsetWidth;
             slot.classList.add('shake-error');
-            this.showToast(`🔒 ${w ? w.name : 'Arma'} Bloqueada: Requiere ${rule ? rule.desc : 'más destrucción'} o Pase VIP`);
+            this.showToast(`🔒 ${w ? w.name : 'Arma'} VIP: Requiere Pase Creador 24 Horas ($1 USD)`);
+            if (this.game.wompi) this.game.wompi.openModal('Desbloquear Arsenal VIP');
           }
         }
       };
@@ -2538,7 +2544,7 @@ class UIManager {
       btnRedeemCode.addEventListener('click', async () => {
         const code = codeDirectInput.value.trim().toUpperCase();
         if (!code || code.length < 5) {
-          this.showToast('⚠️ Ingresa tu código de acceso de 6 dígitos (ej: 602951)');
+          this.showToast('⚠️ Ingresa tu código de acceso de 6 dígitos (ej: 123456)');
           return;
         }
 
@@ -2618,7 +2624,7 @@ class UIManager {
             if (this.game.passManager) {
               this.game.passManager.activatePass(24, email);
             }
-            const accessCode = data.code || '602951';
+            const accessCode = data.code || '';
             alert(`⭐ ¡PASE ENCONTRADO CON ÉXITO!\n\nTu CÓDIGO DE ACCESO es:\n👉  ${accessCode}  👈\n\nTu Pase Creador de 24 Horas y Arsenal VIP han sido activados en este navegador.`);
             if (modal) modal.style.display = 'none';
           } else {

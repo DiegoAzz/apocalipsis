@@ -113,7 +113,7 @@
 
     <!-- Buscador / Input de URL -->
     <div class="url-control-group">
-      <input type="text" id="webpage-url-input" placeholder="Escribe cualquier URL..." value="https://en.wikipedia.org/wiki/Stick_figure">
+      <input type="text" id="webpage-url-input" placeholder="TikTok es gratis • Pega cualquier URL..." value="https://www.tiktok.com">
       <button class="btn btn-primary" id="btn-destroy-url">
         <span>⚡ DESTRUIR</span>
       </button>
@@ -131,16 +131,10 @@
 
     <!-- Contenedor de Opciones (Barra horizontal en Desktop, Menú desplegable en Móvil) -->
     <div id="nav-drawer" class="nav-drawer">
-      <!-- Páginas Rápidas & Subir Imagen -->
+      <!-- Subir Imagen Propia (Requiere Pase 24h) -->
       <div class="preset-group">
-        <button class="preset-pill active" data-preset="google">🔍 Google</button>
-        <button class="preset-pill" data-preset="youtube">▶️ YouTube</button>
-        <button class="preset-pill" data-preset="tiktok">🎵 TikTok</button>
-        <button class="preset-pill" data-preset="wikipedia">📄 Wikipedia</button>
-        <button class="preset-pill" data-preset="amazon">📦 Amazon</button>
-        <button class="preset-pill" data-preset="facebook">📘 Facebook</button>
         <input type="file" id="image-upload-input" accept="image/*" style="display: none">
-        <button class="btn btn-sm btn-primary" id="btn-upload-image">🖼️ Subir Imagen</button>
+        <button class="btn btn-sm btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos (Requiere Pase 24h)">🖼️ Subir Imagen</button>
       </div>
 
       <!-- Controles de Modo & Jugador -->
@@ -327,80 +321,81 @@
 
     <!-- Slots de Armas 1 al 9 + Granada + VIP -->
     <div class="hud-weapons" id="hud-weapons">
-      <!-- 1: Pistola -->
+      <!-- 1: Pistola (Gratis) -->
       <div class="slot active" data-slot="0">
         <kbd class="key">1</kbd>
         <canvas class="slot-icon" id="icon-0" width="48" height="32"></canvas>
         <span class="slot-lbl">Pistol</span>
       </div>
       <!-- 2: SMG -->
-      <div class="slot" data-slot="1">
+      <div class="slot locked" data-slot="1">
         <kbd class="key">2</kbd>
         <canvas class="slot-icon" id="icon-1" width="48" height="32"></canvas>
         <span class="slot-lbl">SMG</span>
+        <div class="slot-lock" id="lock-slot-1" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 3: Escopeta -->
-      <div class="slot" data-slot="2">
+      <div class="slot locked" data-slot="2">
         <kbd class="key">3</kbd>
         <canvas class="slot-icon" id="icon-2" width="48" height="32"></canvas>
         <span class="slot-lbl">Shotgun</span>
-        <div class="slot-lock" id="lock-slot-2" title="Desbloquea al 5% de destrucción">🔒<span class="lock-req">5%</span></div>
+        <div class="slot-lock" id="lock-slot-2" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 4: Lanzacohetes -->
-      <div class="slot" data-slot="3">
+      <div class="slot locked" data-slot="3">
         <kbd class="key">4</kbd>
         <canvas class="slot-icon" id="icon-3" width="48" height="32"></canvas>
         <span class="slot-lbl">Rocket</span>
-        <div class="slot-lock" id="lock-slot-3" title="Desbloquea al 20% de destrucción">🔒<span class="lock-req">20%</span></div>
+        <div class="slot-lock" id="lock-slot-3" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 5: Railgun -->
-      <div class="slot" data-slot="4">
+      <div class="slot locked" data-slot="4">
         <kbd class="key">5</kbd>
         <canvas class="slot-icon" id="icon-4" width="48" height="32"></canvas>
         <span class="slot-lbl">Railgun</span>
-        <div class="slot-lock" id="lock-slot-4" title="Desbloquea al 35% o 1 Secreto">🔒<span class="lock-req">35%</span></div>
+        <div class="slot-lock" id="lock-slot-4" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 6: Lanzallamas -->
-      <div class="slot" data-slot="5">
+      <div class="slot locked" data-slot="5">
         <kbd class="key">6</kbd>
         <canvas class="slot-icon" id="icon-5" width="48" height="32"></canvas>
         <span class="slot-lbl">Flame</span>
-        <div class="slot-lock" id="lock-slot-5" title="Desbloquea al 50% de destrucción">🔒<span class="lock-req">50%</span></div>
+        <div class="slot-lock" id="lock-slot-5" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 7: Too Much (Racimo) -->
-      <div class="slot" data-slot="6">
+      <div class="slot locked" data-slot="6">
         <kbd class="key">7</kbd>
         <canvas class="slot-icon" id="icon-6" width="48" height="32"></canvas>
         <span class="slot-lbl">Cluster</span>
-        <div class="slot-lock" id="lock-slot-6" title="Desbloquea al 65% de destrucción">🔒<span class="lock-req">65%</span></div>
+        <div class="slot-lock" id="lock-slot-6" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 8: Varita Mágica -->
-      <div class="slot" data-slot="7">
+      <div class="slot locked" data-slot="7">
         <kbd class="key">8</kbd>
         <canvas class="slot-icon" id="icon-7" width="48" height="32"></canvas>
         <span class="slot-lbl">Wand</span>
-        <div class="slot-lock" id="lock-slot-7" title="Desbloquea al 75% o 3 Secretos">🔒<span class="lock-req">75%</span></div>
+        <div class="slot-lock" id="lock-slot-7" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 9: Estrella Neutrones -->
-      <div class="slot" data-slot="8">
+      <div class="slot locked" data-slot="8">
         <kbd class="key">9</kbd>
         <canvas class="slot-icon" id="icon-8" width="48" height="32"></canvas>
         <span class="slot-lbl">Neutron</span>
-        <div class="slot-lock" id="lock-slot-8" title="Desbloquea al 85% de destrucción">🔒<span class="lock-req">85%</span></div>
+        <div class="slot-lock" id="lock-slot-8" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- 0: Tsar Bomba (Nuke) -->
-      <div class="slot" data-slot="9">
+      <div class="slot locked" data-slot="9">
         <kbd class="key">0</kbd>
         <canvas class="slot-icon" id="icon-9" width="48" height="32"></canvas>
         <span class="slot-lbl">☢️ Nuke</span>
-        <div class="slot-lock" id="lock-slot-9" title="Desbloquea al 95% o Prestigio / VIP">🔒<span class="lock-req">95%</span></div>
+        <div class="slot-lock" id="lock-slot-9" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- G: Granada / Lanzagranadas (Slot 10 / Tecla G o Clic Derecho) -->
-      <div class="slot" data-slot="10" title="Lanzagranadas (Pulsa G o Clic Derecho)">
+      <div class="slot locked" data-slot="10" title="Lanzagranadas (Requiere Pase 24 Horas)">
         <kbd class="key">G</kbd>
         <canvas class="slot-icon" id="icon-alt" width="48" height="32"></canvas>
         <span class="slot-lbl">Grenade</span>
-        <div class="slot-lock" id="lock-slot-10" title="Desbloquea al 10% de destrucción">🔒<span class="lock-req">10%</span></div>
+        <div class="slot-lock" id="lock-slot-10" title="Requiere Pase Creador 24 Horas ($1 USD)">🔒<span class="lock-req">VIP</span></div>
       </div>
       <!-- Botón VIP Arsenal Wompi -->
       <div class="slot slot-vip" id="btn-vip-hotbar" title="Desbloquear Todo el Arsenal con Wompi">
@@ -544,7 +539,7 @@
             <label for="auth-code-direct-input" style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">
               ⭐ CÓDIGO DE ACCESO (6 DÍGITOS):
             </label>
-            <input type="text" id="auth-code-direct-input" class="auth-input" placeholder="602951" maxlength="6" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px; background:#0f172a; border:2px solid #38bdf8; border-radius:12px; color:#facc15; font-size:26px; text-align:center; font-weight:800; letter-spacing:8px; font-family:monospace;">
+            <input type="text" id="auth-code-direct-input" class="auth-input" placeholder="123456" maxlength="6" autocomplete="off" style="width:100%; box-sizing:border-box; padding:14px; background:#0f172a; border:2px solid #38bdf8; border-radius:12px; color:#facc15; font-size:26px; text-align:center; font-weight:800; letter-spacing:8px; font-family:monospace;">
             <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
               💡 Este código único te permite acceder desde cualquier parte del mundo sin contraseñas ni Gmail.
             </div>
@@ -669,75 +664,125 @@
   <div id="wompi-modal" class="custom-modal">
     <div class="modal-card pass-card">
       <div class="modal-head">
-        <h2>⭐ PASE CREADOR 24 HORAS ($1 USD)</h2>
+        <h2 id="wompi-modal-title">⭐ PASE CREADOR 24 HORAS ($1 USD)</h2>
         <button class="close-btn" id="btn-close-wompi">✕</button>
       </div>
       <div class="modal-body">
-        <div id="pass-feature-notice" class="pass-feature-notice" style="display:none;"></div>
+        <!-- VISTA A: PASE ACTIVO (Se muestra cuando el usuario YA tiene un pase vigente) -->
+        <div id="wompi-active-view" style="display:none; text-align:center;">
+          <div style="font-size:36px; margin-bottom:4px;">⭐</div>
+          <h3 style="color:#facc15; margin:0 0 10px 0; font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">
+            ¡Pase de 24 Horas Activo!
+          </h3>
 
-        <div class="wompi-badge-hero">
-          <span class="wompi-logo-txt">wompi</span>
-          <span class="wompi-colombia">Bancolombia • Nequi • PSE • Tarjetas de Crédito y Débito</span>
-        </div>
+          <div style="background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 14px; padding: 18px 12px; margin: 12px 0; box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);">
+            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">
+              ⏱️ TIEMPO RESTANTE
+            </div>
+            <div id="wompi-active-countdown" style="font-family: monospace; font-size: 38px; font-weight: 900; color: #38bdf8; text-shadow: 0 0 18px rgba(56, 189, 248, 0.8); letter-spacing: 3px;">
+              24:00:00
+            </div>
+            <div style="font-size: 11px; color: #cbd5e1; margin-top: 6px;">
+              Disfruta de acceso total y sin restricciones en este dispositivo
+            </div>
+          </div>
 
-        <p class="desc" style="font-size:13px; color:#cbd5e1; margin:8px 0; text-align:center;">
-          TikTok es <strong>100% Gratis</strong>. Activa tu pase por 24 horas para desbloquear fotos, todas las webs y el arsenal completo:
-        </p>
+          <div style="background: rgba(30, 41, 59, 0.8); border: 1px dashed #f59e0b; border-radius: 12px; padding: 12px; margin-bottom: 14px;">
+            <div style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+              🔑 Tu Código Multidispositivo
+            </div>
+            <div id="wompi-active-pass-code" style="font-family: monospace; font-size: 26px; font-weight: 900; color: #facc15; letter-spacing: 6px;">
+              ------
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+              Usa este código en tu celular o en otro navegador para jugar sin pagar de nuevo.
+            </div>
+          </div>
 
-        <div class="pass-perks-list">
-          <div class="perk-item"><span>🖼️</span> <strong>Subir Fotos, Memes e Imágenes Ilimitadas</strong> para destruir en video</div>
-          <div class="perk-item"><span>🔗</span> <strong>Destruir Cualquier Sitio Web del Mundo</strong> (Noticias, Wikipedia, Tiendas...)</div>
-          <div class="perk-item"><span>🤖</span> <strong>Invocación de Bots de Demolición Cinética</strong> para grabaciones dinámicas</div>
-          <div class="perk-item"><span>☢️</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Lanzallamas, Cohetes...)</div>
-          <div class="perk-item"><span>🌐</span> <strong>Salas Multijugador Privadas</strong> para jugar y grabar con amigos</div>
-        </div>
+          <div class="pass-perks-list" style="margin-bottom: 16px; text-align: left;">
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Cohetes...)</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Destrucción Ilimitada</strong> de cualquier URL del mundo</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Subida de Fotos y Memes</strong> ilimitada</div>
+            <div class="perk-item" style="color:#4ade80;"><span>✅</span> <strong>Invocación de Bots de Demolición</strong> activada</div>
+          </div>
 
-        <!-- Entrada de Correo y PIN para Vincular el Pase -->
-        <div style="margin: 12px 0;">
-          <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:4px; text-transform:uppercase;">
-            📧 Tu Correo Electrónico (Para vincular tu Pase de 24 Horas):
-          </label>
-          <input type="email" id="wompi-user-email" class="auth-input" placeholder="tu@correo.com" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px;">
-
-          <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-top:10px; margin-bottom:4px; text-transform:uppercase;">
-            🔒 Crea un PIN Secreto (4 dígitos para acceder en otros dispositivos):
-          </label>
-          <input type="password" id="wompi-user-pin" class="auth-input" placeholder="Ej: 1234" maxlength="6" value="1234" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px; letter-spacing:2px;">
-
-          <button id="btn-restore-wompi-pass" type="button" class="btn btn-sm" style="width:100%; margin-top:8px; background:#1e293b; color:#38bdf8; font-weight:bold; padding:8px 12px; border:1px dashed #38bdf8; border-radius:8px; cursor:pointer;">
-            🔄 ¿Ya compraste tu pase? Clic aquí para restaurar con Correo y PIN
+          <button id="btn-close-active-view" class="btn btn-pass-main" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); width: 100%; padding: 14px; font-size: 15px; font-weight: 800; border: none; border-radius: 12px; color: #ffffff; cursor: pointer;">
+            <span>🚀 SEGUIR JUGANDO (VOLVER AL JUEGO)</span>
           </button>
+
+          <p style="font-size:11px; color:#64748b; margin-top:10px;">
+            ⚠️ Ya tienes el pase activo. No es necesario pagar de nuevo hasta que el contador llegue a 00:00:00.
+          </p>
         </div>
 
-        <div class="pass-price-box">
-          <div class="price-val">$ 1.00 USD</div>
-          <div class="price-sub">Pase Creador de 24 Horas • Acceso Total e Ilimitado</div>
-        </div>
+        <!-- VISTA B: COMPRA DE PASE (Solo visible cuando NO hay pase activo) -->
+        <div id="wompi-purchase-view">
+          <div id="pass-feature-notice" class="pass-feature-notice" style="display:none;"></div>
 
-        <button id="btn-pay-wompi-trigger" class="btn btn-pass-main">
-          <span>💳 PAGAR $1 USD CON WOMPI (NEQUI / PSE / BANCOLOMBIA / TARJETA)</span>
-        </button>
+          <div class="wompi-badge-hero">
+            <span class="wompi-logo-txt">wompi</span>
+            <span class="wompi-colombia">Bancolombia • Nequi • PSE • Tarjetas de Crédito y Débito</span>
+          </div>
 
-        <div class="pass-url-rules-box">
-          <div class="rules-head">💡 <strong>Guía de Sitios Web Aceptables:</strong></div>
-          <ul class="rules-list">
-            <li>Introduce cualquier URL pública (ej: <code>wikipedia.org/wiki/Stick_figure</code>, <code>bbc.com</code>, <code>reddit.com</code>).</li>
-            <li>No se requieren inicios de sesión ni contraseñas privadas.</li>
-            <li>Si una página tiene protección anti-bots (Cloudflare), nuestro motor creará una arena táctica interactiva con sus titulares y textos reales.</li>
-          </ul>
-        </div>
+          <p class="desc" style="font-size:13px; color:#cbd5e1; margin:8px 0; text-align:center;">
+            TikTok es <strong>100% Gratis</strong>. Activa tu pase por 24 horas para desbloquear fotos, todas las webs y el arsenal completo:
+          </p>
 
-        <div class="pass-test-hint" style="margin-top: 15px; padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; text-align: center;">
-          <div style="font-size: 12px; color: #38bdf8; font-weight: bold; margin-bottom: 6px;">🛠️ MODO DE PRUEBAS / SANDBOX (GRATIS PARA TI)</div>
-          <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">Haz clic abajo para activar el Pase de 24 Horas al instante en tu navegador sin pagar nada:</p>
-          <button id="btn-wompi-test-unlock" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; box-shadow: 0 0 15px rgba(2, 132, 199, 0.5);">⚡ ACTIVAR MODO PRUEBA 24H AHORA (SIN COSTO)</button>
-        </div>
+          <div class="pass-perks-list">
+            <div class="perk-item"><span>🖼️</span> <strong>Subir Fotos, Memes e Imágenes Ilimitadas</strong> para destruir en video</div>
+            <div class="perk-item"><span>🔗</span> <strong>Destruir Cualquier Sitio Web del Mundo</strong> (Noticias, Wikipedia, Tiendas...)</div>
+            <div class="perk-item"><span>🤖</span> <strong>Invocación de Bots de Demolición Cinética</strong> para grabaciones dinámicas</div>
+            <div class="perk-item"><span>☢️</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Lanzallamas, Cohetes...)</div>
+            <div class="perk-item"><span>🌐</span> <strong>Salas Multijugador Privadas</strong> para jugar y grabar con amigos</div>
+          </div>
 
-        <div class="pass-compliance-links" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 11px;">
-          <a href="/terminos.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Términos y Condiciones</a> •
-          <a href="/privacidad.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Privacidad</a> •
-          <a href="/reembolsos.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Reembolsos</a> •
-          <a href="/contacto.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Contacto</a>
+          <!-- Entrada de Correo y PIN para Vincular el Pase -->
+          <div style="margin: 12px 0;">
+            <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:4px; text-transform:uppercase;">
+              📧 Tu Correo Electrónico (Para vincular tu Pase de 24 Horas):
+            </label>
+            <input type="email" id="wompi-user-email" class="auth-input" placeholder="tu@correo.com" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px;">
+
+            <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-top:10px; margin-bottom:4px; text-transform:uppercase;">
+              🔒 Crea un PIN Secreto (4 dígitos para acceder en otros dispositivos):
+            </label>
+            <input type="password" id="wompi-user-pin" class="auth-input" placeholder="Ej: 1234" maxlength="6" value="1234" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px; letter-spacing:2px;">
+
+            <button id="btn-restore-wompi-pass" type="button" class="btn btn-sm" style="width:100%; margin-top:8px; background:#1e293b; color:#38bdf8; font-weight:bold; padding:8px 12px; border:1px dashed #38bdf8; border-radius:8px; cursor:pointer;">
+              🔄 ¿Ya compraste tu pase? Clic aquí para restaurar con Correo y PIN
+            </button>
+          </div>
+
+          <div class="pass-price-box">
+            <div class="price-val">$ 1.00 USD</div>
+            <div class="price-sub">Pase Creador de 24 Horas • Acceso Total e Ilimitado</div>
+          </div>
+
+          <button id="btn-pay-wompi-trigger" class="btn btn-pass-main">
+            <span>💳 PAGAR $1 USD CON WOMPI (NEQUI / PSE / BANCOLOMBIA / TARJETA)</span>
+          </button>
+
+          <div class="pass-url-rules-box">
+            <div class="rules-head">💡 <strong>Guía de Sitios Web Aceptables:</strong></div>
+            <ul class="rules-list">
+              <li>Introduce cualquier URL pública (ej: <code>wikipedia.org/wiki/Stick_figure</code>, <code>bbc.com</code>, <code>reddit.com</code>).</li>
+              <li>No se requieren inicios de sesión ni contraseñas privadas.</li>
+              <li>Si una página tiene protección anti-bots (Cloudflare), nuestro motor creará una arena táctica interactiva con sus titulares y textos reales.</li>
+            </ul>
+          </div>
+
+          <div class="pass-test-hint" style="margin-top: 15px; padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; text-align: center;">
+            <div style="font-size: 12px; color: #38bdf8; font-weight: bold; margin-bottom: 6px;">🛠️ MODO DE PRUEBAS / SANDBOX (GRATIS PARA TI)</div>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">Haz clic abajo para activar el Pase de 24 Horas al instante en tu navegador sin pagar nada:</p>
+            <button id="btn-wompi-test-unlock" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; box-shadow: 0 0 15px rgba(2, 132, 199, 0.5);">⚡ ACTIVAR MODO PRUEBA 24H AHORA (SIN COSTO)</button>
+          </div>
+
+          <div class="pass-compliance-links" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 11px;">
+            <a href="/terminos.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Términos y Condiciones</a> •
+            <a href="/privacidad.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Privacidad</a> •
+            <a href="/reembolsos.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Reembolsos</a> •
+            <a href="/contacto.html" target="_blank" style="color: #94a3b8; text-decoration: none; margin: 0 6px;">Contacto</a>
+          </div>
         </div>
       </div>
     </div>
@@ -748,16 +793,16 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=4.5"></script>
-  <script src="js/levelGenerator.js?v=4.5"></script>
-  <script src="js/physics.js?v=4.5"></script>
-  <script src="js/player.js?v=4.5"></script>
-  <script src="js/bot.js?v=4.5"></script>
-  <script src="js/multiplayer.js?v=4.5"></script>
-  <script src="js/idleManager.js?v=4.5"></script>
-  <script src="js/fix-webm-duration.js?v=4.8"></script>
-  <script src="js/videoRecorder.js?v=4.8"></script>
-  <script src="js/wompiManager.js?v=4.8"></script>
-  <script src="js/game.js?v=4.8"></script>
+  <script src="js/audio.js?v=5.0"></script>
+  <script src="js/levelGenerator.js?v=5.0"></script>
+  <script src="js/physics.js?v=5.0"></script>
+  <script src="js/player.js?v=5.0"></script>
+  <script src="js/bot.js?v=5.0"></script>
+  <script src="js/multiplayer.js?v=5.0"></script>
+  <script src="js/idleManager.js?v=5.0"></script>
+  <script src="js/fix-webm-duration.js?v=5.0"></script>
+  <script src="js/videoRecorder.js?v=5.0"></script>
+  <script src="js/wompiManager.js?v=5.0"></script>
+  <script src="js/game.js?v=5.0"></script>
 </body>
 </html>

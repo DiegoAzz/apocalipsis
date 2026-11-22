@@ -125,8 +125,8 @@ class Player {
       { index: 9, name: 'Tsar Bomba', reqPct: 95, desc: '95% de Destrucción o Prestigio' }
     ];
 
-    // Persistencia por Dispositivo
-    this.unlockedWeapons = [0, 1];
+    // Persistencia por Dispositivo (Solo Pistola Slot 0 es gratis; 1-10 son VIP Pase 24h)
+    this.unlockedWeapons = [0];
     this.isVip = false;
     this.loadPersistence();
 
@@ -140,16 +140,18 @@ class Player {
 
   isWeaponUnlocked(index) {
     if (this.isVip) return true;
-    return this.unlockedWeapons.includes(index);
+    return index === 0;
   }
 
   unlockWeapon(index) {
-    if (!this.unlockedWeapons.includes(index)) {
-      this.unlockedWeapons.push(index);
-      this.savePersistence();
+    if (this.isVip) {
+      if (!this.unlockedWeapons.includes(index)) {
+        this.unlockedWeapons.push(index);
+        this.savePersistence();
+      }
       return true;
     }
-    return false;
+    return index === 0;
   }
 
   unlockAllWeaponsVip() {
@@ -159,22 +161,9 @@ class Player {
   }
 
   checkUnlocks(currentPct, secretsCount = 0) {
-    const newlyUnlocked = [];
-    if (this.isVip) return newlyUnlocked;
-
-    for (const rule of this.weaponUnlockRules) {
-      if (!this.unlockedWeapons.includes(rule.index)) {
-        let shouldUnlock = currentPct >= rule.reqPct;
-        if (rule.index === 4 && secretsCount >= 1) shouldUnlock = true;
-        if (rule.index === 7 && secretsCount >= 3) shouldUnlock = true;
-
-        if (shouldUnlock) {
-          this.unlockWeapon(rule.index);
-          newlyUnlocked.push(this.weapons[rule.index]);
-        }
-      }
-    }
-    return newlyUnlocked;
+    // Para usuarios gratuitos NUNCA se desbloquean armas por porcentaje.
+    // Todas las armas 1 a 10 requieren el Pase Creador 24 Horas ($1 USD).
+    return [];
   }
 
   savePersistence() {
@@ -183,8 +172,8 @@ class Player {
       const data = {
         name: this.name,
         color: this.color,
-        unlockedWeapons: this.unlockedWeapons,
-        isVip: this.isVip
+        unlockedWeapons: this.isVip ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : [0],
+        isVip: Boolean(this.isVip)
       };
       localStorage.setItem('apocalipsis_player_data', JSON.stringify(data));
       localStorage.setItem('destroy_player_name', this.name);
@@ -202,13 +191,18 @@ class Player {
         if (d.isVip) {
           this.isVip = true;
           this.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        } else if (Array.isArray(d.unlockedWeapons)) {
-          this.unlockedWeapons = d.unlockedWeapons;
-          if (!this.unlockedWeapons.includes(0)) this.unlockedWeapons.push(0);
-          if (!this.unlockedWeapons.includes(1)) this.unlockedWeapons.push(1);
+        } else {
+          this.isVip = false;
+          this.unlockedWeapons = [0];
         }
+      } else {
+        this.isVip = false;
+        this.unlockedWeapons = [0];
       }
-    } catch (e) {}
+    } catch (e) {
+      this.isVip = false;
+      this.unlockedWeapons = [0];
+    }
   }
 
   getCurrentWeapon() {
