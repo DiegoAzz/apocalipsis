@@ -2597,7 +2597,8 @@ class UIManager {
             if (this.game.passManager) {
               this.game.passManager.activatePass(24, email);
             }
-            this.showToast(`⭐ ¡Pase Encontrado! Tu acceso de 24 horas está activo.`);
+            const accessCode = data.code || '602951';
+            alert(`⭐ ¡PASE ENCONTRADO CON ÉXITO!\n\nTu CÓDIGO DE ACCESO es:\n👉  ${accessCode}  👈\n\nTu Pase Creador de 24 Horas y Arsenal VIP han sido activados en este navegador.`);
             if (modal) modal.style.display = 'none';
           } else {
             alert(data.message || 'No encontramos un pase activo para este correo.');

@@ -439,7 +439,7 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
 
     const passes = getCreatorPasses();
 
-    // Si el usuario ingresó un código de 6 dígitos numéricos
+    // 1. Si el usuario ingresó un código de 6 dígitos numéricos
     if (/^\d{6}$/.test(inputVal)) {
       for (const [key, p] of Object.entries(passes)) {
         if (p && p.code && p.code.toString().trim() === inputVal) {
@@ -467,6 +467,23 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
           expiresAt: dPass ? dPass.expiresAt : Date.now() + 8760 * 3600 * 1000,
           message: `¡Pase Creador activado para Diego Zuniga!`
         });
+      }
+    }
+
+    // 2. Si el usuario ingresó un Número de Transacción o Referencia de Wompi (el que le llega a su correo)
+    for (const [key, p] of Object.entries(passes)) {
+      if (p && p.reference && (p.reference === inputVal || inputVal.includes(p.reference) || p.reference.includes(inputVal))) {
+        if (p.expiresAt > Date.now()) {
+          return res.json({
+            success: true,
+            isPassActive: true,
+            isVip: true,
+            code: p.code || '602951',
+            email: p.identifier || key,
+            expiresAt: p.expiresAt,
+            message: `⭐ ¡Comprobante de Wompi verificado! Tu código de acceso es: ${p.code || '602951'}`
+          });
+        }
       }
     }
 
