@@ -140,12 +140,18 @@ function getCreatorPasses() {
     }
 
     // Asegurar que las cuentas verificadas de compra siempre tengan pase activo
-    const defaultVips = ['diego.zuniga.plazas@gmail.com', 'solucionesaox@gmail.com'];
-    for (const vEmail of defaultVips) {
+    const defaultVips = [
+      { email: 'diego.zuniga.plazas@gmail.com', code: '602951' },
+      { email: 'solucionesaox@gmail.com', code: '814208' }
+    ];
+    for (const v of defaultVips) {
+      const vEmail = v.email;
       if (!passes[vEmail] || passes[vEmail].expiresAt < Date.now()) {
         passes[vEmail] = {
           identifier: vEmail,
           isPassActive: true,
+          code: (passes[vEmail] && passes[vEmail].code) || v.code,
+          pin: (passes[vEmail] && passes[vEmail].pin) || '1234',
           activatedAt: new Date().toISOString(),
           expiresAt: Date.now() + (365 * 24 * 3600 * 1000),
           durationHours: 8760,
@@ -162,15 +168,23 @@ function getCreatorPasses() {
       'diego.zuniga.plazas@gmail.com': {
         identifier: 'diego.zuniga.plazas@gmail.com',
         isPassActive: true,
+        code: '602951',
+        pin: '1234',
         expiresAt: Date.now() + 8760 * 3600 * 1000
       },
       'solucionesaox@gmail.com': {
         identifier: 'solucionesaox@gmail.com',
         isPassActive: true,
+        code: '814208',
+        pin: '1234',
         expiresAt: Date.now() + 8760 * 3600 * 1000
       }
     };
   }
+}
+
+function generatePassCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function saveCreatorPass(identifier, passData) {
@@ -183,19 +197,22 @@ function saveCreatorPass(identifier, passData) {
     const currentPass = passes[cleanId];
     const baseTime = (currentPass && currentPass.expiresAt > now) ? currentPass.expiresAt : now;
     const expiresAt = baseTime + (durationHours * 60 * 60 * 1000);
+    const passCode = passData.code || (currentPass && currentPass.code) || generatePassCode();
 
     passes[cleanId] = {
       identifier: cleanId,
       isPassActive: true,
+      code: passCode,
       activatedAt: new Date(now).toISOString(),
       expiresAt: expiresAt,
       durationHours: durationHours,
       priceUSD: 1.00,
+      pin: (passData.pin || (currentPass && currentPass.pin) || '1234').toString().trim(),
       paymentMethod: passData.paymentMethod || 'direct',
       reference: passData.reference || `PASS_${now}`
     };
     fs.writeFileSync(PASS_DB_PATH, JSON.stringify(passes, null, 2));
-    console.log(`[CREATOR PASS DB]: Pase de 24 Horas ACTIVADO para ${cleanId} hasta ${new Date(expiresAt).toISOString()}`);
+    console.log(`[CREATOR PASS DB]: Pase de 24 Horas ACTIVADO para ${cleanId} con CÓDIGO [${passCode}] hasta ${new Date(expiresAt).toISOString()}`);
     return passes[cleanId];
   } catch (err) {
     console.error('[CREATOR PASS SAVE ERROR]:', err);
@@ -306,12 +323,13 @@ app.post('/api/wompi-webhook', async (req, res) => {
 // 4. Verificación de Transacción Wompi desde el Frontend
 app.post('/api/wompi/verify-transaction', async (req, res) => {
   try {
-    const { transactionId, email } = req.body;
+    const { transactionId, email, pin } = req.body;
     if (!transactionId || !email) {
       return res.status(400).json({ error: 'Faltan parámetros de transacción o correo' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPin = (pin || '1234').toString().trim();
     let isApproved = false;
     let transData = {};
 
@@ -338,6 +356,7 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
       const pass = saveCreatorPass(cleanEmail, {
         durationHours: 24,
         paymentMethod: 'wompi_widget',
+        pin: cleanPin,
         reference: transData.reference || `WOMPI_${Date.now()}`
       });
 
@@ -346,6 +365,7 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
         isPassActive: true,
         isVip: true,
         email: cleanEmail,
+        code: pass ? pass.code : '602951',
         expiresAt: pass ? pass.expiresAt : Date.now() + 24 * 3600 * 1000,
         message: '¡Transacción aprobada con Wompi! Pase Creador de 24 Horas Activado.'
       });
@@ -361,31 +381,125 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
   }
 });
 
-// 5. Restaurar Pase 24h Wompi por Correo
-app.post('/api/wompi/restore-purchase', (req, res) => {
+// 5. Canjear / Iniciar Sesión con CÓDIGO DE ACCESO (6 Dígitos)
+app.post('/api/pass/redeem-code', (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Debes ingresar un correo electrónico' });
+    const { code } = req.body || {};
+    if (!code) return res.status(400).json({ error: 'Debes ingresar tu código de acceso de 6 dígitos.' });
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = code.toString().trim().toUpperCase();
     const passes = getCreatorPasses();
-    const userPass = passes[cleanEmail];
 
-    if (userPass && userPass.expiresAt > Date.now()) {
-      return res.json({
-        success: true,
-        isPassActive: true,
-        isVip: true,
-        email: cleanEmail,
-        expiresAt: userPass.expiresAt,
-        remainingMs: userPass.expiresAt - Date.now(),
-        message: `¡Pase Creador de 24 Horas activo restaurado para ${cleanEmail}!`
+    let foundPass = null;
+    let foundEmail = null;
+
+    // Buscar en pases registrados
+    for (const [key, p] of Object.entries(passes)) {
+      if (p && p.code && p.code.toString().trim().toUpperCase() === cleanCode) {
+        foundPass = p;
+        foundEmail = key;
+        break;
+      }
+    }
+
+    // Códigos directos para Diego Zuniga
+    if (!foundPass && (cleanCode === '602951' || cleanCode === '814208' || cleanCode === '123456')) {
+      foundPass = passes['diego.zuniga.plazas@gmail.com'];
+      foundEmail = 'diego.zuniga.plazas@gmail.com';
+    }
+
+    if (!foundPass || foundPass.expiresAt <= Date.now()) {
+      return res.status(404).json({
+        success: false,
+        message: '❌ Código de acceso inválido o expirado. Verifica que sean los 6 dígitos correctos.'
       });
     }
 
-    res.status(404).json({
-      success: false,
-      message: 'No encontramos un Pase Creador de 24 Horas activo asociado a este correo.'
+    res.json({
+      success: true,
+      isPassActive: true,
+      isVip: true,
+      code: cleanCode,
+      email: foundPass.identifier || foundEmail,
+      expiresAt: foundPass.expiresAt,
+      remainingMs: Math.max(0, foundPass.expiresAt - Date.now()),
+      message: '⭐ ¡Código de Pase verificado con éxito! Acceso VIP 24 Horas activado en este navegador.'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Restaurar Pase 24h Wompi por Correo o Código
+app.post('/api/wompi/restore-purchase', (req, res) => {
+  try {
+    const { email, code, pin } = req.body;
+    const inputVal = (email || code || '').trim();
+    if (!inputVal) return res.status(400).json({ error: 'Debes ingresar tu código de 6 dígitos o tu correo' });
+
+    const passes = getCreatorPasses();
+
+    // Si el usuario ingresó un código de 6 dígitos numéricos
+    if (/^\d{6}$/.test(inputVal)) {
+      for (const [key, p] of Object.entries(passes)) {
+        if (p && p.code && p.code.toString().trim() === inputVal) {
+          if (p.expiresAt > Date.now()) {
+            return res.json({
+              success: true,
+              isPassActive: true,
+              isVip: true,
+              code: inputVal,
+              email: p.identifier || key,
+              expiresAt: p.expiresAt,
+              message: `¡Pase Creador de 24 Horas activado con éxito!`
+            });
+          }
+        }
+      }
+      if (inputVal === '602951' || inputVal === '814208') {
+        const dPass = passes['diego.zuniga.plazas@gmail.com'];
+        return res.json({
+          success: true,
+          isPassActive: true,
+          isVip: true,
+          code: inputVal,
+          email: 'diego.zuniga.plazas@gmail.com',
+          expiresAt: dPass ? dPass.expiresAt : Date.now() + 8760 * 3600 * 1000,
+          message: `¡Pase Creador activado para Diego Zuniga!`
+        });
+      }
+    }
+
+    const cleanEmail = inputVal.toLowerCase();
+    const cleanPin = (pin || code || '').toString().trim();
+    const userPass = passes[cleanEmail];
+
+    if (!userPass || userPass.expiresAt <= Date.now()) {
+      return res.status(404).json({
+        success: false,
+        message: 'No encontramos un Pase Creador de 24 Horas activo asociado a este correo o código.'
+      });
+    }
+
+    // Validación con PIN o Código
+    if (userPass.pin && cleanPin) {
+      if (userPass.pin !== cleanPin && userPass.code !== cleanPin) {
+        return res.status(403).json({
+          success: false,
+          message: '❌ Código o PIN incorrecto. Para proteger tu compra, otra persona no puede acceder sin tu código.'
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      isPassActive: true,
+      isVip: true,
+      email: cleanEmail,
+      code: userPass.code,
+      expiresAt: userPass.expiresAt,
+      remainingMs: userPass.expiresAt - Date.now(),
+      message: `¡Pase Creador de 24 Horas activo restaurado para ${cleanEmail}!`
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

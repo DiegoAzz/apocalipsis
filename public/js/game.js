@@ -2445,64 +2445,126 @@ class UIManager {
     const modal = document.getElementById('auth-code-modal');
     const btnClose = document.getElementById('btn-close-auth-modal');
     const stepEmail = document.getElementById('auth-step-email');
-    const stepCode = document.getElementById('auth-step-code');
     const stepLogged = document.getElementById('auth-step-logged');
+    const codeDirectInput = document.getElementById('auth-code-direct-input');
+    const btnRedeemCode = document.getElementById('btn-redeem-pass-code');
+    const btnToggleEmail = document.getElementById('btn-toggle-email-restore');
+    const emailFallbackBox = document.getElementById('auth-email-fallback-box');
     const emailInput = document.getElementById('auth-email-input');
-    const codeInput = document.getElementById('auth-code-input');
     const btnSendCode = document.getElementById('btn-send-auth-code');
-    const btnVerifyCode = document.getElementById('btn-verify-auth-code');
-    const btnBack = document.getElementById('btn-auth-back-to-email');
     const btnLogout = document.getElementById('btn-logout-auth');
-    const targetEmailLabel = document.getElementById('auth-target-email-label');
     const loggedEmailDisplay = document.getElementById('auth-logged-email-display');
     const vipStatusBadge = document.getElementById('auth-vip-status-badge');
     const btnAuthLabel = document.getElementById('auth-btn-label');
 
     const checkSavedSession = () => {
+      const savedPass = localStorage.getItem('apocalipsis_creator_pass');
+      const savedCode = localStorage.getItem('apocalipsis_pass_code');
       const savedEmail = localStorage.getItem('apocalipsis_auth_email');
-      if (savedEmail) {
-        const isVip = localStorage.getItem('apocalipsis_vip_unlocked') === 'true';
-        if (btnAuthLabel) btnAuthLabel.textContent = isVip ? '⭐ VIP' : 'Mi Cuenta';
-        return savedEmail;
+      const now = Date.now();
+
+      if (savedPass && parseInt(savedPass, 10) > now) {
+        if (btnAuthLabel) btnAuthLabel.textContent = savedCode ? `⭐ Código: ${savedCode}` : '⭐ Pase Activo';
+        return true;
       }
-      return null;
+      return false;
     };
 
     checkSavedSession();
 
+    if (btnToggleEmail && emailFallbackBox) {
+      btnToggleEmail.addEventListener('click', () => {
+        emailFallbackBox.style.display = emailFallbackBox.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+
     if (btnOpen && modal) {
       btnOpen.addEventListener('click', () => {
         modal.style.display = 'flex';
-        const currentEmail = localStorage.getItem('apocalipsis_auth_email');
-        if (currentEmail) {
+        const savedPass = localStorage.getItem('apocalipsis_creator_pass');
+        const savedCode = localStorage.getItem('apocalipsis_pass_code');
+        const now = Date.now();
+
+        if (savedPass && parseInt(savedPass, 10) > now) {
           if (stepEmail) stepEmail.style.display = 'none';
-          if (stepCode) stepCode.style.display = 'none';
           if (stepLogged) stepLogged.style.display = 'block';
-          if (loggedEmailDisplay) loggedEmailDisplay.textContent = currentEmail;
-          const isVip = localStorage.getItem('apocalipsis_vip_unlocked') === 'true';
+          if (loggedEmailDisplay) {
+            loggedEmailDisplay.textContent = savedCode ? `Código: ${savedCode}` : 'Pase Creador 24h Activo';
+          }
           if (vipStatusBadge) {
-            vipStatusBadge.textContent = isVip ? '⭐ Arsenal VIP Activado' : 'Operativo Estándar';
-            vipStatusBadge.style.color = isVip ? '#facc15' : '#94a3b8';
+            vipStatusBadge.textContent = '⭐ Arsenal VIP & Creación Activados';
+            vipStatusBadge.style.color = '#facc15';
           }
         } else {
           if (stepEmail) stepEmail.style.display = 'block';
-          if (stepCode) stepCode.style.display = 'none';
           if (stepLogged) stepLogged.style.display = 'none';
+          if (codeDirectInput && !codeDirectInput.value) {
+            codeDirectInput.focus();
+          }
         }
       });
     }
 
     if (btnClose && modal) {
       btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
-    }
-
-    if (btnBack) {
-      btnBack.addEventListener('click', () => {
-        if (stepEmail) stepEmail.style.display = 'block';
-        if (stepCode) stepCode.style.display = 'none';
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.style.display = 'none';
       });
     }
 
+    // 1. Canjear con CÓDIGO DE ACCESO (6 dígitos)
+    if (btnRedeemCode && codeDirectInput) {
+      btnRedeemCode.addEventListener('click', async () => {
+        const code = codeDirectInput.value.trim().toUpperCase();
+        if (!code || code.length < 5) {
+          this.showToast('⚠️ Ingresa tu código de acceso de 6 dígitos (ej: 602951)');
+          return;
+        }
+
+        btnRedeemCode.disabled = true;
+        btnRedeemCode.innerHTML = '<span>⏳ Verificando código...</span>';
+
+        try {
+          const res = await fetch('/api/pass/redeem-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+          });
+          const data = await res.json();
+
+          if (data.success && data.isPassActive) {
+            localStorage.setItem('apocalipsis_pass_code', code);
+            localStorage.setItem('apocalipsis_auth_email', data.email || 'creador@apocalipsis.com');
+            localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
+
+            if (btnAuthLabel) btnAuthLabel.textContent = `⭐ ${code}`;
+            if (this.game.localPlayer) {
+              this.game.localPlayer.unlockAllWeaponsVip();
+            }
+            this.refreshWeaponLocks();
+            if (this.game.passManager) {
+              this.game.passManager.activatePass(24, data.email);
+            }
+            this.showToast(`⭐ ¡CÓDIGO ${code} VÁLIDO! Pase 24 Horas y Arsenal activados.`);
+            if (modal) modal.style.display = 'none';
+          } else {
+            alert(data.message || '❌ Código no encontrado o expirado.');
+          }
+        } catch (err) {
+          alert('❌ Error de conexión al servidor.');
+        } finally {
+          btnRedeemCode.disabled = false;
+          btnRedeemCode.innerHTML = '<span>🚀 ACTIVAR EN ESTE NAVEGADOR</span>';
+        }
+      });
+
+      // Permitir pulsar Enter en el campo de código
+      codeDirectInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') btnRedeemCode.click();
+      });
+    }
+
+    // 2. Restaurar por correo electrónico (alternativa)
     if (btnSendCode && emailInput) {
       btnSendCode.addEventListener('click', async () => {
         const email = emailInput.value.trim().toLowerCase();
@@ -2512,7 +2574,7 @@ class UIManager {
         }
 
         btnSendCode.disabled = true;
-        btnSendCode.innerHTML = '<span>⏳ Restaurando...</span>';
+        btnSendCode.innerHTML = '<span>⏳ Buscando pase...</span>';
 
         try {
           const res = await fetch('/api/wompi/restore-purchase', {
@@ -2524,60 +2586,42 @@ class UIManager {
 
           if (data.success && data.isPassActive) {
             localStorage.setItem('apocalipsis_auth_email', email);
-            localStorage.setItem('apocalipsis_user_email', email);
-            if (btnAuthLabel) btnAuthLabel.textContent = '⭐ Pase Activo';
+            localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
+            if (data.code) localStorage.setItem('apocalipsis_pass_code', data.code);
+            if (btnAuthLabel) btnAuthLabel.textContent = data.code ? `⭐ ${data.code}` : '⭐ Pase Activo';
 
-            this.game.localPlayer.unlockAllWeaponsVip();
+            if (this.game.localPlayer) {
+              this.game.localPlayer.unlockAllWeaponsVip();
+            }
             this.refreshWeaponLocks();
             if (this.game.passManager) {
               this.game.passManager.activatePass(24, email);
             }
-            this.showToast(`⭐ ¡Pase Restaurado! Tienes acceso total durante 24 horas.`);
+            this.showToast(`⭐ ¡Pase Encontrado! Tu acceso de 24 horas está activo.`);
             if (modal) modal.style.display = 'none';
           } else {
-            this.showToast(`❌ ${data.message || 'No encontramos un Pase activo de 24 horas para este correo.'}`);
+            alert(data.message || 'No encontramos un pase activo para este correo.');
           }
         } catch (err) {
-          this.showToast('❌ Error de conexión al servidor');
+          alert('Error de conexión al servidor');
         } finally {
           btnSendCode.disabled = false;
-          btnSendCode.innerHTML = '<span>🚀 RESTAURAR MI ACCESO 24 HORAS</span>';
+          btnSendCode.innerHTML = '<span>Buscar pase por correo</span>';
         }
       });
     }
 
-    if (btnVerifyCode && codeInput && emailInput) {
-      btnVerifyCode.addEventListener('click', async () => {
-        const email = emailInput.value.trim().toLowerCase();
-        const code = codeInput.value.trim();
-
-        if (!code || code.length !== 6) {
-          this.showToast('⚠️ Ingresa el código de 6 dígitos');
-          return;
-        }
-
-        btnVerifyCode.disabled = true;
-        btnVerifyCode.innerHTML = '<span>⏳ Verificando...</span>';
-
-        try {
-          const res = await fetch('/api/auth/verify-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code })
-          });
-          const data = await res.json();
-
-          if (data.success) {
-            localStorage.setItem('apocalipsis_auth_email', email);
-            if (btnAuthLabel) btnAuthLabel.textContent = data.isVip ? '⭐ VIP' : 'Mi Cuenta';
-
-            if (data.isVip || data.isPassActive) {
-              this.game.localPlayer.unlockAllWeaponsVip();
-              this.refreshWeaponLocks();
-              if (this.game.passManager) {
-                this.game.passManager.activatePass(24, email);
-              }
-              this.showToast(`⭐ ¡Bienvenido! Tu Pase Creador 24h y todas las armas han sido activadas.`);
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('apocalipsis_auth_email');
+        localStorage.removeItem('apocalipsis_pass_code');
+        localStorage.removeItem('apocalipsis_creator_pass');
+        if (btnAuthLabel) btnAuthLabel.textContent = 'Código de Pase';
+        if (modal) modal.style.display = 'none';
+        this.showToast('Sesión cerrada en este navegador');
+        window.location.reload();
+      });
+    }
             } else {
               this.showToast(`✅ ¡Inicio de sesión confirmado!`);
             }

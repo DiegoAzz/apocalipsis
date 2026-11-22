@@ -56,38 +56,12 @@ class WompiManager {
 
     const btnRestore = document.getElementById('btn-restore-wompi-pass');
     if (btnRestore) {
-      btnRestore.addEventListener('click', async () => {
-        let email = (this.emailInput && this.emailInput.value.trim().toLowerCase()) || '';
-        if (!email || !email.includes('@')) {
-          email = prompt('Ingresa el correo con el que realizaste tu pago en Wompi:');
-          if (!email || !email.includes('@')) return;
-          if (this.emailInput) this.emailInput.value = email;
-        }
-
-        btnRestore.disabled = true;
-        btnRestore.innerHTML = '<span>⏳ Comprobando compra...</span>';
-
-        try {
-          const res = await fetch('/api/wompi/restore-purchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-          });
-          const data = await res.json();
-          if (data.success && data.isPassActive) {
-            this.activatePass(24, email);
-            if (this.game && this.game.ui) {
-              this.game.ui.showToast('⭐ ¡Pase Restaurado! Tu acceso de 24 horas está activo.');
-            }
-          } else {
-            alert(data.message || 'No se encontró un Pase activo de 24 horas para este correo.');
-          }
-        } catch (e) {
-          alert('Error de conexión al servidor.');
-        } finally {
-          btnRestore.disabled = false;
-          btnRestore.innerHTML = '<span>🔄 ¿Ya pagaste antes? Clic aquí para restaurar con este correo</span>';
-        }
+      btnRestore.addEventListener('click', () => {
+        this.closeModal();
+        const authModal = document.getElementById('auth-code-modal');
+        if (authModal) authModal.style.display = 'flex';
+        const codeInput = document.getElementById('auth-code-direct-input');
+        if (codeInput) codeInput.focus();
       });
     }
   }
@@ -230,6 +204,10 @@ class WompiManager {
       });
       const data = await res.json();
       console.log('[BACKEND WOMPI VERIFIED]:', data);
+      if (data && data.code) {
+        localStorage.setItem('apocalipsis_pass_code', data.code);
+        alert(`⭐ ¡PAGO APROBADO EXITOSAMENTE!\n\nTu CÓDIGO DE ACCESO DE 24 HORAS es:\n\n👉  ${data.code}  👈\n\nGuarda este código para ingresar desde cualquier computador, celular o trabajo durante las próximas 24 horas.`);
+      }
     } catch (err) {
       console.warn('Backend verification call failed, proceeding locally:', err);
     }
@@ -319,28 +297,39 @@ class WompiManager {
       }
     } catch (e) {}
 
-    // 2. Comprobar correos registrados y vinculados en el backend
+    // 2. Comprobar sesión guardada en este navegador (por código o pase local)
     try {
-      const emailsToCheck = [
-        localStorage.getItem(this.STORAGE_EMAIL),
-        localStorage.getItem('apocalipsis_auth_email'),
-        'diego.zuniga.plazas@gmail.com',
-        'solucionesaox@gmail.com'
-      ].filter(Boolean);
+      const savedCode = localStorage.getItem('apocalipsis_pass_code');
+      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
 
-      for (const email of emailsToCheck) {
-        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(email)}`);
+      if (savedCode) {
+        const res = await fetch('/api/pass/redeem-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: savedCode })
+        });
         if (res.ok) {
           const data = await res.json();
           if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
-            localStorage.setItem(this.STORAGE_EMAIL, email);
             this.updateHUD();
             if (this.game && this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
               if (this.game.ui) this.game.ui.refreshWeaponLocks();
             }
-            break;
+          }
+        }
+      } else if (savedEmail) {
+        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(savedEmail)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.isPassActive && data.expiresAt) {
+            localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
+            this.updateHUD();
+            if (this.game && this.game.localPlayer) {
+              this.game.localPlayer.unlockAllWeaponsVip();
+              if (this.game.ui) this.game.ui.refreshWeaponLocks();
+            }
           }
         }
       }

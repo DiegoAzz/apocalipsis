@@ -1,6 +1,7 @@
 {
   "diego.zuniga.plazas@gmail.com": {
     "identifier": "diego.zuniga.plazas@gmail.com",
+    "code": "602951",
     "isPassActive": true,
     "activatedAt": "2026-11-22T09:41:00.000Z",
     "expiresAt": 1895444897163,
@@ -11,6 +12,7 @@
   },
   "solucionesaox@gmail.com": {
     "identifier": "solucionesaox@gmail.com",
+    "code": "814208",
     "isPassActive": true,
     "activatedAt": "2026-11-22T09:41:00.000Z",
     "expiresAt": 1895444897163,
