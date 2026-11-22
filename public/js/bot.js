@@ -10,11 +10,11 @@ class BotController {
     // Grant demolition bot access to full arsenal
     this.player.unlockAllWeaponsVip();
 
-    // Pool of visible, fluid and kinetic demolition weapons:
-    // 1: SMG, 2: Shotgun, 3: Rocket Launcher, 4: Railgun, 5: Flamethrower
-    // We intentionally exclude screen-blinding weapons (Nuke, Black Hole, Giant Banners)
-    // so recordings clearly show stickmen running and carving satisfying holes in the website!
-    this.demolitionWeapons = [1, 2, 3, 4, 5];
+    // Pool of weapons for demolition AI bots:
+    // Strictly the first 3 weapons (1: SMG, 2: Shotgun, 3: Rocket) and Flamethrower (5: Fire)
+    // ABSOLUTELY NO LASER (Railgun 4), NO Grenades, NO Nuke, NO Singularity
+    // so recordings clearly show clean, fluid and rapid physical website demolition!
+    this.demolitionWeapons = [1, 2, 3, 5];
     this.currentDemoWeaponIdx = Math.floor(Math.random() * this.demolitionWeapons.length);
     this.player.selectWeapon(this.demolitionWeapons[this.currentDemoWeaponIdx]);
 
@@ -181,13 +181,8 @@ class BotController {
 
       // Trigger firing barrage at terrain
       if (dist < 750) {
-        // Continuous rapid demolition firing
+        // Continuous rapid demolition firing with SMG, Shotgun, Rocket and Fire
         fakeInput.isMouseDown = true;
-
-        // Occasional Grenades (every few seconds)
-        if (Math.random() < 0.04 && dist > 100) {
-          fakeInput.isRightMouseDown = true;
-        }
       }
     } else {
       // Free Patrol & Demolition Sweep across the entire website

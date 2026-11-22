@@ -18,115 +18,65 @@
     <div class="gta-bg-grid"></div>
     <div class="gta-scanlines"></div>
     
-    <div class="gta-container">
+    <div class="gta-backdrop-blur"></div>
+
+    <div class="gta-poster-screen">
       <!-- Botón Rápido para Saltar Intro y Jugar de Inmediato -->
       <button class="gta-quick-skip-btn" id="btn-gta-skip" title="Saltar intro y entrar a la partida inmediatamente">
         <span>✕ ENTRAR AL JUEGO</span>
       </button>
 
-      <!-- COMIC COLLAGE POSTER ESTILO GTA VI CON LAS 5 IMÁGENES HD -->
-      <div class="gta-comic-poster">
-        <!-- Bloque 1: Superior Izquierdo (Metrópolis en Ruinas) -->
-        <div class="gta-comic-cell cell-city">
-          <img src="assets/apocalypse_city_burn.jpg" alt="Metrópolis en Ruinas" class="comic-img">
-          <div class="comic-badge">CAPÍTULO I • METRÓPOLIS EN RUINAS</div>
-        </div>
+      <!-- POSTER COMPLETO INTERACTIVO GTA VI APOCALIPSIS (CADA BLOQUE ES UN BOTÓN) -->
+      <div class="gta-master-poster" id="gta-master-poster">
+        <img src="assets/apocalipsis_poster.jpg" alt="GTA VI Apocalipsis Cover Art" class="gta-poster-img">
 
-        <!-- Bloque 2: Centro (Hero Cover Art & Logo GTA VI Apocalipsis) -->
-        <div class="gta-comic-cell cell-hero">
-          <img src="assets/gta_apocalipsis_cover.jpg" alt="Apocalipsis VI Master Cover" class="comic-img hero-img">
-          <div class="gta-logo-card">
-            <span class="gta-logo-sub">GRAND WEB DESTRUCTION</span>
-            <h1 class="gta-logo-title">APOCALIPSIS</h1>
-            <div class="gta-logo-roman">VI</div>
-            <p class="gta-logo-tagline">DESCUBRE LOS SECRETOS • EXCAVA LA RED • ANIQUILACIÓN TOTAL</p>
-          </div>
-        </div>
-
-        <!-- Bloque 3: Superior Derecho (Dragón del Abismo) -->
-        <div class="gta-comic-cell cell-dragon">
-          <img src="assets/apocalypse_dragon.jpg" alt="El Dragón del Abismo" class="comic-img">
-          <div class="comic-badge">CAPÍTULO II • EL DRAGÓN DEL ABISMO</div>
-        </div>
-
-        <!-- Bloque 4: Inferior Izquierdo (Los 4 Jinetes) -->
-        <div class="gta-comic-cell cell-horsemen">
-          <img src="assets/apocalypse_horsemen.jpg" alt="Los Cuatro Jinetes del Apocalipsis" class="comic-img">
-          <div class="comic-badge">CAPÍTULO III • LOS 4 JINETES</div>
-        </div>
-
-        <!-- Bloque 5: Inferior Derecho (Operativo Celestial) -->
-        <div class="gta-comic-cell cell-soldier">
-          <img src="assets/apocalypse_hero_soldier.jpg" alt="Operativo Celestial" class="comic-img">
-          <div class="comic-badge">CAPÍTULO IV • OPERATIVO CELESTIAL</div>
-        </div>
-      </div>
-
-      <!-- PANEL DE CONTROL & CONFIGURACIÓN RÁPIDA DE PARTIDA -->
-      <div class="gta-panels-grid">
-        <!-- Panel 1: Objetivo a Destruir -->
-        <div class="gta-panel">
-          <div class="gta-panel-title"><span>🌐 1. SELECCIONA EL OBJETIVO A DESTRUIR</span></div>
-          <div class="gta-presets-row">
-            <button class="gta-preset-btn active" data-gta-preset="tiktok">🎵 TikTok</button>
-            <button class="gta-preset-btn" data-gta-preset="youtube">▶️ YouTube</button>
-            <button class="gta-preset-btn" data-gta-preset="google">🔍 Google</button>
-            <button class="gta-preset-btn" data-gta-preset="wikipedia">📄 Wikipedia</button>
-            <button class="gta-preset-btn" data-gta-preset="amazon">📦 Amazon</button>
-            <button class="gta-preset-btn" data-gta-preset="facebook">📘 Facebook</button>
-          </div>
-          <div class="gta-url-box">
-            <input type="text" id="gta-url-input" placeholder="O escribe cualquier URL (ej: https://www.tiktok.com)..." value="https://www.tiktok.com">
-          </div>
-          <div class="gta-upload-row">
-            <button class="gta-upload-btn" id="btn-gta-upload">🖼️ O Sube Cualquier Imagen / Foto / Meme</button>
-            <input type="file" id="gta-file-input" accept="image/*" style="display:none">
-          </div>
-        </div>
-
-        <!-- Panel 2: Operativo y Modo -->
-        <div class="gta-panel">
-          <div class="gta-panel-title"><span>👤 2. OPERATIVO & MODO DE COMBATE</span></div>
-          <div class="gta-name-row">
-            <label>Nombre del Operativo:</label>
-            <input type="text" id="gta-player-name" maxlength="15" value="Operativo" placeholder="Tu Nombre">
-          </div>
-          <div class="gta-colors-section">
-            <label>Color del Traje & Visor:</label>
-            <div class="gta-color-palette" id="gta-color-palette">
-              <button class="gta-color-swatch active" data-color="#f97316" style="background:#f97316" title="Naranja Táctico"></button>
-              <button class="gta-color-swatch" data-color="#38bdf8" style="background:#38bdf8" title="Cyan Neón"></button>
-              <button class="gta-color-swatch" data-color="#22c55e" style="background:#22c55e" title="Verde Radiactivo"></button>
-              <button class="gta-color-swatch" data-color="#a855f7" style="background:#a855f7" title="Púrpura Cuántico"></button>
-              <button class="gta-color-swatch" data-color="#ef4444" style="background:#ef4444" title="Rojo Carmesí"></button>
-              <button class="gta-color-swatch" data-color="#facc15" style="background:#facc15" title="Oro VIP"></button>
-            </div>
-          </div>
-          <div class="gta-mode-selector">
-            <label>Modo de Partida:</label>
-            <div class="gta-modes-row">
-              <button class="gta-mode-btn" id="gta-mode-solo">👤 Modo Solitario</button>
-              <button class="gta-mode-btn active" id="gta-mode-multi">🌐 Cooperativo Online</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 3: Misión de Excavación -->
-      <div class="gta-mission-brief">
-        <div class="brief-icon">🎯</div>
-        <div class="brief-text">
-          <strong>MISIÓN:</strong> Desintegra la web para excavar los <strong>5 Secretos Ocultos</strong>. A medida que destruyas se irán desbloqueando las 11 armas. ¡Efectos Super 3D tipo Street Fighter 6 y grabación a 60 FPS con línea de tiempo controlable!
-        </div>
-      </div>
-
-      <!-- Botón Gigante de Inicio Estilo GTA VI -->
-      <div class="gta-actions">
-        <button id="btn-gta-start" class="btn-gta-start">
-          <span class="btn-bolt">⚡</span>
-          <span class="btn-text">INICIAR APOCALIPSIS VI</span>
-          <span class="btn-sub">START MISSION • DESATAR ARSENAL</span>
+        <!-- BLOQUE 1: Helicóptero / Metrópolis (Superior Izquierdo) -> Google -->
+        <button class="gta-hotspot-btn cell-helicopter" data-intro-preset="google" title="Destruir Metrópolis / Google">
+          <span class="hotspot-pill">🔍 GOOGLE</span>
         </button>
+
+        <!-- BLOQUE 2: Jinetes del Apocalipsis (Superior Centro) -> Wikipedia -->
+        <button class="gta-hotspot-btn cell-horsemen" data-intro-preset="wikipedia" title="Destruir Wikipedia">
+          <span class="hotspot-pill">📄 WIKIPEDIA</span>
+        </button>
+
+        <!-- BLOQUE 3: Soldado Táctico (Superior Derecho) -> Multijugador Online -->
+        <button class="gta-hotspot-btn cell-soldier-top" data-intro-action="rooms" title="Salas Multijugador & Invitar Amigos">
+          <span class="hotspot-pill">🌐 SALAS ONLINE</span>
+        </button>
+
+        <!-- BLOQUE 4: Dragón de Fuego del Abismo (Medio Izquierdo) -> TikTok -->
+        <button class="gta-hotspot-btn cell-dragon" data-intro-preset="tiktok" title="Devorar & Destruir TikTok">
+          <span class="hotspot-pill">🎵 TIKTOK</span>
+        </button>
+
+        <!-- BLOQUE 5: Auto Deportivo con Fuego (Medio Derecho) -> YouTube -->
+        <button class="gta-hotspot-btn cell-car" data-intro-preset="youtube" title="Destruir YouTube Arena">
+          <span class="hotspot-pill">▶️ YOUTUBE</span>
+        </button>
+
+        <!-- BLOQUE 6: Logo Central VI APOCALIPSIS -> Jugar Ahora -->
+        <button class="gta-hotspot-btn cell-logo-center" data-intro-action="play" title="¡INICIAR APOCALIPSIS VI!">
+          <span class="hotspot-pill-hero">⚡ INICIAR APOCALIPSIS VI</span>
+        </button>
+
+        <!-- BLOQUE 7: Rascacielos & Lluvia de Meteoros (Inferior Izquierdo) -> Cualquier URL -->
+        <button class="gta-hotspot-btn cell-meteors" data-intro-action="url-prompt" title="Escribe cualquier página web para destruirla">
+          <span class="hotspot-pill">🔗 CUALQUIER URL</span>
+        </button>
+
+        <!-- BLOQUE 8: Soldado con Jetpack (Inferior Derecho) -> Subir Foto / Meme -->
+        <button class="gta-hotspot-btn cell-jetpack" data-intro-action="upload" title="Sube cualquier imagen, foto o meme">
+          <span class="hotspot-pill">🖼️ SUBIR FOTO</span>
+        </button>
+
+        <!-- Barra flotante de entrada de URL (Aparece al tocar el bloque de Cualquier URL) -->
+        <div id="gta-url-bar-popup" class="gta-url-bar-popup">
+          <input type="text" id="gta-url-bar-input" placeholder="Pega cualquier enlace (ej: cnn.com, reddit.com)...">
+          <button id="btn-gta-url-bar-go" class="btn-url-bar-go">⚡ DESTRUIR</button>
+        </div>
+
+        <input type="file" id="gta-poster-file-input" accept="image/*" style="display:none">
       </div>
     </div>
   </div>
@@ -142,8 +92,8 @@
     <button class="pill-btn pill-auth" id="btn-open-auth-modal" title="Iniciar Sesión con Código OTP / Restaurar VIP">
       <span>🔐 <span id="auth-btn-label">Iniciar Sesión</span></span>
     </button>
-    <button class="pill-btn pill-vip" id="btn-open-wompi-top" title="Desbloquear Todo el Arsenal con Wompi">
-      <span>⭐ Arsenal VIP</span>
+    <button class="pill-btn pill-pass" id="btn-creator-pass-top" title="Obtener Pase Creador 24 Horas por $1 USD">
+      <span><span id="creator-pass-badge-label">⭐ Pase 24h ($1 USD)</span></span>
     </button>
   </div>
   <!-- Barra Superior de Navegación & Selector de URL -->
@@ -701,39 +651,61 @@
     </div>
   </div>
 
-  <!-- Modal Wompi Pasarela de Pagos (Desbloqueo VIP Inmediato) -->
+  <!-- Modal Pase Creador de 24 Horas con Wompi ($5.000 COP / ~$1 USD) -->
   <div id="wompi-modal" class="custom-modal">
-    <div class="modal-card wompi-card">
+    <div class="modal-card pass-card">
       <div class="modal-head">
-        <h2>⭐ PASE VIP APOCALIPSIS (PAGOS WOMPI)</h2>
+        <h2>⭐ PASE CREADOR 24 HORAS (WOMPI)</h2>
         <button class="close-btn" id="btn-close-wompi">✕</button>
       </div>
       <div class="modal-body">
+        <div id="pass-feature-notice" class="pass-feature-notice" style="display:none;"></div>
+
         <div class="wompi-badge-hero">
           <span class="wompi-logo-txt">wompi</span>
-          <span class="wompi-colombia">Bancolombia • Nequi • PSE • Tarjetas</span>
-        </div>
-        <p class="desc">¿Quieres todo el armamento ya mismo? Desbloquea el <strong>Arsenal VIP Definitivo</strong> al instante en tu dispositivo:</p>
-        
-        <div class="wompi-perks-list">
-          <div class="perk-item"><span>☢️</span> <strong>Bomba del Zar (Tsar Bomba)</strong> desbloqueada para siempre</div>
-          <div class="perk-item"><span>⚡</span> <strong>Todas las 11 Armas</strong> (Railgun, Neutrones, Varita, Lanzallamas...)</div>
-          <div class="perk-item"><span>💰</span> <strong>$100,000 en Efectivo del Juego</strong> para mejoras inmediatas</div>
-          <div class="perk-item"><span>⚛️</span> <strong>5 Núcleos de Plutonio</strong> (Prestigio Permanente)</div>
-          <div class="perk-item"><span>⭐</span> <strong>Distintivo VIP Dorado</strong> en Multijugador</div>
+          <span class="wompi-colombia">Bancolombia • Nequi • PSE • Tarjetas de Crédito y Débito</span>
         </div>
 
-        <div class="wompi-price-box">
-          <span class="price-val">$ 5.000 COP</span>
-          <span class="price-sub">Pago único • Desbloqueo Permanente en este Dispositivo</span>
+        <p class="desc" style="font-size:13px; color:#cbd5e1; margin:8px 0; text-align:center;">
+          TikTok es <strong>100% Gratis</strong>. Activa tu pase por 24 horas para desbloquear fotos, todas las webs y el arsenal completo:
+        </p>
+
+        <div class="pass-perks-list">
+          <div class="perk-item"><span>🖼️</span> <strong>Subir Fotos, Memes e Imágenes Ilimitadas</strong> para destruir en video</div>
+          <div class="perk-item"><span>🔗</span> <strong>Destruir Cualquier Sitio Web del Mundo</strong> (Noticias, Wikipedia, Tiendas...)</div>
+          <div class="perk-item"><span>🤖</span> <strong>Invocación de Bots de Demolición Cinética</strong> para grabaciones dinámicas</div>
+          <div class="perk-item"><span>☢️</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Lanzallamas, Cohetes...)</div>
+          <div class="perk-item"><span>🌐</span> <strong>Salas Multijugador Privadas</strong> para jugar y grabar con amigos</div>
         </div>
 
-        <button id="btn-pay-wompi-trigger" class="btn btn-wompi-main">
-          <span>💳 PAGAR CON WOMPI (NEQUI / PSE / BANCOLOMBIA)</span>
+        <!-- Entrada de Correo para Vincular el Pase -->
+        <div style="margin: 12px 0;">
+          <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:4px; text-transform:uppercase;">
+            📧 Tu Correo Electrónico (Para vincular tu Pase de 24 Horas):
+          </label>
+          <input type="email" id="wompi-user-email" class="auth-input" placeholder="tu@correo.com" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px;">
+        </div>
+
+        <div class="pass-price-box">
+          <div class="price-val">$ 5.000 COP</div>
+          <div class="price-sub">~$1 USD • Acceso Total e Ilimitado durante 24 Horas Completas</div>
+        </div>
+
+        <button id="btn-pay-wompi-trigger" class="btn btn-pass-main">
+          <span>💳 PAGAR CON WOMPI ($5.000 COP • NEQUI / PSE / BANCOLOMBIA)</span>
         </button>
 
-        <div class="wompi-test-hint">
-          <button id="btn-wompi-test-unlock" class="btn btn-sm btn-ghost">⚡ Probar Activación Inmediata (Modo Prueba)</button>
+        <div class="pass-url-rules-box">
+          <div class="rules-head">💡 <strong>Guía de Sitios Web Aceptables:</strong></div>
+          <ul class="rules-list">
+            <li>Introduce cualquier URL pública (ej: <code>wikipedia.org/wiki/Stick_figure</code>, <code>bbc.com</code>, <code>reddit.com</code>).</li>
+            <li>No se requieren inicios de sesión ni contraseñas privadas.</li>
+            <li>Si una página tiene protección anti-bots (Cloudflare), nuestro motor creará una arena táctica interactiva con sus titulares y textos reales.</li>
+          </ul>
+        </div>
+
+        <div class="pass-test-hint">
+          <button id="btn-wompi-test-unlock" class="btn btn-sm btn-ghost">⚡ Probar Activación 24h Inmediata (Modo Prueba)</button>
         </div>
       </div>
     </div>

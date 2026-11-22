@@ -1,32 +1,46 @@
-// Wompi Payment Gateway Integration for Apocalipsis VIP Arsenal with Email Security
+// ==========================================================================
+// INTEGRACIÓN OFICIAL WOMPI: PASE CREADOR 24 HORAS ($5.000 COP / ~$1 USD)
+// Bancolombia, Nequi, PSE, Tarjetas de Crédito / Débito
+// TikTok es gratis ilimitado; Subir Fotos, Webs y Bots requieren Pase 24h
+// ==========================================================================
 class WompiManager {
   constructor(game) {
     this.game = game;
     this.publicKey = window.WOMPI_PUBLIC_KEY || 'pub_test_Q5yDA9xoKdePzhSGeVe9KStXTIIOxjwW';
+    this.STORAGE_KEY = 'apocalipsis_creator_pass_expires';
+    this.STORAGE_EMAIL = 'apocalipsis_user_email';
 
-    this.modal = document.getElementById('wompi-modal');
-    this.btnClose = document.getElementById('btn-close-wompi');
-    this.btnTrigger = document.getElementById('btn-pay-wompi-trigger');
-    this.btnTestUnlock = document.getElementById('btn-wompi-test-unlock');
+    this.modal = document.getElementById('wompi-modal') || document.getElementById('creator-pass-modal');
+    this.btnClose = document.getElementById('btn-close-wompi') || document.getElementById('btn-close-pass-modal');
+    this.btnTrigger = document.getElementById('btn-pay-wompi-trigger') || document.getElementById('btn-pay-paypal-1usd');
+    this.btnTestUnlock = document.getElementById('btn-wompi-test-unlock') || document.getElementById('btn-pass-test-unlock');
     this.emailInput = document.getElementById('wompi-user-email');
-    this.restoreEmailInput = document.getElementById('wompi-restore-email');
-    this.btnRestore = document.getElementById('btn-restore-wompi');
+    this.badgeTop = document.getElementById('btn-creator-pass-top') || document.getElementById('btn-open-wompi-top');
+    this.badgeLabel = document.getElementById('creator-pass-badge-label');
+    this.featureNotice = document.getElementById('pass-feature-notice');
 
     this.setupListeners();
-    this.checkSavedVip();
+    this.checkSavedPass();
+
+    // Verificación periódica cada 30 segundos
+    setInterval(() => this.updateHUD(), 30000);
   }
 
   setupListeners() {
     const openBtns = [
+      document.getElementById('btn-creator-pass-top'),
       document.getElementById('btn-open-wompi-top'),
       document.getElementById('btn-vip-hotbar')
     ];
     openBtns.forEach((btn) => {
-      if (btn) btn.addEventListener('click', () => this.openModal());
+      if (btn) btn.addEventListener('click', () => this.openModal('Acceso Total al Arsenal & Creación Ilimitada'));
     });
 
-    if (this.btnClose) {
+    if (this.btnClose && this.modal) {
       this.btnClose.addEventListener('click', () => this.closeModal());
+      this.modal.addEventListener('click', (e) => {
+        if (e.target === this.modal) this.closeModal();
+      });
     }
 
     if (this.btnTrigger) {
@@ -35,73 +49,81 @@ class WompiManager {
 
     if (this.btnTestUnlock) {
       this.btnTestUnlock.addEventListener('click', () => {
-        const email = (this.emailInput && this.emailInput.value.trim()) || 'operativo@apocalipsis.com';
+        const email = (this.emailInput && this.emailInput.value.trim()) || 'creador@apocalipsis.com';
         this.verifyAndActivate(`DEV_TEST_${Date.now()}`, email);
       });
     }
+  }
 
-    // Botón Restaurar Compras por Correo
-    if (this.btnRestore) {
-      this.btnRestore.addEventListener('click', () => this.restorePurchaseByEmail());
+  // Verifica si el pase de 24 horas está vigente
+  isPassActive() {
+    try {
+      const expires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
+      return expires > Date.now();
+    } catch (e) {
+      return false;
     }
   }
 
-  async checkSavedVip() {
-    try {
-      const savedEmail = localStorage.getItem('apocalipsis_user_email');
-      const isLocalVip = localStorage.getItem('apocalipsis_vip_unlocked') === 'true';
+  // Retorna el tiempo restante en formato legible (ej: 23h 45m)
+  getRemainingFormatted() {
+    const expires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
+    const diffMs = expires - Date.now();
+    if (diffMs <= 0) return null;
 
-      if (isLocalVip && this.game.localPlayer) {
-        this.game.localPlayer.unlockAllWeaponsVip();
-      }
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-      // Validar con el backend si hay correo guardado
-      if (savedEmail) {
-        if (this.emailInput) this.emailInput.value = savedEmail;
-        if (this.restoreEmailInput) this.restoreEmailInput.value = savedEmail;
-
-        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(savedEmail)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.isVip && this.game.localPlayer) {
-            this.game.localPlayer.unlockAllWeaponsVip();
-            localStorage.setItem('apocalipsis_vip_unlocked', 'true');
-            if (this.game.ui) this.game.ui.refreshWeaponLocks();
-          }
-        }
-      }
-    } catch (e) {}
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
   }
 
-  openModal() {
-    if (this.modal) {
-      this.modal.classList.add('open');
-      const savedEmail = localStorage.getItem('apocalipsis_user_email');
-      if (savedEmail && this.emailInput && !this.emailInput.value) {
-        this.emailInput.value = savedEmail;
+  // Requiere pase activo para ejecutar una función
+  requirePass(featureName, onAllowed) {
+    if (this.isPassActive()) {
+      if (typeof onAllowed === 'function') onAllowed();
+      return true;
+    }
+    this.openModal(featureName);
+    return false;
+  }
+
+  openModal(featureName) {
+    if (!this.modal) return;
+    if (this.featureNotice) {
+      if (featureName) {
+        this.featureNotice.innerHTML = `🔒 <strong>${featureName.toUpperCase()}</strong> requiere el <strong>Pase Creador de 24 Horas</strong> ($5.000 COP con Wompi). ¡TikTok es 100% gratis!`;
+        this.featureNotice.style.display = 'block';
+      } else {
+        this.featureNotice.style.display = 'none';
       }
+    }
+    this.modal.classList.add('open');
+    const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
+    if (savedEmail && this.emailInput && !this.emailInput.value) {
+      this.emailInput.value = savedEmail;
+    }
+    if (window.soundManager && typeof window.soundManager.playSecretCollect === 'function') {
+      window.soundManager.playSecretCollect();
     }
   }
 
   closeModal() {
-    if (this.modal) {
-      this.modal.classList.remove('open');
-    }
+    if (this.modal) this.modal.classList.remove('open');
   }
 
   startWompiCheckout() {
-    const email = this.emailInput ? this.emailInput.value.trim() : '';
-    if (!email || !email.includes('@') || !email.includes('.')) {
-      alert('Por favor escribe tu correo electrónico para asociar la compra de forma segura y no perder tu arsenal.');
-      if (this.emailInput) this.emailInput.focus();
-      return;
+    let email = this.emailInput ? this.emailInput.value.trim() : '';
+    if (!email || !email.includes('@')) {
+      email = prompt('Por favor ingresa tu correo para vincular tu Pase de 24 Horas y poder restaurarlo:');
+      if (!email || !email.includes('@')) return;
+      if (this.emailInput) this.emailInput.value = email;
     }
 
-    // Guardar correo preventivamente
-    localStorage.setItem('apocalipsis_user_email', email);
+    localStorage.setItem(this.STORAGE_EMAIL, email);
 
-    const reference = `APOC_VIP_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const amountInCents = 500000; // $5.000 COP
+    const reference = `APOC_PASS_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const amountInCents = 500000; // $5.000 COP (~$1 USD)
 
     if (typeof WidgetCheckout !== 'undefined') {
       try {
@@ -112,7 +134,7 @@ class WompiManager {
           publicKey: this.publicKey,
           customerData: {
             email: email,
-            fullName: (this.game.localPlayer && this.game.localPlayer.name) || 'Operativo'
+            fullName: (this.game.localPlayer && this.game.localPlayer.name) || 'Creador Apocalipsis'
           }
         });
 
@@ -127,13 +149,13 @@ class WompiManager {
         });
       } catch (err) {
         console.warn('Wompi Widget error:', err);
-        const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase VIP Arsenal para ${email}?`);
+        const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($5.000 COP) para ${email}?`);
         if (confirmBuy) {
           this.verifyAndActivate(`DEV_FALLBACK_${Date.now()}`, email);
         }
       }
     } else {
-      const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase VIP Arsenal para ${email}?`);
+      const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($5.000 COP) para ${email}?`);
       if (confirmBuy) {
         this.verifyAndActivate(`DIRECT_CONFIRM_${Date.now()}`, email);
       }
@@ -142,7 +164,6 @@ class WompiManager {
 
   async verifyAndActivate(transactionId, email) {
     try {
-      // 1. Confirmar con el Backend para registrar en base de datos segura
       const res = await fetch('/api/wompi/verify-transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,74 +174,90 @@ class WompiManager {
     } catch (err) {
       console.warn('Backend verification call failed, proceeding locally:', err);
     }
-
-    // 2. Activar VIP en el jugador
-    this.activateVip(email);
+    this.activatePass(24, email);
   }
 
-  async restorePurchaseByEmail() {
-    const email = this.restoreEmailInput ? this.restoreEmailInput.value.trim() : '';
-    if (!email || !email.includes('@')) {
-      alert('Por favor ingresa un correo electrónico válido.');
-      return;
+  activatePass(hours = 24, email = '') {
+    const now = Date.now();
+    const currentExpires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
+    const baseTime = currentExpires > now ? currentExpires : now;
+    const newExpires = baseTime + (hours * 60 * 60 * 1000);
+
+    localStorage.setItem(this.STORAGE_KEY, newExpires.toString());
+    if (email) localStorage.setItem(this.STORAGE_EMAIL, email);
+
+    if (this.game && this.game.localPlayer) {
+      this.game.localPlayer.unlockAllWeaponsVip();
+      if (this.game.ui) this.game.ui.refreshWeaponLocks();
     }
 
-    if (this.game.ui) this.game.ui.showToast('🔍 Verificando compras con Wompi...');
+    this.updateHUD();
 
-    try {
-      const res = await fetch('/api/wompi/restore-purchase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        localStorage.setItem('apocalipsis_user_email', email);
-        this.activateVip(email);
-        alert(`🎉 ¡Arsenal VIP restaurado con éxito para ${email}!`);
-      } else {
-        alert(data.message || 'No se encontró compra de Arsenal VIP con este correo.');
-      }
-    } catch (err) {
-      console.error('Error restaurando compra:', err);
-      alert('Error de conexión al verificar compra: ' + err.message);
+    if (this.game && this.game.ui) {
+      this.game.ui.showToast('⭐ ¡PASE CREADOR DE 24 HORAS ACTIVADO CON WOMPI! Tienes acceso ilimitado a fotos, webs y armas.');
     }
-  }
-
-  activateVip(email = '') {
-    if (!this.game || !this.game.localPlayer) return;
-
-    // 1. Desbloquear todas las 11 armas inmediatamente
-    this.game.localPlayer.unlockAllWeaponsVip();
-
-    // 2. Conceder bono VIP de dinero y núcleos de plutonio
-    if (this.game.idle) {
-      this.game.idle.cash += 100000;
-      this.game.idle.prestigeCores += 5;
-      this.game.idle.prestigeMultiplier = 1.0 + (this.game.idle.prestigeCores * 0.5);
-      this.game.idle.save();
-      this.game.idle.updateUI();
-    }
-
-    // 3. Persistir estado VIP y correo en el dispositivo
-    try {
-      localStorage.setItem('apocalipsis_vip_unlocked', 'true');
-      if (email) localStorage.setItem('apocalipsis_user_email', email);
-    } catch (e) {}
-
-    // 4. Actualizar slots visuales de armas en el HUD
-    if (this.game.ui) {
-      this.game.ui.refreshWeaponLocks();
-      this.game.ui.showToast(`⭐ ¡ARSENAL VIP VINCULADO A ${email.toUpperCase() || 'TU CUENTA'}!`);
-    }
-
     if (window.soundManager && typeof window.soundManager.playWeaponUnlocked === 'function') {
       window.soundManager.playWeaponUnlocked();
     }
 
     this.closeModal();
   }
+
+  updateHUD() {
+    const active = this.isPassActive();
+    if (!this.badgeTop) return;
+
+    if (active) {
+      const remaining = this.getRemainingFormatted();
+      this.badgeTop.classList.add('pass-active');
+      this.badgeTop.classList.remove('pass-inactive');
+      if (this.badgeLabel) {
+        this.badgeLabel.innerHTML = `⭐ <strong>PASE 24H:</strong> ${remaining}`;
+      } else {
+        this.badgeTop.innerHTML = `<span>⭐ <strong>PASE 24H:</strong> ${remaining}</span>`;
+      }
+      this.badgeTop.title = `Pase Creador Activo (${remaining} restantes). Acceso total a fotos, webs y arsenal.`;
+
+      if (this.game && this.game.localPlayer) {
+        this.game.localPlayer.isVip = true;
+      }
+    } else {
+      this.badgeTop.classList.remove('pass-active');
+      this.badgeTop.classList.add('pass-inactive');
+      if (this.badgeLabel) {
+        this.badgeLabel.innerHTML = `⭐ Pase 24h ($5.000 COP)`;
+      } else {
+        this.badgeTop.innerHTML = `<span>⭐ Pase 24h ($5.000 COP)</span>`;
+      }
+      this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($5.000 COP) para fotos y webs.';
+
+      if (this.game && this.game.localPlayer && this.game.localPlayer.isVip) {
+        this.game.localPlayer.isVip = false;
+        if (this.game.ui) {
+          this.game.ui.showToast('⏳ Tu Pase Creador de 24 Horas ha finalizado. ¡TikTok sigue disponible gratis!');
+        }
+      }
+    }
+  }
+
+  async checkSavedPass() {
+    this.updateHUD();
+    try {
+      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
+      if (savedEmail) {
+        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(savedEmail)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isPassActive && data.expiresAt) {
+            localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
+            this.updateHUD();
+          }
+        }
+      }
+    } catch (e) {}
+  }
 }
 
 window.WompiManager = WompiManager;
+// Alias para compatibilidad
+window.CreatorPassManager = WompiManager;

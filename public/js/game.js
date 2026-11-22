@@ -129,15 +129,16 @@ class Game {
       this.recorder = new GameRecorder(this);
     }
 
-    // Initialize Wompi Payment Manager (Pase VIP Inmediato)
+    // Initialize Wompi Payment Manager (Pase Creador 24h - $5.000 COP / ~$1 USD)
     if (typeof WompiManager !== 'undefined') {
       this.wompi = new WompiManager(this);
+      this.passManager = this.wompi;
     }
 
     this.secretsFoundCount = 0;
 
-    // Default Level: Authentic TikTok or Wikipedia
-    this.loadMapPreset('wikipedia', 'https://en.wikipedia.org/wiki/Stick_figure', false);
+    // Default Level: Authentic TikTok (100% Free Demo Sandbox)
+    this.loadMapPreset('tiktok', 'https://www.tiktok.com', false);
     if (this.level && this.idle) {
       this.level.onCellsDestroyed = (count, x, y) => this.idle.onCellsDestroyed(count, x, y);
     }
@@ -402,113 +403,25 @@ class Game {
     this.input.mouseY = (touch.clientY - window.innerHeight / 2) / this.camera.zoom + this.camera.y;
   }
 
-  // Configuración del Menú de Entrada e Intro estilo GTA VI
+  // Configuración del Menú de Entrada e Intro estilo GTA VI con Poster Maestro Interactivo
   setupGtaIntro() {
     const overlay = document.getElementById('gta-intro-overlay');
-    const startBtn = document.getElementById('btn-gta-start');
-    if (!overlay || !startBtn) return;
+    if (!overlay) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = (urlParams.get('room') || '').trim();
     const isFriendInvite = roomParam && roomParam !== 'lobby';
 
-    if (isFriendInvite) {
-      startBtn.innerHTML = `<span>🚀 ENTRAR A LA SALA (${roomParam.toUpperCase()})</span>`;
-      const subtitle = document.querySelector('.gta-subtitle');
-      if (subtitle) {
-        subtitle.innerHTML = `🎮 <strong>¡INVITACIÓN DETECTADA!</strong> Te estás uniendo a la sala <em>${roomParam.toUpperCase()}</em> de tu amigo.`;
-        subtitle.style.color = '#38bdf8';
-      }
-    }
+    const presetMap = {
+      tiktok: 'https://www.tiktok.com',
+      youtube: 'https://www.youtube.com',
+      google: 'https://www.google.com',
+      wikipedia: 'https://en.wikipedia.org/wiki/Stick_figure',
+      amazon: 'https://www.amazon.com',
+      facebook: 'https://www.facebook.com'
+    };
 
-    let selectedPreset = 'tiktok';
-    const urlInput = document.getElementById('gta-url-input');
-    const nameInput = document.getElementById('gta-player-name');
-    const fileInput = document.getElementById('gta-file-input');
-    const btnUpload = document.getElementById('btn-gta-upload');
-
-    // Inicializar nombre guardado en input
-    if (nameInput && this.localPlayer) {
-      nameInput.value = this.localPlayer.name;
-    }
-
-    // Botones de presets en la intro
-    document.querySelectorAll('[data-gta-preset]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-gta-preset]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedPreset = btn.getAttribute('data-gta-preset');
-        const mapUrls = {
-          tiktok: 'https://www.tiktok.com',
-          youtube: 'https://www.youtube.com',
-          google: 'https://www.google.com',
-          wikipedia: 'https://en.wikipedia.org/wiki/Stick_figure',
-          amazon: 'https://www.amazon.com',
-          facebook: 'https://www.facebook.com'
-        };
-        if (urlInput) urlInput.value = mapUrls[selectedPreset] || `https://www.${selectedPreset}.com`;
-      });
-    });
-
-    // Paleta de colores de traje en la intro
-    document.querySelectorAll('.gta-color-swatch').forEach((swatch) => {
-      swatch.addEventListener('click', () => {
-        document.querySelectorAll('.gta-color-swatch').forEach(s => s.classList.remove('active'));
-        swatch.classList.add('active');
-        const col = swatch.getAttribute('data-color');
-        if (this.localPlayer) {
-          this.localPlayer.color = col;
-          this.localPlayer.savePersistence();
-          const dot = document.getElementById('color-dot');
-          if (dot) dot.style.background = col;
-        }
-      });
-    });
-
-    // Modos en la intro
-    const btnSolo = document.getElementById('gta-mode-solo');
-    const btnMulti = document.getElementById('gta-mode-multi');
-    if (btnSolo && btnMulti) {
-      btnSolo.addEventListener('click', () => {
-        this.isSoloMode = true;
-        btnSolo.classList.add('active');
-        btnMulti.classList.remove('active');
-        const topSolo = document.getElementById('btn-mode-solo');
-        const topMulti = document.getElementById('btn-mode-multi');
-        if (topSolo) topSolo.classList.add('active');
-        if (topMulti) topMulti.classList.remove('active');
-      });
-      btnMulti.addEventListener('click', () => {
-        this.isSoloMode = false;
-        btnMulti.classList.add('active');
-        btnSolo.classList.remove('active');
-        const topSolo = document.getElementById('btn-mode-solo');
-        const topMulti = document.getElementById('btn-mode-multi');
-        if (topSolo) topSolo.classList.remove('active');
-        if (topMulti) topMulti.classList.add('active');
-      });
-    }
-
-    // Subida de imagen desde la intro
-    if (btnUpload && fileInput) {
-      btnUpload.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = async (ev) => {
-            const dataUrl = ev.target.result;
-            await this.loadUserImage(dataUrl);
-            btnUpload.textContent = `🖼️ Imagen: ${file.name.substring(0, 16)}...`;
-            btnUpload.style.borderColor = '#10b981';
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-
-    // Botón Iniciar Misión GTA VI
-    startBtn.addEventListener('click', async () => {
+    const startGame = (targetUrl, presetName, customAction) => {
       this.isGameStarted = true;
       this.input.isMouseDown = false;
       this.input.isRightMouseDown = false;
@@ -517,17 +430,9 @@ class Game {
         window.soundManager.playCinematicBoom();
       }
 
-      if (nameInput && nameInput.value.trim() && this.localPlayer) {
-        this.localPlayer.name = nameInput.value.trim();
-        this.localPlayer.savePersistence();
-        const topName = document.getElementById('player-name-input');
-        if (topName) topName.value = this.localPlayer.name;
-      }
-
       overlay.classList.add('hidden');
 
       if (isFriendInvite) {
-        // Enlace de amigo (?room=): Entrar a la sala compartida directamente sin sobreescribir el nivel
         this.snapCameraToPlayer();
         if (this.ui) {
           this.ui.showToast(`🎮 ¡Conectado a la sala ${roomParam.toUpperCase()} con tu amigo!`);
@@ -535,47 +440,178 @@ class Game {
         return;
       }
 
-      const targetUrl = urlInput ? urlInput.value.trim() : '';
-      if (targetUrl) {
-        const topUrlInput = document.getElementById('webpage-url-input');
-        if (topUrlInput) topUrlInput.value = targetUrl;
-        const destroyBtn = document.getElementById('btn-destroy-url');
-        if (destroyBtn) {
-          destroyBtn.click();
-        } else {
-          this.loadMapPreset(selectedPreset, targetUrl, true);
-        }
+      if (typeof customAction === 'function') {
+        customAction();
+        return;
       }
+
+      const destUrl = targetUrl || presetMap[presetName] || 'https://www.tiktok.com';
+      const topUrlInput = document.getElementById('webpage-url-input');
+      if (topUrlInput) topUrlInput.value = destUrl;
+
+      this.triggerDestructionCountdown(destUrl, () => {
+        this.loadMapPreset(presetName || 'custom', destUrl, true);
+      });
 
       this.snapCameraToPlayer();
       if (this.ui) {
-        this.ui.showToast('🚀 ¡MISIÓN INICIADA! Excava los 5 núcleos y desata el armamento.');
+        this.ui.showToast('🚀 ¡MISIÓN INICIADA! Excava los secretos y desata el armamento.');
       }
+    };
+
+    // 1. Hotspots con data-intro-preset (TikTok es 100% Gratis; Google, Wikipedia, YouTube requieren Pase 24h)
+    document.querySelectorAll('[data-intro-preset]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const preset = btn.getAttribute('data-intro-preset');
+        const targetUrl = presetMap[preset] || `https://www.${preset}.com`;
+
+        if (preset === 'tiktok') {
+          // TikTok es la demo 100% gratuita para todo el mundo
+          startGame(targetUrl, preset);
+        } else {
+          // Otras páginas web requieren el Pase Creador 24h ($1 USD)
+          if (this.passManager) {
+            this.passManager.requirePass(`Destruir ${preset.toUpperCase()}`, () => {
+              startGame(targetUrl, preset);
+            });
+          } else {
+            startGame(targetUrl, preset);
+          }
+        }
+      });
     });
+
+    // 2. Botón Central "VI APOCALIPSIS" (Play Hero) -> Inicia TikTok Demo 100% Gratis
+    const btnPlayCenter = document.querySelector('[data-intro-action="play"]');
+    if (btnPlayCenter) {
+      btnPlayCenter.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame('https://www.tiktok.com', 'tiktok');
+      });
+    }
+
+    // 3. Botón Soldado Superior "SALAS ONLINE"
+    const btnRooms = document.querySelector('[data-intro-action="rooms"]');
+    if (btnRooms) {
+      btnRooms.addEventListener('click', (e) => {
+        e.stopPropagation();
+        overlay.classList.add('hidden');
+        this.isGameStarted = true;
+        this.snapCameraToPlayer();
+        const btnShare = document.getElementById('btn-open-rooms-hub') || document.getElementById('btn-open-rooms-hub-drawer');
+        if (btnShare) btnShare.click();
+      });
+    }
+
+    // 4. Bloque Meteoros "CUALQUIER URL" (Requiere Pase 24h)
+    const btnUrlPrompt = document.querySelector('[data-intro-action="url-prompt"]');
+    const urlBarPopup = document.getElementById('gta-url-bar-popup');
+    const urlBarInput = document.getElementById('gta-url-bar-input');
+    const btnUrlBarGo = document.getElementById('btn-gta-url-bar-go');
+
+    if (btnUrlPrompt && urlBarPopup) {
+      btnUrlPrompt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.passManager) {
+          this.passManager.requirePass('Destruir Cualquier URL', () => {
+            urlBarPopup.classList.toggle('open');
+            if (urlBarPopup.classList.contains('open') && urlBarInput) {
+              urlBarInput.focus();
+            }
+          });
+        } else {
+          urlBarPopup.classList.toggle('open');
+        }
+      });
+
+      const submitCustomUrl = () => {
+        let val = urlBarInput ? urlBarInput.value.trim() : '';
+        if (!val) return;
+        if (!val.startsWith('http://') && !val.startsWith('https://')) {
+          val = 'https://' + val;
+        }
+        const topUrlInput = document.getElementById('webpage-url-input');
+        if (topUrlInput) topUrlInput.value = val;
+        urlBarPopup.classList.remove('open');
+        startGame(val, 'custom', () => {
+          this.triggerDestructionCountdown(val, () => {
+            const destroyBtn = document.getElementById('btn-destroy-url');
+            if (destroyBtn) {
+              destroyBtn.click();
+            } else {
+              this.loadMapPreset('custom', val, true);
+            }
+          });
+        });
+      };
+
+      if (btnUrlBarGo) {
+        btnUrlBarGo.addEventListener('click', (e) => {
+          e.stopPropagation();
+          submitCustomUrl();
+        });
+      }
+      if (urlBarInput) {
+        urlBarInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.stopPropagation();
+            submitCustomUrl();
+          }
+        });
+      }
+    }
+
+    // 5. Bloque Jetpack "SUBIR FOTO / MEME" (Requiere Pase 24h)
+    const btnUpload = document.querySelector('[data-intro-action="upload"]');
+    const posterFileInput = document.getElementById('gta-poster-file-input');
+    if (btnUpload && posterFileInput) {
+      btnUpload.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.passManager) {
+          this.passManager.requirePass('Subir Fotos Personalizadas', () => {
+            posterFileInput.click();
+          });
+        } else {
+          posterFileInput.click();
+        }
+      });
+
+      posterFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const dataUrl = ev.target.result;
+            startGame(`Imagen: ${file.name}`, 'image', () => {
+              this.triggerDestructionCountdown(`Imagen: ${file.name}`, async () => {
+                await this.loadUserImage(dataUrl);
+                try {
+                  let currentRoom = this.multiplayer && this.multiplayer.roomId ? this.multiplayer.roomId : 'lobby';
+                  await fetch('/api/upload-room-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ roomId: currentRoom, imageBase64: dataUrl, preset: 'image' })
+                  });
+                } catch (err) {
+                  console.warn('[UPLOAD-SYNC ERROR]:', err);
+                }
+              });
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
 
     // Botón Saltar Intro y entrar directo a jugar
     const btnSkip = document.getElementById('btn-gta-skip');
     if (btnSkip) {
-      btnSkip.addEventListener('click', () => {
-        this.isGameStarted = true;
-        this.input.isMouseDown = false;
-        this.input.isRightMouseDown = false;
-        if (window.soundManager && typeof window.soundManager.playCinematicBoom === 'function') {
-          window.soundManager.playCinematicBoom();
-        }
-        overlay.classList.add('hidden');
-        this.snapCameraToPlayer();
+      btnSkip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startGame('https://www.tiktok.com', 'tiktok');
       });
     }
-
-    // Efecto interactivo al tocar los bloques de cómic GTA VI
-    document.querySelectorAll('.gta-comic-cell').forEach((cell) => {
-      cell.addEventListener('click', () => {
-        if (window.soundManager && typeof window.soundManager.playSecretCollect === 'function') {
-          window.soundManager.playSecretCollect();
-        }
-      });
-    });
   }
 
   resizeCanvas() {
@@ -1747,28 +1783,48 @@ class UIManager {
       }
     };
 
-    // Presets con Conteo Regresivo de 3s y Sincronización Multijugador
+    // Presets con Conteo Regresivo de 3s y Sincronización Multijugador (TikTok es Gratis; los demás requieren Pase 24h)
     document.querySelectorAll('[data-preset]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         const preset = btn.getAttribute('data-preset');
         const targetUrl = presetMap[preset] || `https://www.${preset}.com`;
-        if (this.urlInput) this.urlInput.value = targetUrl;
-        this.game.triggerDestructionCountdown(targetUrl, () => {
-          this.game.loadMapPreset(preset, targetUrl, true);
-        });
+
+        const applyPreset = () => {
+          document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (this.urlInput) this.urlInput.value = targetUrl;
+          this.game.triggerDestructionCountdown(targetUrl, () => {
+            this.game.loadMapPreset(preset, targetUrl, true);
+          });
+        };
+
+        if (preset === 'tiktok') {
+          applyPreset();
+        } else {
+          if (this.game.passManager) {
+            this.game.passManager.requirePass(`Destruir ${preset.toUpperCase()}`, applyPreset);
+          } else {
+            applyPreset();
+          }
+        }
       });
     });
 
-    // Destroy button con Conteo Regresivo de 3 Segundos
+    // Destroy button con Conteo Regresivo de 3 Segundos (Requiere Pase 24h)
     const destroyBtn = document.getElementById('btn-destroy-url');
     const handleUrlSubmit = () => {
       const val = this.urlInput.value.trim();
       if (!val) return;
-      this.game.triggerDestructionCountdown(val, () => {
-        loadLiveWebpage(val, 'custom');
-      });
+      const doDestroy = () => {
+        this.game.triggerDestructionCountdown(val, () => {
+          loadLiveWebpage(val, 'custom');
+        });
+      };
+      if (this.game.passManager) {
+        this.game.passManager.requirePass('Destruir Cualquier URL', doDestroy);
+      } else {
+        doDestroy();
+      }
     };
 
     if (destroyBtn) {
@@ -1781,11 +1837,17 @@ class UIManager {
       });
     }
 
-    // Image Upload Button & Input con Conteo Regresivo
+    // Image Upload Button & Input con Conteo Regresivo (Requiere Pase 24h)
     const uploadBtn = document.getElementById('btn-upload-image');
     const fileInput = document.getElementById('image-upload-input');
     if (uploadBtn && fileInput) {
-      uploadBtn.addEventListener('click', () => fileInput.click());
+      uploadBtn.addEventListener('click', () => {
+        if (this.game.passManager) {
+          this.game.passManager.requirePass('Subir Fotos Personalizadas', () => fileInput.click());
+        } else {
+          fileInput.click();
+        }
+      });
       fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -1906,10 +1968,16 @@ class UIManager {
       });
     }
 
-    // Add Bot & Clear Bots
+    // Add Bot & Clear Bots (Requiere Pase Creador 24h Wompi)
     const botBtn = document.getElementById('btn-add-bot');
     if (botBtn) {
-      botBtn.addEventListener('click', () => this.game.spawnBot());
+      botBtn.addEventListener('click', () => {
+        if (this.game.passManager) {
+          this.game.passManager.requirePass('Invocar Bots de Demolición', () => this.game.spawnBot());
+        } else {
+          this.game.spawnBot();
+        }
+      });
     }
 
     const clearBtn = document.getElementById('btn-clear-bots');

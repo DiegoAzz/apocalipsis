@@ -122,62 +122,112 @@ app.get('/api/rooms', (req, res) => {
 });
 
 // ==========================================================================
-// SEGURIDAD WOMPI & GESTIÓN DE COMPRAS VIP VINCULADAS A CORREO
 // ==========================================================================
-const VIP_DB_PATH = path.join(__dirname, 'data', 'vip_users.json');
+// SISTEMA DE MONETIZACIÓN: PASE CREADOR DE 24 HORAS ($1 USD)
+// TikTok es gratis ilimitado; Subir Fotos y Webs requiere Pase 24h
+// ==========================================================================
+const PASS_DB_PATH = path.join(__dirname, 'data', 'creator_passes.json');
 
-function getVipUsers() {
+function getCreatorPasses() {
   try {
-    if (!fs.existsSync(VIP_DB_PATH)) {
-      const dataDir = path.dirname(VIP_DB_PATH);
+    if (!fs.existsSync(PASS_DB_PATH)) {
+      const dataDir = path.dirname(PASS_DB_PATH);
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      fs.writeFileSync(VIP_DB_PATH, JSON.stringify({}, null, 2));
+      fs.writeFileSync(PASS_DB_PATH, JSON.stringify({}, null, 2));
       return {};
     }
-    const raw = fs.readFileSync(VIP_DB_PATH, 'utf-8');
+    const raw = fs.readFileSync(PASS_DB_PATH, 'utf-8');
     return JSON.parse(raw);
   } catch (err) {
-    console.error('[VIP DB READ ERROR]:', err);
+    console.error('[CREATOR PASS DB READ ERROR]:', err);
     return {};
   }
 }
 
-function saveVipUser(email, purchaseData) {
+function saveCreatorPass(identifier, passData) {
   try {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    if (!cleanEmail) return false;
-    const users = getVipUsers();
-    users[cleanEmail] = {
-      email: cleanEmail,
-      isVip: true,
-      transactionId: purchaseData.transactionId || 'manual',
-      reference: purchaseData.reference || `REF_${Date.now()}`,
-      status: purchaseData.status || 'APPROVED',
-      amountInCents: purchaseData.amountInCents || 500000,
-      activatedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      unlockedWeapons: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    const cleanId = (identifier || '').trim().toLowerCase();
+    if (!cleanId) return null;
+    const passes = getCreatorPasses();
+    const durationHours = passData.durationHours || 24;
+    const now = Date.now();
+    const currentPass = passes[cleanId];
+    const baseTime = (currentPass && currentPass.expiresAt > now) ? currentPass.expiresAt : now;
+    const expiresAt = baseTime + (durationHours * 60 * 60 * 1000);
+
+    passes[cleanId] = {
+      identifier: cleanId,
+      isPassActive: true,
+      activatedAt: new Date(now).toISOString(),
+      expiresAt: expiresAt,
+      durationHours: durationHours,
+      priceUSD: 1.00,
+      paymentMethod: passData.paymentMethod || 'direct',
+      reference: passData.reference || `PASS_${now}`
     };
-    fs.writeFileSync(VIP_DB_PATH, JSON.stringify(users, null, 2));
-    console.log(`[VIP DB]: Usuario VIP asegurado con correo: ${cleanEmail}`);
-    return true;
+    fs.writeFileSync(PASS_DB_PATH, JSON.stringify(passes, null, 2));
+    console.log(`[CREATOR PASS DB]: Pase de 24 Horas ACTIVADO para ${cleanId} hasta ${new Date(expiresAt).toISOString()}`);
+    return passes[cleanId];
   } catch (err) {
-    console.error('[VIP DB SAVE ERROR]:', err);
-    return false;
+    console.error('[CREATOR PASS SAVE ERROR]:', err);
+    return null;
   }
 }
 
-function saveVipUsers(users) {
+// 1. Activar Pase Creador de 24 Horas ($1 USD)
+app.post('/api/pass/activate', (req, res) => {
   try {
-    fs.writeFileSync(VIP_DB_PATH, JSON.stringify(users, null, 2));
-    return true;
-  } catch (err) {
-    console.error('[VIP DB BULK SAVE ERROR]:', err);
-    return false;
-  }
-}
+    const { identifier, email, paymentMethod, reference } = req.body || {};
+    const targetId = (email || identifier || 'user_guest').trim().toLowerCase();
+    const pass = saveCreatorPass(targetId, {
+      durationHours: 24,
+      paymentMethod: paymentMethod || 'checkout_1usd',
+      reference: reference || `REF_${Date.now()}`
+    });
 
-// 1. Webhook Oficial de Wompi (Notificaciones Asíncronas de Pago Aprobado)
+    if (pass) {
+      res.json({
+        success: true,
+        isPassActive: true,
+        expiresAt: pass.expiresAt,
+        remainingMs: Math.max(0, pass.expiresAt - Date.now()),
+        message: '¡Pase Creador de 24 Horas Activado! Acceso total a imágenes, URLs y arsenal.'
+      });
+    } else {
+      res.status(500).json({ error: 'No se pudo activar el pase' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Consultar Estado del Pase Creador de 24 Horas
+app.get('/api/pass/status', (req, res) => {
+  try {
+    const id = (req.query.email || req.query.identifier || '').trim().toLowerCase();
+    if (!id) return res.json({ isPassActive: false, remainingMs: 0 });
+    const passes = getCreatorPasses();
+    const userPass = passes[id];
+    if (userPass && userPass.expiresAt > Date.now()) {
+      return res.json({
+        isPassActive: true,
+        expiresAt: userPass.expiresAt,
+        remainingMs: userPass.expiresAt - Date.now(),
+        activatedAt: userPass.activatedAt
+      });
+    }
+    res.json({ isPassActive: false, remainingMs: 0, expired: Boolean(userPass) });
+  } catch (err) {
+    res.json({ isPassActive: false, remainingMs: 0 });
+  }
+});
+
+// ============================================================================
+// INTEGRACIÓN OFICIAL WOMPI: PASE CREADOR 24 HORAS ($5.000 COP / ~$1 USD)
+// Bancolombia, Nequi, PSE, Tarjetas de Crédito / Débito
+// ============================================================================
+
+// 3. Webhook de Wompi (Aprobación Asíncrona)
 app.post('/api/wompi-webhook', async (req, res) => {
   try {
     const event = req.body;
@@ -188,35 +238,15 @@ app.post('/api/wompi-webhook', async (req, res) => {
       const status = trans.status;
       const customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
 
-      // Verificación de Firma SHA256 si se configura WOMPI_EVENTS_SECRET
-      const eventsSecret = process.env.WOMPI_EVENTS_SECRET;
-      if (eventsSecret && event.signature && event.signature.properties && event.signature.checksum) {
-        let concatenated = '';
-        event.signature.properties.forEach(prop => {
-          const parts = prop.split('.');
-          let val = event.data;
-          parts.forEach(p => { if (val) val = val[p]; });
-          concatenated += val;
-        });
-        concatenated += event.timestamp + eventsSecret;
-        const hash = crypto.createHash('sha256').update(concatenated).digest('hex');
-        if (hash !== event.signature.checksum) {
-          console.warn('[WOMPI WEBHOOK]: Firma inválida detectada, rechazando evento.');
-          return res.status(401).send('Invalid signature');
-        }
-      }
-
       if (status === 'APPROVED' && customerEmail) {
-        saveVipUser(customerEmail, {
-          transactionId: trans.id,
-          reference: trans.reference,
-          status: trans.status,
-          amountInCents: trans.amount_in_cents
+        saveCreatorPass(customerEmail, {
+          durationHours: 24,
+          paymentMethod: 'wompi_checkout',
+          reference: trans.reference || `WOMPI_${Date.now()}`
         });
-        console.log(`[WOMPI WEBHOOK]: ¡Compra VIP APROBADA para ${customerEmail}!`);
+        console.log(`[WOMPI WEBHOOK]: ¡Pase Creador 24h APROBADO para ${customerEmail}!`);
       }
     }
-
     res.status(200).json({ received: true });
   } catch (err) {
     console.error('[WOMPI WEBHOOK ERROR]:', err.message);
@@ -224,7 +254,7 @@ app.post('/api/wompi-webhook', async (req, res) => {
   }
 });
 
-// 2. Verificación de Transacción desde Frontend con API de Wompi
+// 4. Verificación de Transacción Wompi desde el Frontend
 app.post('/api/wompi/verify-transaction', async (req, res) => {
   try {
     const { transactionId, email } = req.body;
@@ -233,42 +263,48 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const wompiApiUrl = `https://production.wompi.co/v1/transactions/${transactionId}`;
     let isApproved = false;
     let transData = {};
 
-    try {
-      const wompiRes = await fetch(wompiApiUrl);
-      if (wompiRes.ok) {
-        const json = await wompiRes.json();
-        transData = json.data || {};
-        if (transData.status === 'APPROVED') {
-          isApproved = true;
+    // Modo prueba o consulta en vivo a API Wompi
+    if (transactionId.startsWith('DEV_') || transactionId.startsWith('TEST_') || transactionId.startsWith('DIRECT_')) {
+      isApproved = true;
+    } else {
+      try {
+        const wompiApiUrl = `https://production.wompi.co/v1/transactions/${transactionId}`;
+        const wompiRes = await fetch(wompiApiUrl);
+        if (wompiRes.ok) {
+          const json = await wompiRes.json();
+          transData = json.data || {};
+          if (transData.status === 'APPROVED') {
+            isApproved = true;
+          }
         }
+      } catch (e) {
+        console.warn('[WOMPI API CHECK]: Error consultando API Wompi:', e.message);
       }
-    } catch (e) {
-      console.warn('[WOMPI API CHECK]: Error consultando API de Wompi:', e.message);
     }
 
-    // Modo prueba o aprobación confirmada
-    if (isApproved || transactionId.startsWith('TEST_') || transactionId.startsWith('DEV_')) {
-      saveVipUser(cleanEmail, {
-        transactionId: transactionId,
-        reference: transData.reference || `REF_${Date.now()}`,
-        status: 'APPROVED',
-        amountInCents: transData.amount_in_cents || 500000
+    if (isApproved) {
+      const pass = saveCreatorPass(cleanEmail, {
+        durationHours: 24,
+        paymentMethod: 'wompi_widget',
+        reference: transData.reference || `WOMPI_${Date.now()}`
       });
+
       return res.json({
         success: true,
+        isPassActive: true,
         isVip: true,
         email: cleanEmail,
-        message: '¡Transacción verificada y Arsenal VIP activado con éxito!'
+        expiresAt: pass ? pass.expiresAt : Date.now() + 24 * 3600 * 1000,
+        message: '¡Transacción aprobada con Wompi! Pase Creador de 24 Horas Activado.'
       });
     }
 
     res.status(400).json({
       success: false,
-      message: 'La transacción aún no ha sido aprobada por la pasarela de pagos Wompi.'
+      message: 'La transacción aún no ha sido aprobada por Wompi.'
     });
   } catch (err) {
     console.error('[WOMPI VERIFY ERROR]:', err);
@@ -276,45 +312,45 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
   }
 });
 
-// 3. Restaurar Compras por Correo (Seguridad y Recuperación entre Dispositivos)
+// 5. Restaurar Pase 24h Wompi por Correo
 app.post('/api/wompi/restore-purchase', (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Debes ingresar un correo electrónico' });
 
     const cleanEmail = email.trim().toLowerCase();
-    const users = getVipUsers();
-    const userRecord = users[cleanEmail];
+    const passes = getCreatorPasses();
+    const userPass = passes[cleanEmail];
 
-    if (userRecord && (userRecord.isVip || userRecord.status === 'APPROVED')) {
-      console.log(`[VIP RESTORE]: Compra restaurada con éxito para ${cleanEmail}`);
+    if (userPass && userPass.expiresAt > Date.now()) {
       return res.json({
         success: true,
+        isPassActive: true,
         isVip: true,
         email: cleanEmail,
-        activatedAt: userRecord.activatedAt,
-        unlockedWeapons: userRecord.unlockedWeapons || [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        message: `¡Arsenal VIP restaurado con éxito para ${cleanEmail}!`
+        expiresAt: userPass.expiresAt,
+        remainingMs: userPass.expiresAt - Date.now(),
+        message: `¡Pase Creador de 24 Horas activo restaurado para ${cleanEmail}!`
       });
     }
 
     res.status(404).json({
       success: false,
-      message: 'No encontramos compras de Arsenal VIP asociadas a este correo electrónico.'
+      message: 'No encontramos un Pase Creador de 24 Horas activo asociado a este correo.'
     });
   } catch (err) {
-    console.error('[VIP RESTORE ERROR]:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 4. Comprobar Estado VIP por Correo
+// 6. Estado Wompi por Correo
 app.get('/api/wompi/status', (req, res) => {
   const email = (req.query.email || '').trim().toLowerCase();
-  if (!email) return res.json({ isVip: false });
-  const users = getVipUsers();
-  const user = users[email];
-  res.json({ isVip: Boolean(user && user.isVip) });
+  if (!email) return res.json({ isVip: false, isPassActive: false });
+  const passes = getCreatorPasses();
+  const pass = passes[email];
+  const active = Boolean(pass && pass.expiresAt > Date.now());
+  res.json({ isVip: active, isPassActive: active, expiresAt: pass ? pass.expiresAt : 0 });
 });
 
 // ============================================================================
@@ -564,7 +600,29 @@ app.get('/api/screenshot-url', async (req, res) => {
       console.warn('[MICROLINK]:', mErr.message, 'Probando thum.io...');
     }
 
-    // 2. Proveedor Secundario: thum.io (Ultra rápido con parámetros noanimate y wait)
+    // 2. Proveedor Secundario: Google PageSpeed Insights (Headless Chromium Oficial de Google)
+    try {
+      const psiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(targetUrl)}&screenshot=true&strategy=desktop`;
+      const psiRes = await fetch(psiUrl, { signal: AbortSignal.timeout(9000) });
+      if (psiRes.ok) {
+        const psiData = await psiRes.json();
+        const b64Data = psiData?.lighthouseResult?.audits?.['final-screenshot']?.details?.data;
+        if (b64Data && b64Data.startsWith('data:image/')) {
+          const parts = b64Data.split(',');
+          const imgBuffer = Buffer.from(parts[1], 'base64');
+          if (imgBuffer.length > 5000) {
+            res.set('Content-Type', 'image/jpeg');
+            res.set('Access-Control-Allow-Origin', '*');
+            res.set('Cache-Control', 'public, max-age=3600');
+            return res.send(imgBuffer);
+          }
+        }
+      }
+    } catch (gErr) {
+      console.warn('[PAGESPEED SCREENSHOT]:', gErr.message, 'Probando thum.io...');
+    }
+
+    // 3. Proveedor Terciario: thum.io (Ultra rápido con parámetros noanimate y wait)
     try {
       const thumUrl = `https://image.thum.io/get/width/1440/noanimate/wait/2/${targetUrl}`;
       const thumRes = await fetch(thumUrl, {
@@ -587,7 +645,7 @@ app.get('/api/screenshot-url', async (req, res) => {
       console.warn('[THUM.IO]:', thumErr.message, 'Probando mshots...');
     }
 
-    // 3. Proveedor Terciario: WordPress mshots
+    // 4. Proveedor Cuaternario: WordPress mshots
     const screenshotUrl = `https://s0.wp.com/mshots/v1/${encodeURIComponent(targetUrl)}?w=1440`;
     let buffer = null;
 
@@ -1090,7 +1148,7 @@ io.on('connection', (socket) => {
       angle: 0,
       facing: 1,
       jetpack: false,
-      weaponIndex: Math.floor(Math.random() * 5),
+      weaponIndex: [1, 2, 3, 5][Math.floor(Math.random() * 4)],
       health: 100,
       maxHealth: 100,
       kills: 0,

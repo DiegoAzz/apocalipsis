@@ -254,30 +254,9 @@ class IdleManager {
       this.updateRateDisplay();
     }
 
-    // 3. Update Drones
-    if (this.drones.length > 0 && this.game.level) {
-      this.updateDrones(dt);
-    }
-
-    // 4. Passive Meteor Rain
-    if (this.upgrades.meteorRain.level > 0) {
-      const interval = Math.max(3.5, 16 - this.upgrades.meteorRain.level * 2);
-      this.meteorTimer += dt;
-      if (this.meteorTimer >= interval) {
-        this.meteorTimer = 0;
-        this.triggerPassiveMeteor();
-      }
-    }
-
-    // 5. Passive Orbital Nuke
-    if (this.upgrades.orbitalNuke.level > 0) {
-      const nukeInterval = Math.max(25, 75 - this.upgrades.orbitalNuke.level * 8);
-      this.nukeTimer += dt;
-      if (this.nukeTimer >= nukeInterval) {
-        this.nukeTimer = 0;
-        this.triggerPassiveNuke();
-      }
-    }
+    // 3. Drones, Meteors and Passive Nukes are strictly disabled from auto-destroying terrain
+    // so the page is NEVER destroyed automatically without player action.
+    this.drones = [];
 
     // 6. Floating Texts Update
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {

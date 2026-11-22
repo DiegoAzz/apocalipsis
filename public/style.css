@@ -1782,424 +1782,288 @@ body.ui-hidden #idle-hud-widget {
   border-color: #ec4899;
 }
 
-/* GTA VI COMIC BOOK POSTER COLLAGE */
-.gta-comic-poster {
-  display: grid;
-  grid-template-columns: 1fr 1.6fr 1fr;
-  grid-template-rows: 175px 175px;
-  gap: 8px;
-  background: #000000;
-  padding: 8px;
-  border-radius: 18px;
-  border: 4px solid #0f0a1c;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.95), 0 0 35px rgba(236, 72, 153, 0.35);
-  overflow: hidden;
-}
-
-.cell-hero {
-  grid-column: 2;
-  grid-row: 1 / 3;
-}
-.cell-city {
-  grid-column: 1;
-  grid-row: 1;
-}
-.cell-horsemen {
-  grid-column: 1;
-  grid-row: 2;
-}
-.cell-dragon {
-  grid-column: 3;
-  grid-row: 1;
-}
-.cell-soldier {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.gta-comic-cell {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid #1e1b2e;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.gta-comic-cell:hover {
-  transform: scale(1.02);
-  border-color: #ec4899;
-  box-shadow: 0 0 24px rgba(236, 72, 153, 0.7);
-  z-index: 5;
-}
-
-.comic-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  filter: contrast(1.1) saturate(1.18);
-  transition: transform 0.6s ease;
-}
-
-.gta-comic-cell:hover .comic-img {
-  transform: scale(1.08);
-}
-
-.comic-badge {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  background: rgba(8, 6, 14, 0.85);
-  backdrop-filter: blur(5px);
-  border-left: 3.5px solid #f97316;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 1.2px;
-  padding: 5px 8px;
-  text-transform: uppercase;
-  text-shadow: 0 2px 4px #000;
-  border-radius: 0 4px 4px 0;
-}
-
-.cell-hero .gta-logo-card {
+/* ==========================================================================
+   POSTER MAESTRO COMPLETO INTERACTIVO GTA VI APOCALIPSIS (COVER ART PURO)
+   ========================================================================== */
+.gta-backdrop-blur {
   position: absolute;
   inset: 0;
+  background: url('assets/apocalipsis_poster.jpg') center/cover no-repeat;
+  filter: blur(40px) brightness(0.22);
+  transform: scale(1.1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.gta-poster-screen {
+  position: relative;
+  z-index: 2;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, rgba(15, 7, 26, 0.35) 0%, rgba(5, 2, 10, 0.85) 100%);
-  text-align: center;
-  padding: 16px;
-  pointer-events: none;
-}
-
-.gta-logo-sub {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: #f472b6;
-  text-transform: uppercase;
-  text-shadow: 0 0 12px rgba(244, 114, 182, 0.9);
-}
-
-.gta-logo-title {
-  font-size: clamp(30px, 4.5vw, 50px);
-  font-weight: 950;
-  letter-spacing: 2.5px;
-  margin: 2px 0 0 0;
-  text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 0 20px rgba(236, 72, 153, 0.85), 0 4px 12px #000000;
-}
-
-.gta-logo-roman {
-  font-size: clamp(48px, 7vw, 76px);
-  font-weight: 950;
-  line-height: 0.92;
-  background: linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #d946ef 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 28px rgba(244, 63, 94, 0.95));
-  font-style: italic;
-}
-
-.gta-logo-tagline {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: #cbd5e1;
-  margin-top: 6px;
-  text-transform: uppercase;
-  text-shadow: 0 2px 4px #000;
-}
-
-@media (max-width: 768px) {
-  .gta-comic-poster {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto;
-  }
-  .cell-hero {
-    grid-column: 1 / 3;
-    grid-row: 1;
-    height: 190px;
-  }
-  .cell-city, .cell-horsemen, .cell-dragon, .cell-soldier {
-    height: 110px;
-  }
-}
-
-/* Encabezado GTA VI */
-.gta-header {
-  text-align: center;
-}
-
-.gta-badge {
-  display: inline-block;
-  background: rgba(236, 72, 153, 0.15);
-  border: 1px solid rgba(236, 72, 153, 0.4);
-  color: #f472b6;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 2.5px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.gta-title {
-  font-size: clamp(38px, 6vw, 68px);
-  font-weight: 950;
-  letter-spacing: 3px;
-  margin: 0;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #ffffff 0%, #fed7aa 35%, #fb923c 60%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 25px rgba(249, 115, 22, 0.5));
-  line-height: 1.1;
-}
-
-.gta-six {
-  background: linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #d946ef 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 35px rgba(244, 63, 94, 0.9));
-  font-style: italic;
-}
-
-.gta-subtitle {
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  margin-top: 6px;
-}
-
-/* Paneles del Menú */
-.gta-panels-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .gta-panels-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.gta-panel {
-  background: rgba(18, 11, 30, 0.85);
-  border: 1.5px solid rgba(168, 85, 247, 0.3);
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(12px);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.gta-panel-title {
-  font-size: 13px;
-  font-weight: 900;
-  color: #e2e8f0;
-  letter-spacing: 1.2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 8px;
-}
-
-.gta-presets-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.gta-preset-btn {
-  background: rgba(30, 20, 50, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.gta-preset-btn:hover {
-  background: rgba(249, 115, 22, 0.2);
-  border-color: #f97316;
-  color: #ffffff;
-}
-
-.gta-preset-btn.active {
-  background: linear-gradient(135deg, #f97316, #ec4899);
-  border-color: #ffffff;
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(249, 115, 22, 0.6);
-}
-
-.gta-url-box input, .gta-name-row input {
-  width: 100%;
-  background: rgba(10, 6, 18, 0.95);
-  border: 1.5px solid rgba(168, 85, 247, 0.4);
-  color: #ffffff;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
+  padding: 10px;
   box-sizing: border-box;
 }
 
-.gta-url-box input:focus, .gta-name-row input:focus {
-  outline: none;
-  border-color: #f43f5e;
-  box-shadow: 0 0 16px rgba(244, 63, 94, 0.5);
-}
-
-.gta-upload-btn {
-  width: 100%;
-  background: rgba(45, 25, 70, 0.8);
-  border: 1px dashed rgba(236, 72, 153, 0.5);
-  color: #f472b6;
-  padding: 9px;
-  border-radius: 8px;
+.gta-poster-screen .gta-quick-skip-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 30;
+  background: rgba(10, 6, 18, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 7px 18px;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
 }
 
-.gta-upload-btn:hover {
-  background: rgba(236, 72, 153, 0.2);
+.gta-poster-screen .gta-quick-skip-btn:hover {
+  background: rgba(236, 72, 153, 0.4);
+  border-color: #ec4899;
   color: #ffffff;
+  transform: scale(1.05);
 }
 
-.gta-name-row label, .gta-colors-section label, .gta-mode-selector label {
+/* El Poster de Cómic GTA VI en su proporción original exacta (764x1024) */
+.gta-master-poster {
+  position: relative;
+  height: min(92vh, 900px);
+  aspect-ratio: 764 / 1024;
+  border-radius: 16px;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.98), 0 0 40px rgba(236, 72, 153, 0.35);
+  border: 3.5px solid #000000;
+  overflow: hidden;
+  background: #000000;
+}
+
+.gta-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
   display: block;
-  font-size: 11px;
-  font-weight: 800;
-  color: #94a3b8;
-  text-transform: uppercase;
-  margin-bottom: 6px;
+  pointer-events: none;
+  user-select: none;
 }
 
-.gta-color-palette {
-  display: flex;
-  gap: 10px;
-}
-
-.gta-color-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+/* HOTSPOTS INTERACTIVOS SOBRE CADA VIÑETA DEL POSTER */
+.gta-hotspot-btn {
+  position: absolute;
+  background: transparent;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.gta-color-swatch:hover {
-  transform: scale(1.15);
-}
-
-.gta-color-swatch.active {
-  border-color: #ffffff;
-  box-shadow: 0 0 16px currentColor;
-  transform: scale(1.2);
-}
-
-.gta-modes-row {
   display: flex;
-  gap: 10px;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
 }
 
-.gta-mode-btn {
+.gta-hotspot-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(250, 204, 21, 0.85);
+  box-shadow: inset 0 0 28px rgba(250, 204, 21, 0.45);
+}
+
+.gta-hotspot-btn:active {
+  transform: scale(0.98);
+}
+
+/* 1. Helicóptero / Metrópolis: Google */
+.cell-helicopter {
+  top: 0%;
+  left: 0%;
+  width: 33.5%;
+  height: 31%;
+}
+
+/* 2. Jinetes del Apocalipsis: Wikipedia */
+.cell-horsemen {
+  top: 0%;
+  left: 33.5%;
+  width: 33%;
+  height: 26.5%;
+}
+
+/* 3. Soldado Táctico: Multijugador Online */
+.cell-soldier-top {
+  top: 0%;
+  left: 66.5%;
+  width: 33.5%;
+  height: 30%;
+}
+
+/* 4. Dragón del Abismo: TikTok */
+.cell-dragon {
+  top: 31%;
+  left: 0%;
+  width: 48%;
+  height: 43.5%;
+}
+
+/* 5. Auto Deportivo: YouTube */
+.cell-car {
+  top: 26.5%;
+  left: 48%;
+  width: 52%;
+  height: 48%;
+}
+
+/* 6. Logo Central VI APOCALIPSIS: Jugar Ahora */
+.cell-logo-center {
+  top: 35%;
+  left: 16%;
+  width: 68%;
+  height: 20%;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 0;
+}
+
+/* 7. Rascacielos & Lluvia de Meteoros: Cualquier URL */
+.cell-meteors {
+  top: 74.5%;
+  left: 0%;
+  width: 71%;
+  height: 25.5%;
+}
+
+/* 8. Soldado con Jetpack: Subir Imagen */
+.cell-jetpack {
+  top: 74%;
+  left: 71%;
+  width: 29%;
+  height: 26%;
+}
+
+/* Píldoras con nombres dentro de cada bloque */
+.hotspot-pill {
+  background: rgba(10, 6, 18, 0.88);
+  border: 1.5px solid #f97316;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.gta-hotspot-btn:hover .hotspot-pill {
+  transform: scale(1.1);
+  background: #f97316;
+  border-color: #ffffff;
+  color: #000000;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.9);
+}
+
+.hotspot-pill-hero {
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: 1px;
+  padding: 9px 24px;
+  border-radius: 999px;
+  box-shadow: 0 0 35px rgba(249, 115, 22, 0.85), 0 8px 24px rgba(0, 0, 0, 0.95);
+  animation: heroPulse 1.8s infinite alternate;
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.cell-logo-center:hover .hotspot-pill-hero {
+  transform: scale(1.12);
+  box-shadow: 0 0 50px rgba(236, 72, 153, 0.95);
+}
+
+/* Cuadro flotante para escribir cualquier URL */
+.gta-url-bar-popup {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 35;
+  display: none;
+  background: rgba(10, 6, 18, 0.96);
+  border: 2px solid #38bdf8;
+  border-radius: 12px;
+  padding: 8px;
+  gap: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(12px);
+  animation: popupSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gta-url-bar-popup.open {
+  display: flex;
+}
+
+.gta-url-bar-popup input {
   flex: 1;
-  background: rgba(30, 20, 50, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #cbd5e1;
-  padding: 9px;
+  background: #181126;
+  border: 1px solid #38bdf8;
+  color: #ffffff;
+  padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
+  outline: none;
 }
 
-.gta-mode-btn.active {
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
+.gta-url-bar-popup input:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+}
+
+.btn-url-bar-go {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  border: none;
   color: #ffffff;
-  border-color: #ffffff;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
-}
-
-/* Misión Briefing */
-.gta-mission-brief {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  color: #fde68a;
-  line-height: 1.4;
-}
-
-.brief-icon {
-  font-size: 26px;
-}
-
-/* Botón Gigante GTA VI Start */
-.gta-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.btn-gta-start {
-  background: linear-gradient(135deg, #f97316 0%, #ec4899 50%, #a855f7 100%);
-  color: #ffffff;
-  border: 2px solid #ffffff;
-  border-radius: 18px;
-  padding: 16px 48px;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 0 35px rgba(249, 115, 22, 0.6), 0 10px 25px rgba(0, 0, 0, 0.8);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
+  white-space: nowrap;
 }
 
-.btn-gta-start:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 0 50px rgba(236, 72, 153, 0.8), 0 15px 35px rgba(0, 0, 0, 0.9);
+.btn-url-bar-go:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.8);
 }
 
-.btn-gta-start:active {
-  transform: translateY(1px) scale(0.98);
+@keyframes popupSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.btn-gta-start .btn-text {
-  font-size: 22px;
-  font-weight: 950;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-}
-
-.btn-gta-start .btn-sub {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  opacity: 0.85;
+@media (max-width: 768px) {
+  .gta-master-poster {
+    width: 96vw;
+    height: auto;
+    max-height: 88vh;
+  }
+  .hotspot-pill {
+    font-size: 9px;
+    padding: 3px 7px;
+  }
+  .hotspot-pill-hero {
+    font-size: 11px;
+    padding: 6px 14px;
+  }
 }
 
 /* ==========================================================================
@@ -2410,118 +2274,162 @@ body.ui-hidden #idle-hud-widget {
   display: flex;
 }
 
-.video-card, .wompi-card {
+.video-card, .pass-card {
   max-width: 580px;
   width: 100%;
 }
 
-.video-preview-wrapper {
-  background: #000000;
-  border-radius: 12px;
-  overflow: hidden;
-  margin: 14px 0;
-  border: 1px solid #334155;
-  max-height: 380px;
-  display: flex;
-  justify-content: center;
+.pass-card {
+  border: 1.5px solid rgba(250, 204, 21, 0.45);
+  box-shadow: 0 0 50px rgba(250, 204, 21, 0.25), 0 20px 60px rgba(0, 0, 0, 0.95);
 }
 
-.video-preview-wrapper video {
-  width: 100%;
-  max-height: 380px;
-  object-fit: contain;
-}
-
-.video-actions-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-@media (max-width: 600px) {
-  .video-actions-row {
-    flex-direction: column;
-  }
-}
-
-.wompi-badge-hero {
-  background: #ffffff;
-  padding: 10px 16px;
+.pass-feature-notice {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  padding: 10px 14px;
   border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.pass-badge-hero {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.18), rgba(249, 115, 22, 0.18));
+  border: 1.5px solid rgba(250, 204, 21, 0.5);
+  padding: 12px 16px;
+  border-radius: 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
   margin-bottom: 14px;
 }
 
-.wompi-logo-txt {
-  font-size: 24px;
-  font-weight: 900;
-  color: #27255f;
-  letter-spacing: -1px;
+.pass-hero-title {
+  font-size: 16px;
+  font-weight: 950;
+  color: #facc15;
+  letter-spacing: 0.5px;
 }
 
-.wompi-colombia {
-  font-size: 11px;
-  font-weight: 700;
-  color: #475569;
+.pass-hero-sub {
+  font-size: 12px;
+  color: #cbd5e1;
 }
 
-.wompi-perks-list {
-  background: rgba(15, 23, 42, 0.6);
+.pass-perks-list {
+  background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 14px;
   margin: 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
 }
 
-.wompi-price-box {
+.pass-price-box {
   text-align: center;
-  background: rgba(234, 179, 8, 0.12);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 12px;
-  padding: 12px;
+  background: rgba(234, 179, 8, 0.14);
+  border: 1.5px solid rgba(234, 179, 8, 0.45);
+  border-radius: 14px;
+  padding: 14px;
   margin: 14px 0;
 }
 
-.wompi-price-box .price-val {
+.pass-price-box .price-val {
   display: block;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 950;
   color: #facc15;
+  text-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
 }
 
-.wompi-price-box .price-sub {
-  font-size: 11px;
+.pass-price-box .price-sub {
+  font-size: 12px;
   color: #94a3b8;
+  margin-top: 2px;
 }
 
-.btn-wompi-main {
+.btn-pass-main {
   width: 100%;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: 1.5px solid #34d399;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 900;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1.5px solid #fbbf24;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 950;
   padding: 14px;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.45);
   transition: all 0.2s ease;
+  letter-spacing: 0.5px;
 }
 
-.btn-wompi-main:hover {
+.btn-pass-main:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 0 35px rgba(251, 191, 36, 0.75);
 }
 
-.wompi-test-hint {
+.pass-url-rules-box {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.pass-url-rules-box .rules-head {
+  font-size: 12px;
+  color: #38bdf8;
+  margin-bottom: 6px;
+}
+
+.pass-url-rules-box .rules-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.pass-url-rules-box .rules-list code {
+  color: #facc15;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.pass-test-hint {
   text-align: center;
-  margin-top: 10px;
+  margin-top: 12px;
+}
+
+/* Píldora Superior Pase 24h */
+.pill-pass {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(250, 204, 21, 0.5);
+  color: #facc15;
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.25);
+}
+
+.pill-pass.pass-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #34d399;
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.pill-pass.pass-inactive:hover {
+  background: rgba(250, 204, 21, 0.2);
+  border-color: #facc15;
+  color: #ffffff;
 }
 
 /* ==========================================================================
