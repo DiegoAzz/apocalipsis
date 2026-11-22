@@ -543,13 +543,21 @@ app.post('/api/auth/verify-code', (req, res) => {
       saveVipUsers(users);
     }
 
-    console.log(`[AUTH LOGIN SUCCESS] Sesión iniciada con éxito para ${cleanEmail} (VIP: ${userRecord.isVip})`);
+    // Verificar si tiene Pase Creador de 24 Horas activo en Wompi
+    const passes = getCreatorPasses();
+    const pass = passes[cleanEmail];
+    const isPassActive = Boolean(pass && pass.expiresAt > Date.now());
+    const isVip = Boolean(userRecord.isVip || isPassActive);
+
+    console.log(`[AUTH LOGIN SUCCESS] Sesión iniciada para ${cleanEmail} (VIP/Pase: ${isVip})`);
 
     res.json({
       success: true,
       email: cleanEmail,
-      isVip: Boolean(userRecord.isVip),
-      unlockedWeapons: userRecord.unlockedWeapons || [0, 1],
+      isVip: isVip,
+      isPassActive: isPassActive,
+      expiresAt: pass ? pass.expiresAt : (isVip ? Date.now() + 24 * 3600 * 1000 : null),
+      unlockedWeapons: isVip ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'G'] : (userRecord.unlockedWeapons || [0, 1]),
       message: `¡Bienvenido! Sesión iniciada para ${cleanEmail}.`
     });
   } catch (err) {

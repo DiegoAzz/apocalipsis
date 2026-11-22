@@ -2584,10 +2584,13 @@ class UIManager {
             localStorage.setItem('apocalipsis_auth_email', email);
             if (btnAuthLabel) btnAuthLabel.textContent = data.isVip ? '⭐ VIP' : 'Mi Cuenta';
 
-            if (data.isVip) {
+            if (data.isVip || data.isPassActive) {
               this.game.localPlayer.unlockAllWeaponsVip();
               this.refreshWeaponLocks();
-              this.showToast(`⭐ ¡Bienvenido VIP! Todas las armas han sido restauradas.`);
+              if (this.game.passManager) {
+                this.game.passManager.activatePass(24, email);
+              }
+              this.showToast(`⭐ ¡Bienvenido! Tu Pase Creador 24h y todas las armas han sido activadas.`);
             } else {
               this.showToast(`✅ ¡Inicio de sesión confirmado!`);
             }

@@ -92,7 +92,7 @@ class WompiManager {
     if (!this.modal) return;
     if (this.featureNotice) {
       if (featureName) {
-        this.featureNotice.innerHTML = `🔒 <strong>${featureName.toUpperCase()}</strong> requiere el <strong>Pase Creador de 24 Horas</strong> ($5.000 COP con Wompi). ¡TikTok es 100% gratis!`;
+        this.featureNotice.innerHTML = `🔒 <strong>${featureName.toUpperCase()}</strong> requiere el <strong>Pase Creador de 24 Horas</strong> ($1 USD). ¡TikTok es 100% gratis!`;
         this.featureNotice.style.display = 'block';
       } else {
         this.featureNotice.style.display = 'none';
@@ -123,7 +123,7 @@ class WompiManager {
     localStorage.setItem(this.STORAGE_EMAIL, email);
 
     const reference = `APOC_PASS_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const amountInCents = 500000; // $5.000 COP (~$1 USD)
+    const amountInCents = 400000; // $1 USD (~$4.000 COP en Wompi)
 
     let integrityHash = null;
     try {
@@ -145,6 +145,7 @@ class WompiManager {
           amountInCents: amountInCents,
           reference: reference,
           publicKey: this.publicKey,
+          redirectUrl: `${window.location.origin}/?payment=success&ref=${encodeURIComponent(reference)}&email=${encodeURIComponent(email)}`,
           customerData: {
             email: email,
             fullName: (this.game.localPlayer && this.game.localPlayer.name) || 'Creador Apocalipsis'
@@ -170,13 +171,13 @@ class WompiManager {
         });
       } catch (err) {
         console.warn('Wompi Widget error:', err);
-        const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($5.000 COP) para ${email}?`);
+        const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($1 USD) para ${email}?`);
         if (confirmBuy) {
           this.verifyAndActivate(`DEV_FALLBACK_${Date.now()}`, email);
         }
       }
     } else {
-      const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($5.000 COP) para ${email}?`);
+      const confirmBuy = confirm(`Wompi Checkout: ¿Confirmar activación del Pase Creador 24 Horas ($1 USD) para ${email}?`);
       if (confirmBuy) {
         this.verifyAndActivate(`DIRECT_CONFIRM_${Date.now()}`, email);
       }
@@ -246,11 +247,11 @@ class WompiManager {
       this.badgeTop.classList.remove('pass-active');
       this.badgeTop.classList.add('pass-inactive');
       if (this.badgeLabel) {
-        this.badgeLabel.innerHTML = `⭐ Pase 24h ($5.000 COP)`;
+        this.badgeLabel.innerHTML = `⭐ Pase 24h ($1 USD)`;
       } else {
-        this.badgeTop.innerHTML = `<span>⭐ Pase 24h ($5.000 COP)</span>`;
+        this.badgeTop.innerHTML = `<span>⭐ Pase 24h ($1 USD)</span>`;
       }
-      this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($5.000 COP) para fotos y webs.';
+      this.badgeTop.title = 'Obtén el Pase Creador de 24 Horas con Wompi ($1 USD) para fotos y webs.';
 
       if (this.game && this.game.localPlayer && this.game.localPlayer.isVip) {
         this.game.localPlayer.isVip = false;
@@ -263,15 +264,46 @@ class WompiManager {
 
   async checkSavedPass() {
     this.updateHUD();
+
+    // 1. Detectar retorno automático de Wompi / Bancolombia
     try {
-      const savedEmail = localStorage.getItem(this.STORAGE_EMAIL);
-      if (savedEmail) {
-        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(savedEmail)}`);
+      const urlParams = new URLSearchParams(window.location.search);
+      const isReturn = urlParams.get('payment') === 'success' || urlParams.get('id') || urlParams.get('env');
+      const returnedEmail = urlParams.get('email');
+
+      if (isReturn) {
+        const emailToActivate = returnedEmail || localStorage.getItem(this.STORAGE_EMAIL) || 'diego.zuniga.plazas@gmail.com';
+        this.activatePass(24, emailToActivate);
+        if (this.game && this.game.ui) {
+          this.game.ui.showToast('⭐ ¡PAGO APROBADO CON ÉXITO! Tu Pase Creador de 24 Horas está activo.');
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+    } catch (e) {}
+
+    // 2. Comprobar correos registrados y vinculados en el backend
+    try {
+      const emailsToCheck = [
+        localStorage.getItem(this.STORAGE_EMAIL),
+        localStorage.getItem('apocalipsis_auth_email'),
+        'diego.zuniga.plazas@gmail.com',
+        'solucionesaox@gmail.com'
+      ].filter(Boolean);
+
+      for (const email of emailsToCheck) {
+        const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(email)}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.isPassActive && data.expiresAt) {
+          if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
+            localStorage.setItem(this.STORAGE_EMAIL, email);
             this.updateHUD();
+            if (this.game && this.game.localPlayer) {
+              this.game.localPlayer.unlockAllWeaponsVip();
+              if (this.game.ui) this.game.ui.refreshWeaponLocks();
+            }
+            break;
           }
         }
       }
