@@ -2644,32 +2644,6 @@ class UIManager {
         window.location.reload();
       });
     }
-            } else {
-              this.showToast(`✅ ¡Inicio de sesión confirmado!`);
-            }
-
-            if (modal) modal.style.display = 'none';
-          } else {
-            this.showToast(`❌ Código Incorrecto o Expirado: ${data.error || ''}`);
-          }
-        } catch (err) {
-          this.showToast('❌ Error al validar código');
-        } finally {
-          btnVerifyCode.disabled = false;
-          btnVerifyCode.innerHTML = '<span>✅ Confirmar y Entrar</span>';
-        }
-      });
-    }
-
-    if (btnLogout) {
-      btnLogout.addEventListener('click', () => {
-        localStorage.removeItem('apocalipsis_auth_email');
-        if (btnAuthLabel) btnAuthLabel.textContent = 'Iniciar Sesión';
-        if (stepLogged) stepLogged.style.display = 'none';
-        if (stepEmail) stepEmail.style.display = 'block';
-        this.showToast('👋 Sesión cerrada correctamente');
-      });
-    }
   }
 
   updatePlayerCount(count) {
