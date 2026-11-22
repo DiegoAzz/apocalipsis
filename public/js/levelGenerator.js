@@ -951,103 +951,240 @@ class LevelEngine {
     this.syncGridFromCanvas();
   }
 
-  // 🎵 Generar Nivel de TikTok (Vertical Style & Neon Glitch)
+  // 🎵 Generar Nivel Real de TikTok (Desktop Dark Feed 100% Auténtico)
   generateTikTok() {
-    if (this.width !== 1500 || this.height !== 2600) this.resize(1500, 2600);
+    if (this.width !== 1600 || this.height !== 1100) this.resize(1600, 1100);
     this.presetName = 'tiktok';
-    this.pageUrl = 'https://www.tiktok.com/@apocalipsis/video/7391823901';
+    this.pageUrl = 'https://www.tiktok.com';
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // Fondo TikTok
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(80, 40, this.width - 160, this.height - 80);
-    ctx.strokeStyle = '#1e1e1e';
-    ctx.strokeRect(80, 40, this.width - 160, this.height - 80);
+    // 1. Fondo Global TikTok Dark Mode
+    ctx.fillStyle = '#121212';
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    // 2. Barra Superior de Navegación Oficial (Top Bar)
+    ctx.fillStyle = '#161823';
+    ctx.fillRect(0, 0, this.width, 70);
+    ctx.strokeStyle = '#2f3136';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 70);
+    ctx.lineTo(this.width, 70);
+    ctx.stroke();
 
     // Logotipo TikTok Glitch (Cian + Magenta + Blanco)
-    const logoX = 160;
-    const logoY = 95;
-    ctx.font = '900 38px Arial, sans-serif';
+    const logoX = 40;
+    const logoY = 46;
+    ctx.font = '900 32px Arial, sans-serif';
     ctx.fillStyle = '#00f2fe';
-    ctx.fillText('TikTok', logoX - 3, logoY - 2);
+    ctx.fillText('TikTok', logoX - 2, logoY - 1);
     ctx.fillStyle = '#fe2c55';
-    ctx.fillText('TikTok', logoX + 3, logoY + 2);
+    ctx.fillText('TikTok', logoX + 2, logoY + 1);
     ctx.fillStyle = '#ffffff';
     ctx.fillText('TikTok', logoX, logoY);
 
-    // Pestañas "Siguiendo" / "Para ti"
-    ctx.font = 'bold 22px Arial, sans-serif';
-    ctx.fillStyle = '#777777';
-    ctx.fillText('Siguiendo', 650, 95);
+    // Barra de Búsqueda Central de TikTok
+    ctx.fillStyle = '#2f3136';
+    ctx.beginPath();
+    ctx.roundRect(440, 14, 460, 42, 21);
+    ctx.fill();
+
+    ctx.fillStyle = '#8a8b91';
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillText('🔍  Buscar cuentas y videos...', 465, 40);
+
+    // Botones de la barra superior
+    ctx.fillStyle = '#2a2b33';
+    ctx.beginPath();
+    ctx.roundRect(1120, 16, 110, 38, 6);
+    ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('Para ti', 790, 95);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(790, 108, 65, 4);
+    ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText('+ Cargar', 1148, 40);
 
-    // Contenedor Central de Video (Formato 9:16)
-    const feedX = 420;
-    const feedY = 150;
-    const feedW = 660;
-    const feedH = 1150;
-
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(feedX, feedY, feedW, feedH);
-    ctx.strokeStyle = '#fe2c55';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(feedX, feedY, feedW, feedH);
-
-    // Cartel Viral en Pantalla
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(feedX + 40, feedY + 80, feedW - 80, 180);
-    ctx.strokeStyle = '#00f2fe';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(feedX + 40, feedY + 80, feedW - 80, 180);
-
-    ctx.fillStyle = '#fde047';
-    ctx.font = '900 34px Arial, sans-serif';
-    ctx.fillText('¿SE PUEDE DESTRUIR', feedX + 70, feedY + 145);
     ctx.fillStyle = '#fe2c55';
-    ctx.fillText('TIKTOK CON 1 BOMBA? 💥', feedX + 70, feedY + 195);
+    ctx.beginPath();
+    ctx.roundRect(1250, 16, 140, 38, 6);
+    ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = '18px Arial, sans-serif';
-    ctx.fillText('Juega gratis en: apocalipsis.appzplay.online', feedX + 70, feedY + 235);
+    ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText('Iniciar sesión', 1272, 40);
 
-    // Barra Lateral de Botones de Interacción TikTok (Like, Comentario, Compartir)
-    const btnX = feedX + feedW + 35;
+    // 3. Barra Lateral Izquierda (Sidebar)
+    const sideW = 260;
+    ctx.fillStyle = '#161823';
+    ctx.fillRect(0, 71, sideW, this.height - 71);
+    ctx.strokeStyle = '#2f3136';
+    ctx.beginPath();
+    ctx.moveTo(sideW, 71);
+    ctx.lineTo(sideW, this.height);
+    ctx.stroke();
+
+    const menuItems = [
+      { icon: '🏠', text: 'Para ti', active: true },
+      { icon: '🧭', text: 'Explorar', active: false },
+      { icon: '👥', text: 'Siguiendo', active: false },
+      { icon: '📹', text: 'LIVE', active: false },
+      { icon: '👤', text: 'Perfil', active: false }
+    ];
+
+    menuItems.forEach((item, idx) => {
+      const my = 115 + (idx * 52);
+      if (item.active) {
+        ctx.fillStyle = 'rgba(254, 44, 85, 0.12)';
+        ctx.beginPath();
+        ctx.roundRect(18, my - 26, sideW - 36, 42, 8);
+        ctx.fill();
+        ctx.fillStyle = '#fe2c55';
+      } else {
+        ctx.fillStyle = '#e1e2e5';
+      }
+      ctx.font = 'bold 17px Arial, sans-serif';
+      ctx.fillText(`${item.icon}  ${item.text}`, 35, my);
+    });
+
+    // Cuentas Sugeridas en el Sidebar
+    ctx.fillStyle = '#777980';
+    ctx.font = 'bold 13px Arial, sans-serif';
+    ctx.fillText('CUENTAS SUGERIDAS', 32, 400);
+
+    const suggestedAccounts = [
+      { name: 'cristiano', desc: 'Cristiano Ronaldo', verified: true },
+      { name: 'mrbeast', desc: 'MrBeast', verified: true },
+      { name: 'khaby.lame', desc: 'Khabane Lame', verified: true },
+      { name: 'gaming_clips', desc: 'Gaming Daily', verified: false }
+    ];
+
+    suggestedAccounts.forEach((acc, idx) => {
+      const ay = 440 + (idx * 50);
+      ctx.fillStyle = '#3a3c45';
+      ctx.beginPath();
+      ctx.arc(46, ay - 6, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial, sans-serif';
+      ctx.fillText(`@${acc.name}`, 72, ay - 10);
+      if (acc.verified) {
+        ctx.fillStyle = '#20d5ec';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(' ✓', 72 + ctx.measureText(`@${acc.name}`).width, ay - 10);
+      }
+      ctx.fillStyle = '#777980';
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(acc.desc, 72, ay + 6);
+    });
+
+    // 4. Feed Principal de Videos de TikTok (Centro de la pantalla)
+    const feedX = 330;
+    const feedY = 95;
+    const videoW = 540;
+    const videoH = 720;
+
+    // Encabezado de Usuario del Video
+    ctx.fillStyle = '#3a3c45';
+    ctx.beginPath();
+    ctx.arc(feedX + 24, feedY + 24, 24, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Arial, sans-serif';
+    ctx.fillText('@cristiano', feedX + 60, feedY + 20);
+    ctx.fillStyle = '#20d5ec';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(' ✓', feedX + 160, feedY + 20);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '15px Arial, sans-serif';
+    ctx.fillText('Great team victory tonight! Hard work pays off ⚽🏆 #football #alnassr #victory #viral', feedX + 60, feedY + 45);
+
+    ctx.fillStyle = '#8a8b91';
+    ctx.font = '13px Arial, sans-serif';
+    ctx.fillText('🎵 Sonido original - Cristiano Ronaldo Official', feedX + 60, feedY + 68);
+
+    // Contenedor Visual de Video Vertical TikTok
+    const vBoxY = feedY + 85;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.roundRect(feedX, vBoxY, videoW, videoH, 14);
+    ctx.fill();
+    ctx.strokeStyle = '#2f3136';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Imagen simulada de video de fútbol/partido en alta resolución
+    ctx.fillStyle = '#047857'; // Césped verde
+    ctx.fillRect(feedX + 8, vBoxY + 120, videoW - 16, videoH - 240);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(feedX + 40, vBoxY + 160, videoW - 80, videoH - 320);
+
+    ctx.fillStyle = '#1e293b'; // Gradas de estadio
+    ctx.fillRect(feedX + 8, vBoxY + 8, videoW - 16, 112);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 24px Arial, sans-serif';
+    ctx.fillText('⚡ MATCH DAY HIGHLIGHTS', feedX + 30, vBoxY + 50);
+
+    ctx.fillStyle = '#facc15';
+    ctx.font = 'bold 16px Arial, sans-serif';
+    ctx.fillText('🏆 GOAL OF THE TOURNAMENT', feedX + 30, vBoxY + 80);
+
+    // Botones de Interacción Flotantes a la Derecha del Video (Like, Comentarios, etc.)
+    const actX = feedX + videoW + 20;
     const actions = [
-      { icon: '❤️', count: '1.8M', label: 'Likes' },
-      { icon: '💬', count: '64.2K', label: 'Comentarios' },
-      { icon: '🔖', count: '215K', label: 'Guardar' },
-      { icon: '🔄', count: '98.4K', label: 'Compartir' }
+      { icon: '❤️', count: '3.4M' },
+      { icon: '💬', count: '84.6K' },
+      { icon: '🔖', count: '412K' },
+      { icon: '🔄', count: '128K' }
     ];
 
     actions.forEach((act, idx) => {
-      const by = feedY + 450 + (idx * 115);
-      ctx.fillStyle = '#222222';
+      const ay = vBoxY + 320 + (idx * 85);
+      ctx.fillStyle = '#2f3136';
       ctx.beginPath();
-      ctx.arc(btnX + 25, by, 32, 0, Math.PI * 2);
+      ctx.arc(actX + 22, ay, 24, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.font = '28px sans-serif';
-      ctx.fillText(act.icon, btnX + 11, by + 10);
+      ctx.font = '22px sans-serif';
+      ctx.fillText(act.icon, actX + 11, ay + 8);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px Arial, sans-serif';
-      ctx.fillText(act.count, btnX + 5, by + 48);
+      ctx.fillStyle = '#e1e2e5';
+      ctx.font = 'bold 13px Arial, sans-serif';
+      ctx.fillText(act.count, actX + 6, ay + 40);
     });
 
-    // Handle de Cuenta y Descripción en el pie del video
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 22px Arial, sans-serif';
-    ctx.fillText('@Apocalipsis ⚡', feedX + 30, feedY + feedH - 120);
+    // 5. Segundo Post de Video a la derecha (Feed Widescreen)
+    const post2X = feedX + videoW + 110;
+    if (post2X + 480 < this.width) {
+      ctx.fillStyle = '#3a3c45';
+      ctx.beginPath();
+      ctx.arc(post2X + 24, feedY + 24, 24, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.font = '16px Arial, sans-serif';
-    ctx.fillText('Comenta qué web o foto destruyo en el próximo video! 👇💥 #gaming #satisfying #destruction', feedX + 30, feedY + feedH - 85);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px Arial, sans-serif';
+      ctx.fillText('@mrbeast', post2X + 60, feedY + 20);
+      ctx.fillStyle = '#20d5ec';
+      ctx.fillText(' ✓', post2X + 155, feedY + 20);
 
-    ctx.font = '15px Arial, sans-serif';
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillText('🎵 Sonido Original - Apocalipsis Destrucción Total', feedX + 30, feedY + feedH - 50);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '15px Arial, sans-serif';
+      ctx.fillText('I survived 7 days in an abandoned city! 🔥 #mrbeast #challenge', post2X + 60, feedY + 45);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(post2X, vBoxY, 480, videoH, 14);
+      ctx.fill();
+      ctx.strokeStyle = '#2f3136';
+      ctx.stroke();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '900 22px Arial, sans-serif';
+      ctx.fillText('SURVIVING 7 DAYS SOLO 🎬', post2X + 30, vBoxY + 60);
+    }
 
     this.syncGridFromCanvas();
   }
