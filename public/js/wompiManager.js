@@ -6,7 +6,7 @@
 class WompiManager {
   constructor(game) {
     this.game = game;
-    this.publicKey = window.WOMPI_PUBLIC_KEY || 'pub_test_Q5yDA9xoKdePzhSGeVe9KStXTIIOxjwW';
+    this.publicKey = window.WOMPI_PUBLIC_KEY || 'pub_prod_GY4Z4CsYWPa41Ax4D3BEq14Y5Q3lQUam';
     this.STORAGE_KEY = 'apocalipsis_creator_pass_expires';
     this.STORAGE_EMAIL = 'apocalipsis_user_email';
 
