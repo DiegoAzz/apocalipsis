@@ -6,7 +6,7 @@
     "code": "7914",
     "altCode": "ANDRES10",
     "pin": "1234",
-    "activatedAt": "2026-11-22T19:57:20.650Z",
+    "activatedAt": "2026-11-22T20:54:26.608Z",
     "expiresAt": 253402300799000,
     "durationHours": 999999,
     "planName": "Super Administrador Vitalicio",
@@ -24,5 +24,18 @@
     "priceUSD": 1,
     "paymentMethod": "wompi_checkout",
     "reference": "1570221-1795358369-14441"
+  },
+  "cliente_normal@gmail.com": {
+    "identifier": "cliente_normal@gmail.com",
+    "isPassActive": true,
+    "code": "484192",
+    "activatedAt": "2026-11-22T20:54:26.608Z",
+    "expiresAt": 1795467266608,
+    "durationHours": 24,
+    "priceUSD": 1,
+    "planName": "1 Día (24 Horas)",
+    "pin": "5555",
+    "paymentMethod": "wompi_widget",
+    "reference": "WOMPI_1795380866607"
   }
 }

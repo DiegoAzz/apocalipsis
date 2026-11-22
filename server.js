@@ -184,9 +184,10 @@ function getCreatorPasses() {
       'diego.zuniga.plazas@gmail.com': {
         identifier: 'diego.zuniga.plazas@gmail.com',
         isPassActive: true,
-        code: '602951',
+        code: '7914',
+        altCode: 'ANDRES10',
         pin: '1234',
-        expiresAt: Date.now() + 8760 * 3600 * 1000
+        expiresAt: 253402300799000
       },
       'solucionesaox@gmail.com': {
         identifier: 'solucionesaox@gmail.com',
@@ -591,8 +592,9 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
         isPassActive: true,
         isVip: true,
         email: cleanEmail,
-        code: pass ? pass.code : '602951',
+        code: pass ? pass.code : generatePassCode(),
         expiresAt: pass ? pass.expiresAt : Date.now() + (effHours * 3600 * 1000),
+        isAdmin: false,
         planName: effPlanName,
         durationHours: effHours,
         priceUSD: effPrice,
@@ -622,8 +624,8 @@ app.post('/api/pass/redeem-code', (req, res) => {
     let foundPass = null;
     let foundEmail = null;
 
-    // Super Administrador Códigos Maestros (Sin vencimiento)
-    if (cleanCode === '7914' || cleanCode === 'ANDRES10' || cleanCode === '999999' || cleanCode === 'DIEGO1' || cleanCode === 'ADMIN7' || cleanCode === '602951') {
+    // Super Administrador Códigos Maestros (Sin vencimiento) - SOLO para Diego Zúñiga
+    if (cleanCode === '7914' || cleanCode === 'ANDRES10' || cleanCode === 'DIEGO1') {
       return res.json({
         success: true,
         isPassActive: true,
@@ -683,8 +685,8 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
     const inputVal = (code || email || '').trim().toUpperCase();
     if (!inputVal) return res.status(400).json({ error: 'Debes ingresar tu código de acceso o tu correo' });
 
-    // Super Administrador Códigos Maestros (Sin vencimiento)
-    if (inputVal === '7914' || inputVal === 'ANDRES10' || inputVal === '999999' || inputVal === 'DIEGO1' || inputVal === 'ADMIN7' || inputVal === '602951') {
+    // Super Administrador Códigos Maestros (Sin vencimiento) - SOLO para Diego Zúñiga
+    if (inputVal === '7914' || inputVal === 'ANDRES10' || inputVal === 'DIEGO1') {
       return res.json({
         success: true,
         isPassActive: true,
@@ -741,10 +743,10 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
             success: true,
             isPassActive: true,
             isVip: true,
-            code: p.code || '602951',
+            code: p.code || generatePassCode(),
             email: p.identifier || key,
             expiresAt: p.expiresAt,
-            message: `⭐ ¡Comprobante de Wompi verificado! Tu código de acceso es: ${p.code || '602951'}`
+            message: `⭐ ¡Comprobante de Wompi verificado! Tu código de acceso es: ${p.code}`
           });
         }
       }

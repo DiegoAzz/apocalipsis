@@ -457,6 +457,11 @@ class WompiManager {
         localStorage.setItem('apocalipsis_pass_code', data.code);
         alert(`⭐ ¡PAGO APROBADO EXITOSAMENTE!\n\nTu CÓDIGO DE ACCESO (${data.planName || serverPlanName}) es:\n\n👉  ${data.code}  👈\n\nGuarda este código para ingresar desde cualquier computador, celular o trabajo.`);
       }
+      if (data && data.isAdmin) {
+        localStorage.setItem('apocalipsis_is_admin', 'true');
+      } else {
+        localStorage.removeItem('apocalipsis_is_admin');
+      }
       if (data && data.expiresAt) {
         serverExpiresAt = data.expiresAt;
       }
@@ -482,6 +487,11 @@ class WompiManager {
       const currentExpires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
       const baseTime = currentExpires > now ? currentExpires : now;
       newExpires = baseTime + (hours * 60 * 60 * 1000);
+    }
+
+    // Si es un pase normal con fecha fin (menor a 2 años en el futuro), asegurar que NO es admin vitalicio
+    if (newExpires < now + (730 * 24 * 3600 * 1000)) {
+      localStorage.removeItem('apocalipsis_is_admin');
     }
 
     localStorage.setItem(this.STORAGE_KEY, newExpires.toString());
@@ -518,7 +528,9 @@ class WompiManager {
 
     if (active && remaining) {
       const savedCode = localStorage.getItem('apocalipsis_pass_code') || '';
-      const isAdmin = remaining.includes('VITALICIO') || localStorage.getItem('apocalipsis_is_admin') === 'true';
+      const expires = parseInt(localStorage.getItem(this.STORAGE_KEY) || '0', 10);
+      const isLifetime = expires > (Date.now() + 5 * 365 * 24 * 3600 * 1000);
+      const isAdmin = isLifetime && localStorage.getItem('apocalipsis_is_admin') === 'true';
 
       if (this.badgeTop) {
         this.badgeTop.classList.add('pass-active');
@@ -669,6 +681,11 @@ class WompiManager {
           if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
             localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
+            if (data.isAdmin) {
+              localStorage.setItem('apocalipsis_is_admin', 'true');
+            } else {
+              localStorage.removeItem('apocalipsis_is_admin');
+            }
             this.updateHUD();
             if (this.game && this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
@@ -685,6 +702,11 @@ class WompiManager {
           if (data && data.isPassActive && data.expiresAt) {
             localStorage.setItem(this.STORAGE_KEY, data.expiresAt.toString());
             localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
+            if (data.isAdmin) {
+              localStorage.setItem('apocalipsis_is_admin', 'true');
+            } else {
+              localStorage.removeItem('apocalipsis_is_admin');
+            }
             this.updateHUD();
             if (this.game && this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
