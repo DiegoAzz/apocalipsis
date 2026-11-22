@@ -2513,7 +2513,8 @@ class UIManager {
       const now = Date.now();
 
       if (savedPass && parseInt(savedPass, 10) > now) {
-        if (btnAuthLabel) btnAuthLabel.textContent = savedCode ? `⭐ Código: ${savedCode}` : '⭐ Pase Activo';
+        const isAdmin = savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
+        if (btnAuthLabel) btnAuthLabel.textContent = isAdmin ? '👑 SUPER ADMIN' : (savedCode ? `⭐ Código: ${savedCode}` : '⭐ Pase Activo');
         return true;
       }
       return false;
@@ -2535,13 +2536,14 @@ class UIManager {
         const now = Date.now();
 
         if (savedPass && parseInt(savedPass, 10) > now) {
+          const isAdmin = savedCode === '999999' || savedCode === 'DIEGO1' || localStorage.getItem('apocalipsis_is_admin') === 'true';
           if (stepEmail) stepEmail.style.display = 'none';
           if (stepLogged) stepLogged.style.display = 'block';
           if (loggedEmailDisplay) {
-            loggedEmailDisplay.textContent = savedCode ? `Código: ${savedCode}` : 'Pase Creador 24h Activo';
+            loggedEmailDisplay.textContent = isAdmin ? '👑 Super Administrador' : (savedCode ? `Código: ${savedCode}` : 'Pase VIP Activo');
           }
           if (vipStatusBadge) {
-            vipStatusBadge.textContent = '⭐ Arsenal VIP & Creación Activados';
+            vipStatusBadge.textContent = isAdmin ? '👑 Acceso Vitalicio Total (Sin Vencimiento)' : '⭐ Arsenal VIP & Creación Activados';
             vipStatusBadge.style.color = '#facc15';
           }
         } else {
@@ -2582,19 +2584,25 @@ class UIManager {
           const data = await res.json();
 
           if (data.success && data.isPassActive) {
+            const isAdmin = Boolean(data.isAdmin || code === '999999' || code === 'DIEGO1');
             localStorage.setItem('apocalipsis_pass_code', code);
-            localStorage.setItem('apocalipsis_auth_email', data.email || 'creador@apocalipsis.com');
+            localStorage.setItem('apocalipsis_auth_email', data.email || 'diego.zuniga.plazas@gmail.com');
             localStorage.setItem('apocalipsis_creator_pass', data.expiresAt.toString());
+            if (isAdmin) localStorage.setItem('apocalipsis_is_admin', 'true');
 
-            if (btnAuthLabel) btnAuthLabel.textContent = `⭐ ${code}`;
+            if (btnAuthLabel) btnAuthLabel.textContent = isAdmin ? '👑 SUPER ADMIN' : `⭐ ${code}`;
             if (this.game.localPlayer) {
               this.game.localPlayer.unlockAllWeaponsVip();
             }
             this.refreshWeaponLocks();
             if (this.game.passManager) {
-              this.game.passManager.activatePass(data.expiresAt, data.email);
+              this.game.passManager.activatePass(data.expiresAt, data.email, data.planName || (isAdmin ? 'Super Admin Vitalicio' : ''));
             }
-            this.showToast(`⭐ ¡CÓDIGO ${code} VÁLIDO! Pase 24 Horas y Arsenal activados.`);
+            if (isAdmin) {
+              this.showToast('👑 ¡BIENVENIDO SUPER ADMINISTRADOR! Pase Vitalicio Sin Vencimiento activado.');
+            } else {
+              this.showToast(`⭐ ¡CÓDIGO ${code} VÁLIDO! ${data.planName || 'Pase VIP'} activado.`);
+            }
             if (modal) modal.style.display = 'none';
           } else {
             alert(data.message || '❌ Código no encontrado o expirado.');

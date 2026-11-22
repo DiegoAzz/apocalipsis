@@ -139,9 +139,25 @@ function getCreatorPasses() {
       if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    // Asegurar que las cuentas verificadas de compra siempre tengan pase activo
+    // Super Administrador Vitalicio (Diego Zuniga) - Sin vencimiento
+    const LIFETIME_TS = 253402300799000; // Año 9999
+    passes['diego.zuniga.plazas@gmail.com'] = {
+      identifier: 'diego.zuniga.plazas@gmail.com',
+      isPassActive: true,
+      isAdmin: true,
+      code: '999999',
+      altCode: '602951',
+      pin: '1234',
+      activatedAt: new Date().toISOString(),
+      expiresAt: LIFETIME_TS,
+      durationHours: 999999,
+      planName: 'Super Administrador Vitalicio',
+      priceUSD: 0,
+      paymentMethod: 'super_admin_master',
+      reference: 'SUPER_ADMIN_DIEGO_LIFETIME'
+    };
+
     const defaultVips = [
-      { email: 'diego.zuniga.plazas@gmail.com', code: '602951' },
       { email: 'solucionesaox@gmail.com', code: '814208' }
     ];
     for (const v of defaultVips) {
@@ -193,6 +209,8 @@ function saveCreatorPass(identifier, passData) {
     if (!cleanId) return null;
     const passes = getCreatorPasses();
     const durationHours = passData.durationHours || 24;
+    const priceUSD = passData.priceUSD || (durationHours >= 720 ? 10.00 : durationHours >= 360 ? 5.00 : durationHours >= 168 ? 3.00 : 1.00);
+    const planName = passData.planName || (durationHours >= 720 ? '1 Mes VIP (30 Días)' : durationHours >= 360 ? '15 Días' : durationHours >= 168 ? '1 Semana (7 Días)' : '1 Día (24 Horas)');
     const now = Date.now();
     const currentPass = passes[cleanId];
     const baseTime = (currentPass && currentPass.expiresAt > now) ? currentPass.expiresAt : now;
@@ -206,13 +224,14 @@ function saveCreatorPass(identifier, passData) {
       activatedAt: new Date(now).toISOString(),
       expiresAt: expiresAt,
       durationHours: durationHours,
-      priceUSD: 1.00,
+      priceUSD: priceUSD,
+      planName: planName,
       pin: (passData.pin || (currentPass && currentPass.pin) || '1234').toString().trim(),
       paymentMethod: passData.paymentMethod || 'direct',
       reference: passData.reference || `PASS_${now}`
     };
     fs.writeFileSync(PASS_DB_PATH, JSON.stringify(passes, null, 2));
-    console.log(`[CREATOR PASS DB]: Pase de 24 Horas ACTIVADO para ${cleanId} con CÓDIGO [${passCode}] hasta ${new Date(expiresAt).toISOString()}`);
+    console.log(`[CREATOR PASS DB]: Pase [${planName}] ACTIVADO para ${cleanId} con CÓDIGO [${passCode}] hasta ${new Date(expiresAt).toISOString()}`);
     return passes[cleanId];
   } catch (err) {
     console.error('[CREATOR PASS SAVE ERROR]:', err);
@@ -220,14 +239,17 @@ function saveCreatorPass(identifier, passData) {
   }
 }
 
-// 1. Activar Pase Creador de 24 Horas ($1 USD)
+// 1. Activar Pase Creador Multidías / Multisemana
 app.post('/api/pass/activate', (req, res) => {
   try {
-    const { identifier, email, paymentMethod, reference } = req.body || {};
+    const { identifier, email, paymentMethod, reference, durationHours, priceUSD, planName } = req.body || {};
     const targetId = (email || identifier || 'user_guest').trim().toLowerCase();
+    const effHours = parseInt(durationHours, 10) || 24;
     const pass = saveCreatorPass(targetId, {
-      durationHours: 24,
-      paymentMethod: paymentMethod || 'checkout_1usd',
+      durationHours: effHours,
+      priceUSD: priceUSD,
+      planName: planName,
+      paymentMethod: paymentMethod || 'checkout',
       reference: reference || `REF_${Date.now()}`
     });
 
@@ -236,8 +258,9 @@ app.post('/api/pass/activate', (req, res) => {
         success: true,
         isPassActive: true,
         expiresAt: pass.expiresAt,
+        planName: pass.planName,
         remainingMs: Math.max(0, pass.expiresAt - Date.now()),
-        message: '¡Pase Creador de 24 Horas Activado! Acceso total a imágenes, URLs y arsenal.'
+        message: `¡${pass.planName} Activado! Acceso total a imágenes, URLs y arsenal.`
       });
     } else {
       res.status(500).json({ error: 'No se pudo activar el pase' });
@@ -305,12 +328,33 @@ app.post('/api/wompi-webhook', async (req, res) => {
       const customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
 
       if (status === 'APPROVED' && customerEmail) {
+        const cents = trans.amount_in_cents || 400000;
+        let effHours = 24;
+        let effPrice = 1.00;
+        let effPlanName = '1 Día (24 Horas)';
+
+        if (cents >= 3800000) {
+          effHours = 720;
+          effPrice = 10.00;
+          effPlanName = '1 Mes VIP (30 Días)';
+        } else if (cents >= 1800000) {
+          effHours = 360;
+          effPrice = 5.00;
+          effPlanName = '15 Días';
+        } else if (cents >= 1000000) {
+          effHours = 168;
+          effPrice = 3.00;
+          effPlanName = '1 Semana (7 Días)';
+        }
+
         saveCreatorPass(customerEmail, {
-          durationHours: 24,
+          durationHours: effHours,
+          priceUSD: effPrice,
+          planName: effPlanName,
           paymentMethod: 'wompi_checkout',
           reference: trans.reference || `WOMPI_${Date.now()}`
         });
-        console.log(`[WOMPI WEBHOOK]: ¡Pase Creador 24h APROBADO para ${customerEmail}!`);
+        console.log(`[WOMPI WEBHOOK]: ¡${effPlanName} APROBADO para ${customerEmail}!`);
       }
     }
     res.status(200).json({ received: true });
@@ -323,7 +367,7 @@ app.post('/api/wompi-webhook', async (req, res) => {
 // 4. Verificación de Transacción Wompi desde el Frontend
 app.post('/api/wompi/verify-transaction', async (req, res) => {
   try {
-    const { transactionId, email, pin } = req.body;
+    const { transactionId, email, pin, durationHours, priceUSD, planName } = req.body;
     if (!transactionId || !email) {
       return res.status(400).json({ error: 'Faltan parámetros de transacción o correo' });
     }
@@ -353,8 +397,27 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
     }
 
     if (isApproved) {
+      let effHours = parseInt(durationHours, 10);
+      let effPrice = priceUSD ? parseFloat(priceUSD) : 1.00;
+      let effPlanName = planName;
+
+      // Si no viene durationHours explícito, deducir por el monto en centavos de Wompi
+      if (!effHours || isNaN(effHours)) {
+        const cents = transData.amount_in_cents || 400000;
+        if (cents >= 3800000) { effHours = 720; effPrice = 10.00; effPlanName = '1 Mes VIP (30 Días)'; }
+        else if (cents >= 1800000) { effHours = 360; effPrice = 5.00; effPlanName = '15 Días'; }
+        else if (cents >= 1000000) { effHours = 168; effPrice = 3.00; effPlanName = '1 Semana (7 Días)'; }
+        else { effHours = 24; effPrice = 1.00; effPlanName = '1 Día (24 Horas)'; }
+      }
+
+      if (!effPlanName) {
+        effPlanName = effHours >= 720 ? '1 Mes VIP (30 Días)' : effHours >= 360 ? '15 Días' : effHours >= 168 ? '1 Semana (7 Días)' : '1 Día (24 Horas)';
+      }
+
       const pass = saveCreatorPass(cleanEmail, {
-        durationHours: 24,
+        durationHours: effHours,
+        priceUSD: effPrice,
+        planName: effPlanName,
         paymentMethod: 'wompi_widget',
         pin: cleanPin,
         reference: transData.reference || `WOMPI_${Date.now()}`
@@ -366,8 +429,11 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
         isVip: true,
         email: cleanEmail,
         code: pass ? pass.code : '602951',
-        expiresAt: pass ? pass.expiresAt : Date.now() + 24 * 3600 * 1000,
-        message: '¡Transacción aprobada con Wompi! Pase Creador de 24 Horas Activado.'
+        expiresAt: pass ? pass.expiresAt : Date.now() + (effHours * 3600 * 1000),
+        planName: effPlanName,
+        durationHours: effHours,
+        priceUSD: effPrice,
+        message: `¡Transacción aprobada con Wompi! ${effPlanName} Activado.`
       });
     }
 
@@ -393,6 +459,22 @@ app.post('/api/pass/redeem-code', (req, res) => {
     let foundPass = null;
     let foundEmail = null;
 
+    // Super Administrador Códigos Maestros (Sin vencimiento)
+    if (cleanCode === '999999' || cleanCode === 'DIEGO1' || cleanCode === 'ADMIN7' || cleanCode === '602951') {
+      return res.json({
+        success: true,
+        isPassActive: true,
+        isVip: true,
+        isAdmin: true,
+        code: '999999',
+        email: 'diego.zuniga.plazas@gmail.com',
+        planName: 'Super Administrador Vitalicio',
+        expiresAt: 253402300799000,
+        remainingMs: 253402300799000 - Date.now(),
+        message: '👑 ¡BIENVENIDO SUPER ADMINISTRADOR! Acceso Vitalicio Permanente y Arsenal Total desbloqueados.'
+      });
+    }
+
     // Buscar en pases registrados
     for (const [key, p] of Object.entries(passes)) {
       if (p && p.code && p.code.toString().trim().toUpperCase() === cleanCode) {
@@ -402,10 +484,9 @@ app.post('/api/pass/redeem-code', (req, res) => {
       }
     }
 
-    // Códigos directos para Diego Zuniga
-    if (!foundPass && (cleanCode === '602951' || cleanCode === '814208' || cleanCode === '123456')) {
-      foundPass = passes['diego.zuniga.plazas@gmail.com'];
-      foundEmail = 'diego.zuniga.plazas@gmail.com';
+    if (!foundPass && cleanCode === '814208') {
+      foundPass = passes['solucionesaox@gmail.com'];
+      foundEmail = 'solucionesaox@gmail.com';
     }
 
     if (!foundPass || foundPass.expiresAt <= Date.now()) {
@@ -456,16 +537,30 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
           }
         }
       }
-      if (inputVal === '602951' || inputVal === '814208') {
-        const dPass = passes['diego.zuniga.plazas@gmail.com'];
+      if (inputVal === '999999' || inputVal === 'DIEGO1' || inputVal === 'ADMIN7' || inputVal === '602951') {
+        return res.json({
+          success: true,
+          isPassActive: true,
+          isVip: true,
+          isAdmin: true,
+          code: '999999',
+          email: 'diego.zuniga.plazas@gmail.com',
+          planName: 'Super Administrador Vitalicio',
+          expiresAt: 253402300799000,
+          remainingMs: 253402300799000 - Date.now(),
+          message: `👑 ¡Pase Super Administrador Vitalicio Sin Vencimiento activado para Diego Zuniga!`
+        });
+      }
+      if (inputVal === '814208') {
+        const dPass = passes['solucionesaox@gmail.com'];
         return res.json({
           success: true,
           isPassActive: true,
           isVip: true,
           code: inputVal,
-          email: 'diego.zuniga.plazas@gmail.com',
+          email: 'solucionesaox@gmail.com',
           expiresAt: dPass ? dPass.expiresAt : Date.now() + 24 * 3600 * 1000,
-          message: `¡Pase Creador activado para Diego Zuniga!`
+          message: `¡Pase Creador activado!`
         });
       }
     }

@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#090d16">
   <title>Destroy Any Website - Destruye cualquier página web</title>
-  <link rel="stylesheet" href="style.css?v=4.8">
+  <link rel="stylesheet" href="style.css?v=5.5">
   <link rel="preload" as="image" href="/assets/tiktok_real.png">
   <!-- Wompi Checkout Widget Oficial -->
   <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
@@ -100,8 +100,8 @@
     <button class="pill-btn pill-auth" id="btn-open-auth-modal" title="Ingresar tu Código de Pase de 6 dígitos">
       <span>🔑 <span id="auth-btn-label">Código de Pase</span></span>
     </button>
-    <button class="pill-btn pill-pass" id="btn-creator-pass-top" title="Obtener Pase Creador 24 Horas por $1 USD">
-      <span><span id="creator-pass-badge-label">⭐ Comprar Pase ($1 USD)</span></span>
+    <button class="pill-btn pill-pass" id="btn-creator-pass-top" title="Obtener Pase VIP Creador (Desde $1 USD)">
+      <span><span id="creator-pass-badge-label">⭐ Planes VIP (Desde $1)</span></span>
     </button>
   </div>
   <!-- Barra Superior de Navegación & Selector de URL -->
@@ -664,7 +664,7 @@
   <div id="wompi-modal" class="custom-modal">
     <div class="modal-card pass-card">
       <div class="modal-head">
-        <h2 id="wompi-modal-title">⭐ PASE CREADOR 24 HORAS ($1 USD)</h2>
+        <h2 id="wompi-modal-title">⭐ PLANES VIP & ARSENAL COMPLETO</h2>
         <button class="close-btn" id="btn-close-wompi">✕</button>
       </div>
       <div class="modal-body">
@@ -672,14 +672,14 @@
         <div id="wompi-active-view" style="display:none; text-align:center;">
           <div style="font-size:36px; margin-bottom:4px;">⭐</div>
           <h3 style="color:#facc15; margin:0 0 10px 0; font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">
-            ¡Pase de 24 Horas Activo!
+            ¡Pase VIP Activo!
           </h3>
 
           <div style="background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 14px; padding: 18px 12px; margin: 12px 0; box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);">
             <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;">
               ⏱️ TIEMPO RESTANTE
             </div>
-            <div id="wompi-active-countdown" style="font-family: monospace; font-size: 38px; font-weight: 900; color: #38bdf8; text-shadow: 0 0 18px rgba(56, 189, 248, 0.8); letter-spacing: 3px;">
+            <div id="wompi-active-countdown" style="font-family: monospace; font-size: 38px; font-weight: 900; color: #38bdf8; text-shadow: 0 0 18px rgba(56, 189, 248, 0.8); letter-spacing: 2px;">
               24:00:00
             </div>
             <div style="font-size: 11px; color: #cbd5e1; margin-top: 6px;">
@@ -731,8 +731,56 @@
           </div>
 
           <p class="desc" style="font-size:13px; color:#cbd5e1; margin:8px 0; text-align:center;">
-            TikTok es <strong>100% Gratis</strong>. Activa tu pase por 24 horas para desbloquear fotos, todas las webs y el arsenal completo:
+            TikTok es <strong>100% Gratis</strong>. Elige tu pase VIP para desbloquear fotos, todas las webs del mundo y el arsenal completo:
           </p>
+
+          <!-- Selector Interactivo de los 4 Planes -->
+          <div style="margin: 14px 0 8px 0;">
+            <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 1px; text-align: center; margin-bottom: 8px;">
+              ⚡ SELECCIONA TU PLAN:
+            </div>
+            <div class="wompi-plans-grid" id="wompi-plans-container">
+              <!-- Plan 1: 1 Día ($1 USD) -->
+              <div class="wompi-plan-card selected" data-plan="day" data-usd="1" data-cents="400000" data-hours="24" data-name="1 Día (24 Horas)">
+                <div class="plan-check-icon">✓</div>
+                <div class="plan-badge">24 Horas</div>
+                <div class="plan-name">1 DÍA</div>
+                <div class="plan-price">$ 1 <span style="font-size:12px; font-weight:700;">USD</span></div>
+                <div class="plan-cop">~$4.000 COP</div>
+                <div class="plan-rate">$1.00 / día</div>
+              </div>
+
+              <!-- Plan 2: 1 Semana ($3 USD) -->
+              <div class="wompi-plan-card" data-plan="week" data-usd="3" data-cents="1200000" data-hours="168" data-name="1 Semana (7 Días)">
+                <div class="plan-check-icon">✓</div>
+                <div class="plan-badge">🔥 Ahorra 57%</div>
+                <div class="plan-name">1 SEMANA</div>
+                <div class="plan-price">$ 3 <span style="font-size:12px; font-weight:700;">USD</span></div>
+                <div class="plan-cop">~$12.000 COP</div>
+                <div class="plan-rate">$0.43 / día</div>
+              </div>
+
+              <!-- Plan 3: 15 Días ($5 USD) -->
+              <div class="wompi-plan-card" data-plan="biweek" data-usd="5" data-cents="2000000" data-hours="360" data-name="15 Días">
+                <div class="plan-check-icon">✓</div>
+                <div class="plan-badge">⚡ Ahorra 66%</div>
+                <div class="plan-name">15 DÍAS</div>
+                <div class="plan-price">$ 5 <span style="font-size:12px; font-weight:700;">USD</span></div>
+                <div class="plan-cop">~$20.000 COP</div>
+                <div class="plan-rate">$0.33 / día</div>
+              </div>
+
+              <!-- Plan 4: 1 Mes ($10 USD) -->
+              <div class="wompi-plan-card featured" data-plan="month" data-usd="10" data-cents="4000000" data-hours="720" data-name="1 Mes VIP (30 Días)">
+                <div class="plan-check-icon">✓</div>
+                <div class="plan-badge">⭐ MEJOR VALOR</div>
+                <div class="plan-name">1 MES VIP</div>
+                <div class="plan-price">$ 10 <span style="font-size:12px; font-weight:700;">USD</span></div>
+                <div class="plan-cop">~$40.000 COP</div>
+                <div class="plan-rate">$0.33 / día • 67% OFF</div>
+              </div>
+            </div>
+          </div>
 
           <div class="pass-perks-list">
             <div class="perk-item"><span>☢️</span> <strong>Todas las 11 Armas Desbloqueadas</strong> (Tsar Bomba, Lanzallamas, Cohetes...)</div>
@@ -746,7 +794,7 @@
           <!-- Entrada de Correo y PIN para Vincular el Pase -->
           <div style="margin: 12px 0;">
             <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:4px; text-transform:uppercase;">
-              📧 Tu Correo Electrónico (Para vincular tu Pase de 24 Horas):
+              📧 Tu Correo Electrónico (Para vincular tu Pase multidispositivo):
             </label>
             <input type="email" id="wompi-user-email" class="auth-input" placeholder="tu@correo.com" style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:10px; color:#ffffff; font-size:14px;">
 
@@ -760,13 +808,13 @@
             </button>
           </div>
 
-          <div class="pass-price-box">
-            <div class="price-val">$ 1.00 USD</div>
-            <div class="price-sub">Pase Creador de 24 Horas • Acceso Total e Ilimitado</div>
+          <div class="pass-price-box" id="wompi-selected-summary" style="margin: 10px 0 12px 0; padding: 12px 14px;">
+            <div class="price-val" id="wompi-summary-price" style="font-size: 26px;">$ 1.00 USD</div>
+            <div class="price-sub" id="wompi-summary-desc">1 Día (24 Horas) • Acceso Total e Ilimitado</div>
           </div>
 
           <button id="btn-pay-wompi-trigger" class="btn btn-pass-main">
-            <span>💳 PAGAR $1 USD CON WOMPI (NEQUI / PSE / BANCOLOMBIA / TARJETA)</span>
+            <span id="btn-pay-wompi-label">💳 PAGAR $1 USD CON WOMPI (1 DÍA / 24 HORAS)</span>
           </button>
 
           <div class="pass-url-rules-box">
@@ -780,8 +828,8 @@
 
           <div class="pass-test-hint" style="margin-top: 15px; padding: 12px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 10px; text-align: center;">
             <div style="font-size: 12px; color: #38bdf8; font-weight: bold; margin-bottom: 6px;">🛠️ MODO DE PRUEBAS / SANDBOX (GRATIS PARA TI)</div>
-            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">Haz clic abajo para activar el Pase de 24 Horas al instante en tu navegador sin pagar nada:</p>
-            <button id="btn-wompi-test-unlock" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; box-shadow: 0 0 15px rgba(2, 132, 199, 0.5);">⚡ ACTIVAR MODO PRUEBA 24H AHORA (SIN COSTO)</button>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">Haz clic abajo para activar el plan seleccionado al instante en tu navegador sin pagar nada:</p>
+            <button id="btn-wompi-test-unlock" class="btn btn-sm" style="background: #0284c7; color: #fff; font-weight: 800; padding: 10px 18px; border-radius: 8px; cursor: pointer; border: none; box-shadow: 0 0 15px rgba(2, 132, 199, 0.5);">⚡ ACTIVAR MODO PRUEBA (1 DÍA / 24 HORAS)</button>
           </div>
 
           <div class="pass-compliance-links" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; font-size: 11px;">
@@ -800,16 +848,16 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=5.4"></script>
-  <script src="js/levelGenerator.js?v=5.4"></script>
-  <script src="js/physics.js?v=5.4"></script>
-  <script src="js/player.js?v=5.4"></script>
-  <script src="js/bot.js?v=5.4"></script>
-  <script src="js/multiplayer.js?v=5.4"></script>
-  <script src="js/idleManager.js?v=5.4"></script>
-  <script src="js/fix-webm-duration.js?v=5.4"></script>
-  <script src="js/videoRecorder.js?v=5.4"></script>
-  <script src="js/wompiManager.js?v=5.4"></script>
-  <script src="js/game.js?v=5.4"></script>
+  <script src="js/audio.js?v=5.5"></script>
+  <script src="js/levelGenerator.js?v=5.5"></script>
+  <script src="js/physics.js?v=5.5"></script>
+  <script src="js/player.js?v=5.5"></script>
+  <script src="js/bot.js?v=5.5"></script>
+  <script src="js/multiplayer.js?v=5.5"></script>
+  <script src="js/idleManager.js?v=5.5"></script>
+  <script src="js/fix-webm-duration.js?v=5.5"></script>
+  <script src="js/videoRecorder.js?v=5.5"></script>
+  <script src="js/wompiManager.js?v=5.5"></script>
+  <script src="js/game.js?v=5.5"></script>
 </body>
 </html>

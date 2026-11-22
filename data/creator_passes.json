@@ -1,14 +1,18 @@
 {
   "diego.zuniga.plazas@gmail.com": {
     "identifier": "diego.zuniga.plazas@gmail.com",
-    "code": "602951",
     "isPassActive": true,
-    "activatedAt": "2026-11-22T09:41:00.000Z",
-    "expiresAt": 1795452384525,
-    "durationHours": 24,
-    "priceUSD": 1.0,
-    "paymentMethod": "wompi_checkout",
-    "reference": "1570221-1795358369-14441"
+    "isAdmin": true,
+    "code": "999999",
+    "altCode": "602951",
+    "pin": "1234",
+    "activatedAt": "2026-11-22T19:57:20.650Z",
+    "expiresAt": 253402300799000,
+    "durationHours": 999999,
+    "planName": "Super Administrador Vitalicio",
+    "priceUSD": 0,
+    "paymentMethod": "super_admin_master",
+    "reference": "SUPER_ADMIN_DIEGO_LIFETIME"
   },
   "solucionesaox@gmail.com": {
     "identifier": "solucionesaox@gmail.com",
@@ -17,7 +21,7 @@
     "activatedAt": "2026-11-22T09:41:00.000Z",
     "expiresAt": 1795452384525,
     "durationHours": 24,
-    "priceUSD": 1.0,
+    "priceUSD": 1,
     "paymentMethod": "wompi_checkout",
     "reference": "1570221-1795358369-14441"
   }
