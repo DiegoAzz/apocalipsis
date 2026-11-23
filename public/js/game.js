@@ -842,17 +842,20 @@ class Game {
       }
     }, { capture: true, passive: true });
 
-    window.addEventListener('mousemove', (e) => {
+    const updateMousePos = (e) => {
       this.input.screenMouseX = e.clientX;
       this.input.screenMouseY = e.clientY;
+      this.input.mouseX = (e.clientX - window.innerWidth / 2) / this.camera.zoom + this.camera.x;
+      this.input.mouseY = (e.clientY - window.innerHeight / 2) / this.camera.zoom + this.camera.y;
+    };
+
+    window.addEventListener('mousemove', (e) => {
+      updateMousePos(e);
 
       if (isTargetUI(e.target)) {
         this.input.isMouseDown = false;
         return;
       }
-
-      this.input.mouseX = (e.clientX - this.canvas.width / 2) / this.camera.zoom + this.camera.x;
-      this.input.mouseY = (e.clientY - this.canvas.height / 2) / this.camera.zoom + this.camera.y;
 
       // Middle mouse button / Wheel drag camera pan (Hand grab tool)
       if (this.camera.isPanning) {
@@ -868,6 +871,7 @@ class Game {
 
     window.addEventListener('mousedown', (e) => {
       window.soundManager.ensureContext();
+      updateMousePos(e);
 
       // Si el clic es sobre un botón, menú, barra de armas o UI: NO DISPARAR
       if (isTargetUI(e.target)) {

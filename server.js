@@ -204,6 +204,58 @@ function generatePassCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+async function sendPassConfirmationEmail(toEmail, code, pin, planName, expiresAt) {
+  try {
+    if (!toEmail || !toEmail.includes('@')) return false;
+    const transporter = getEmailTransporter();
+    if (!transporter) return false;
+    const sender = process.env.SMTP_FROM || `"Apocalipsis Game" <${process.env.SMTP_USER || process.env.GMAIL_USER || 'no-reply@appzplay.online'}>`;
+    const expDate = new Date(expiresAt).toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+    const directLink = `https://apocalipsis.appzplay.online/?code=${encodeURIComponent(code)}`;
+
+    await transporter.sendMail({
+      from: sender,
+      to: toEmail,
+      subject: `🎉 ¡Tu Pase de Apocalipsis (${planName}) está Activo! Código: ${code}`,
+      html: `
+        <div style="background:#0f172a; color:#f8fafc; padding:30px; border-radius:12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:540px; margin:auto; border:1px solid #334155;">
+          <h1 style="color:#38bdf8; margin-top:0; font-size:26px; text-align:center;">⚡ APOCALIPSIS</h1>
+          <h3 style="color:#22c55e; text-align:center; margin-bottom:20px;">⭐ ¡Pago Aprobado con Éxito!</h3>
+          <p style="font-size:15px; color:#cbd5e1; line-height:1.6;">
+            Gracias por tu compra. Tu <strong>${planName}</strong> ya está habilitado para destruir cualquier página web, subir fotos ilimitadas y usar el arsenal legendario (Tsar Bomba, Cohetes, Cañón de Riel).
+          </p>
+
+          <div style="background:#1e293b; border:2px dashed #f59e0b; padding:20px; text-align:center; border-radius:12px; margin:24px 0;">
+            <div style="font-size:12px; color:#94a3b8; font-weight:bold; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">TU CÓDIGO DE ACCESO MULTIDISPOSITIVO:</div>
+            <span style="font-size:38px; font-weight:900; letter-spacing:8px; color:#facc15; font-family:monospace;">${code}</span>
+            ${pin ? `<div style="font-size:13px; color:#38bdf8; margin-top:10px;">PIN de seguridad: <strong>${pin}</strong></div>` : ''}
+            <div style="font-size:12px; color:#94a3b8; margin-top:8px;">Vigente hasta: <strong>${expDate}</strong></div>
+          </div>
+
+          <div style="text-align:center; margin:25px 0;">
+            <a href="${directLink}" style="display:inline-block; background:linear-gradient(135deg, #0284c7, #0369a1); color:#ffffff; font-weight:800; font-size:16px; padding:14px 28px; border-radius:10px; text-decoration:none; box-shadow:0 0 20px rgba(2,132,199,0.5);">
+              🚀 JUGAR AHORA EN 1 CLIC
+            </a>
+          </div>
+
+          <p style="font-size:12px; color:#94a3b8; text-align:center;">
+            Puedes usar tu código (<strong>${code}</strong>) o tu PIN (<strong>${pin || ''}</strong>) o tu correo para entrar desde tu celular, computador o cualquier navegador sin volver a pagar.
+          </p>
+          <hr style="border:none; border-top:1px solid #334155; margin:20px 0;">
+          <p style="font-size:11px; color:#64748b; text-align:center;">
+            Apocalipsis Web Obliteration • <a href="https://apocalipsis.appzplay.online" style="color:#38bdf8; text-decoration:none;">apocalipsis.appzplay.online</a>
+          </p>
+        </div>
+      `
+    });
+    console.log(`[PASS EMAIL SENT]: Correo de confirmación enviado a ${toEmail} con código [${code}]`);
+    return true;
+  } catch (err) {
+    console.error('[PASS EMAIL ERROR]: No se pudo enviar correo a', toEmail, err.message);
+    return false;
+  }
+}
+
 function saveCreatorPass(identifier, passData) {
   try {
     const cleanId = (identifier || '').trim().toLowerCase();
@@ -233,6 +285,9 @@ function saveCreatorPass(identifier, passData) {
     };
     fs.writeFileSync(PASS_DB_PATH, JSON.stringify(passes, null, 2));
     console.log(`[CREATOR PASS DB]: Pase [${planName}] ACTIVADO para ${cleanId} con CÓDIGO [${passCode}] hasta ${new Date(expiresAt).toISOString()}`);
+    if (cleanId.includes('@')) {
+      sendPassConfirmationEmail(cleanId, passCode, passes[cleanId].pin, planName, expiresAt).catch(() => {});
+    }
     return passes[cleanId];
   } catch (err) {
     console.error('[CREATOR PASS SAVE ERROR]:', err);
@@ -454,8 +509,8 @@ app.get('/api/wompi/signature', (req, res) => {
   }
 });
 
-// 3. Webhook de Wompi (Aprobación Asíncrona)
-app.post('/api/wompi-webhook', async (req, res) => {
+// 3. Webhook de Wompi (Aprobación Asíncrona con soporte dual de rutas)
+const handleWompiWebhook = async (req, res) => {
   try {
     const event = req.body;
     console.log('[WOMPI WEBHOOK EVENT]:', event ? event.event : 'No event');
@@ -463,7 +518,13 @@ app.post('/api/wompi-webhook', async (req, res) => {
     if (event && event.data && event.data.transaction) {
       const trans = event.data.transaction;
       const status = trans.status;
-      const customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
+      let customerEmail = trans.customer_email || (trans.customer_data && trans.customer_data.email);
+
+      // Si el email no viene en customer_email, intentar extraer de la referencia si la contiene
+      if (!customerEmail && trans.reference && trans.reference.includes('@')) {
+        const parts = trans.reference.split('_');
+        customerEmail = parts.find(p => p.includes('@'));
+      }
 
       if (status === 'APPROVED' && customerEmail) {
         const cents = trans.amount_in_cents || 346200;
@@ -503,17 +564,19 @@ app.post('/api/wompi-webhook', async (req, res) => {
     console.error('[WOMPI WEBHOOK ERROR]:', err.message);
     res.status(500).json({ error: err.message });
   }
-});
+};
+app.post('/api/wompi-webhook', handleWompiWebhook);
+app.post('/api/wompi/webhook', handleWompiWebhook);
 
 // 4. Verificación de Transacción Wompi desde el Frontend
 app.post('/api/wompi/verify-transaction', async (req, res) => {
   try {
-    const { transactionId, email, pin, durationHours, priceUSD, planName } = req.body;
-    if (!transactionId || !email) {
-      return res.status(400).json({ error: 'Faltan parámetros de transacción o correo' });
+    const { transactionId, email, pin, durationHours, priceUSD, planName } = req.body || {};
+    if (!transactionId) {
+      return res.status(400).json({ error: 'Falta parámetro transactionId' });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    let cleanEmail = (email || '').trim().toLowerCase();
     const cleanPin = (pin || '1234').toString().trim();
     let isApproved = false;
     let transData = {};
@@ -521,6 +584,7 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
     // Modo prueba o consulta en vivo a API Wompi
     if (transactionId.startsWith('DEV_') || transactionId.startsWith('TEST_') || transactionId.startsWith('DIRECT_')) {
       isApproved = true;
+      if (!cleanEmail) cleanEmail = 'creador@apocalipsis.online';
     } else {
       try {
         const wompiApiUrl = `https://production.wompi.co/v1/transactions/${transactionId}`;
@@ -531,10 +595,17 @@ app.post('/api/wompi/verify-transaction', async (req, res) => {
           if (transData.status === 'APPROVED') {
             isApproved = true;
           }
+          if (!cleanEmail) {
+            cleanEmail = (transData.customer_email || (transData.customer_data && transData.customer_data.email) || '').trim().toLowerCase();
+          }
         }
       } catch (e) {
         console.warn('[WOMPI API CHECK]: Error consultando API Wompi:', e.message);
       }
+    }
+
+    if (!cleanEmail) {
+      cleanEmail = 'cliente_wompi@apocalipsis.online';
     }
 
     if (isApproved) {
@@ -651,6 +722,34 @@ app.post('/api/pass/redeem-code', (req, res) => {
       }
     }
 
+    // Si el usuario ingresó su correo electrónico
+    if (!foundPass && cleanCode.includes('@')) {
+      const lower = cleanCode.toLowerCase();
+      if (passes[lower]) {
+        foundPass = passes[lower];
+        foundEmail = lower;
+      } else {
+        for (const [key, p] of Object.entries(passes)) {
+          if (p && p.identifier && p.identifier.toLowerCase() === lower) {
+            foundPass = p;
+            foundEmail = key;
+            break;
+          }
+        }
+      }
+    }
+
+    // Si el usuario ingresó la referencia de Wompi
+    if (!foundPass) {
+      for (const [key, p] of Object.entries(passes)) {
+        if (p && p.reference && (p.reference.toUpperCase() === cleanCode || cleanCode.includes(p.reference.toUpperCase()) || p.reference.toUpperCase().includes(cleanCode))) {
+          foundPass = p;
+          foundEmail = key;
+          break;
+        }
+      }
+    }
+
     if (!foundPass && cleanCode === '814208') {
       foundPass = passes['solucionesaox@gmail.com'];
       foundEmail = 'solucionesaox@gmail.com';
@@ -659,7 +758,7 @@ app.post('/api/pass/redeem-code', (req, res) => {
     if (!foundPass || foundPass.expiresAt <= Date.now()) {
       return res.status(404).json({
         success: false,
-        message: '❌ Código de acceso inválido o expirado. Verifica que sea el código correcto.'
+        message: '❌ Código de acceso, PIN o correo no encontrado o expirado. Verifica que tus datos coincidan con los ingresados al pagar.'
       });
     }
 
@@ -668,11 +767,12 @@ app.post('/api/pass/redeem-code', (req, res) => {
       isPassActive: true,
       isVip: true,
       isAdmin: Boolean(foundPass.isAdmin),
-      code: cleanCode,
+      code: foundPass.code || cleanCode,
       email: foundPass.identifier || foundEmail,
       expiresAt: foundPass.expiresAt,
       remainingMs: Math.max(0, foundPass.expiresAt - Date.now()),
-      message: '⭐ ¡Código de Pase verificado con éxito! Acceso VIP activado en este navegador.'
+      planName: foundPass.planName || 'Pase VIP',
+      message: '⭐ ¡Pase verificado con éxito! Acceso VIP activado en este navegador.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

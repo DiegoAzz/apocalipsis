@@ -316,6 +316,12 @@ class WompiManager {
         const savedCode = localStorage.getItem('apocalipsis_pass_code') || '';
         codeEl.textContent = savedCode || '------';
       }
+
+      const pinEl = document.getElementById('wompi-active-pass-pin');
+      if (pinEl) {
+        const savedPin = localStorage.getItem('apocalipsis_user_pin') || '';
+        pinEl.textContent = savedPin ? `PIN Secreto: ${savedPin}` : '';
+      }
     } else {
       // SI NO TIENE PASE: Mostrar pasarela de compra de Planes VIP con Wompi
       if (activeView) activeView.style.display = 'none';
@@ -464,7 +470,9 @@ class WompiManager {
       console.log('[BACKEND WOMPI VERIFIED]:', data);
       if (data && data.code) {
         localStorage.setItem('apocalipsis_pass_code', data.code);
-        alert(`⭐ ¡PAGO APROBADO EXITOSAMENTE!\n\nTu CÓDIGO DE ACCESO (${data.planName || serverPlanName}) es:\n\n👉  ${data.code}  👈\n\nGuarda este código para ingresar desde cualquier computador, celular o trabajo.`);
+      }
+      if (pin) {
+        localStorage.setItem('apocalipsis_user_pin', pin);
       }
       if (data && data.isAdmin) {
         localStorage.setItem('apocalipsis_is_admin', 'true');
@@ -481,6 +489,10 @@ class WompiManager {
       console.warn('Backend verification call failed, proceeding locally:', err);
     }
     this.activatePass(serverExpiresAt || hours, email, serverPlanName);
+    this.openModal();
+    if (this.game && this.game.ui) {
+      this.game.ui.showToast('⭐ ¡PAGO APROBADO! Tu pase y arsenal están activos.');
+    }
   }
 
   activatePass(expiresAtOrHours = 24, email = '', planName = '') {
@@ -676,12 +688,75 @@ class WompiManager {
   async checkSavedPass() {
     this.updateHUD();
 
-    // 1. Detectar retorno automático de Wompi tras pago exitoso
+    // 1. Detectar retorno automático de Wompi tras pago exitoso (?id= o ?payment=success)
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const transactionId = urlParams.get('id') || urlParams.get('transaction_id');
+      const directCode = urlParams.get('code') || urlParams.get('pin');
       const isReturn = urlParams.get('payment') === 'success';
       const returnedEmail = urlParams.get('email');
 
+      // A) Si Wompi redirige con el id de transacción
+      if (transactionId) {
+        try {
+          if (this.game && this.game.ui) {
+            this.game.ui.showToast('⏳ Verificando tu pago en Wompi...');
+          }
+          const savedEmail = localStorage.getItem(this.STORAGE_EMAIL) || returnedEmail || '';
+          const savedPin = localStorage.getItem('apocalipsis_user_pin') || '';
+
+          const res = await fetch('/api/wompi/verify-transaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              transactionId: transactionId,
+              email: savedEmail,
+              pin: savedPin
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success) {
+              if (data.code) localStorage.setItem('apocalipsis_pass_code', data.code);
+              this.activatePass(data.expiresAt, data.email, data.planName);
+              if (this.game && this.game.ui) {
+                this.game.ui.showToast(`⭐ ¡PAGO APROBADO CON ÉXITO! Tu código es: ${data.code}`);
+              }
+              this.openModal();
+              window.history.replaceState({}, document.title, window.location.pathname);
+              return;
+            }
+          }
+        } catch (verErr) {
+          console.warn('Error verificando retorno Wompi:', verErr);
+        }
+      }
+
+      // B) Si viene con código o PIN directo desde el enlace del correo (?code=... o ?pin=...)
+      if (directCode) {
+        try {
+          const res = await fetch('/api/pass/redeem-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: directCode })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && data.isPassActive) {
+              if (data.code) localStorage.setItem('apocalipsis_pass_code', data.code);
+              this.activatePass(data.expiresAt, data.email, data.planName);
+              if (this.game && this.game.ui) {
+                this.game.ui.showToast(`⭐ ¡Pase ${data.planName || 'VIP'} activado automáticamente!`);
+              }
+              window.history.replaceState({}, document.title, window.location.pathname);
+              return;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // C) Si viene con ?payment=success
       if (isReturn && returnedEmail) {
         try {
           const res = await fetch(`/api/wompi/status?email=${encodeURIComponent(returnedEmail)}`);
@@ -699,7 +774,7 @@ class WompiManager {
           this.activatePass(24, returnedEmail);
         }
         if (this.game && this.game.ui) {
-          this.game.ui.showToast('⭐ ¡PAGO APROBADO CON ÉXITO! Tu Pase Creador de 24 Horas está activo.');
+          this.game.ui.showToast('⭐ ¡PAGO APROBADO CON ÉXITO! Tu Pase Creador está activo.');
         }
         window.history.replaceState({}, document.title, window.location.pathname);
         return;
