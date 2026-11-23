@@ -31,10 +31,24 @@ class MultiplayerManager {
       if (this.game.localPlayer) {
         this.game.localPlayer.id = this.selfId;
       }
+
+      let passExpires = 0;
+      let hostEmail = '';
+      let isVip = false;
+      try {
+        passExpires = parseInt(localStorage.getItem('apocalipsis_creator_pass_expires') || '0', 10);
+        const authUser = JSON.parse(localStorage.getItem('apocalipsis_auth_user') || '{}');
+        if (authUser.email) hostEmail = authUser.email;
+        if (authUser.isVip || (passExpires > Date.now())) isVip = true;
+      } catch (e) {}
+
       this.socket.emit('join-room', {
         room: this.roomId,
         name: playerName,
-        skinColor
+        skinColor,
+        hostPassExpires: passExpires,
+        hostEmail: hostEmail,
+        isVip: isVip
       });
       this.game.ui.setConnectionStatus(true, this.roomId);
     });
@@ -42,6 +56,32 @@ class MultiplayerManager {
     this.socket.on('disconnect', () => {
       this.connected = false;
       this.game.ui.setConnectionStatus(false, this.roomId);
+    });
+
+    this.socket.on('room-access-denied', (err) => {
+      console.warn('[ROOM ACCESS DENIED]:', err);
+      if (this.game) {
+        this.game.isSoloMode = true;
+        const btnMulti = document.getElementById('btn-mode-multi');
+        const btnSolo = document.getElementById('btn-mode-solo');
+        if (btnMulti) btnMulti.classList.remove('active');
+        if (btnSolo) btnSolo.classList.add('active');
+        const chatCont = document.getElementById('chat-container');
+        if (chatCont) chatCont.style.display = 'none';
+
+        if (this.game.localPlayer) {
+          this.game.localPlayer.isGuestFreePass = false;
+          this.game.localPlayer.loadPersistence();
+        }
+        if (this.game.ui) {
+          this.game.ui.refreshWeaponLocks();
+          this.game.ui.showToast(err.message || '🔒 La sala compartida ha finalizado porque el plan del anfitrión venció.');
+        }
+
+        if (window.WompiManager && typeof window.WompiManager.openModal === 'function') {
+          window.WompiManager.openModal('Plan del Anfitrión Finalizado');
+        }
+      }
     });
 
     this.socket.on('init-state', (data) => {
@@ -52,6 +92,20 @@ class MultiplayerManager {
           this.game.localPlayer.color = data.assignedColor;
           const dot = document.getElementById('color-dot');
           if (dot) dot.style.background = data.assignedColor;
+        }
+
+        // Si es un invitado disfrutando de una sala compartida con anfitrión VIP:
+        if (data.isGuestAccess) {
+          this.game.localPlayer.isGuestFreePass = true;
+          this.game.localPlayer.unlockedWeapons = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+          if (this.game.ui) {
+            this.game.ui.refreshWeaponLocks();
+            this.game.ui.showToast(`🎉 ¡Te uniste a la sala de ${data.hostName || 'tu amigo'}! Juegas gratis con su Pase.`);
+          }
+          const hudRoom = document.getElementById('hud-room-name');
+          if (hudRoom) {
+            hudRoom.textContent = `SALA: ${(this.roomId || '').toUpperCase()} (INVITADO GRATIS)`;
+          }
         }
       }
 

@@ -173,13 +173,14 @@ class Game {
       this.ui.refreshWeaponLocks();
     }
 
-    // Auto-connect to Online Multiplayer (Solo para usuarios con Pase Activo)
+    // Auto-connect to Online Multiplayer (Conexión automática para dueños de pase o invitados con link)
     const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room') || 'lobby';
+    const roomParam = urlParams.get('room');
     const soloParam = urlParams.get('solo');
     const isPassActive = Boolean(this.wompi && this.wompi.isPassActive());
+    const hasSharedRoom = roomParam && roomParam !== 'lobby' && roomParam !== 'solo';
 
-    if (!isPassActive || soloParam === '1' || soloParam === 'true') {
+    if (soloParam === '1' || soloParam === 'true') {
       this.isSoloMode = true;
       const btnMulti = document.getElementById('btn-mode-multi');
       const btnSolo = document.getElementById('btn-mode-solo');
@@ -187,8 +188,9 @@ class Game {
       if (btnSolo) btnSolo.classList.add('active');
       const chatCont = document.getElementById('chat-container');
       if (chatCont) chatCont.style.display = 'none';
-    } else {
+    } else if (hasSharedRoom || isPassActive) {
       this.isSoloMode = false;
+      const targetRoom = roomParam || 'lobby';
       const btnMulti = document.getElementById('btn-mode-multi');
       const btnSolo = document.getElementById('btn-mode-solo');
       if (btnMulti) btnMulti.classList.add('active');
@@ -196,8 +198,16 @@ class Game {
       const chatCont = document.getElementById('chat-container');
       if (chatCont && window.innerWidth > 900) chatCont.style.display = 'flex';
 
-      // Connect to online room in real time with the custom player nickname!
-      this.multiplayer.init(roomParam, this.localPlayer.name, this.localPlayer.color);
+      // Conectar a la sala online
+      this.multiplayer.init(targetRoom, this.localPlayer.name, this.localPlayer.color);
+    } else {
+      this.isSoloMode = true;
+      const btnMulti = document.getElementById('btn-mode-multi');
+      const btnSolo = document.getElementById('btn-mode-solo');
+      if (btnMulti) btnMulti.classList.remove('active');
+      if (btnSolo) btnSolo.classList.add('active');
+      const chatCont = document.getElementById('chat-container');
+      if (chatCont) chatCont.style.display = 'none';
     }
 
     // Touch & Mobile Screen Detection
@@ -2097,9 +2107,13 @@ class UIManager {
       });
 
       btnMulti.addEventListener('click', () => {
-        if (this.game.passManager && !this.game.passManager.isPassActive()) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomParam = urlParams.get('room');
+        const hasSharedRoom = (roomParam && roomParam !== 'lobby' && roomParam !== 'solo') || (this.game.multiplayer && this.game.multiplayer.roomId && this.game.multiplayer.roomId !== 'lobby' && this.game.multiplayer.roomId !== 'solo');
+
+        if (!hasSharedRoom && this.game.passManager && !this.game.passManager.isPassActive()) {
           this.game.passManager.openModal('Modo Multijugador Online');
-          this.showToast('🔒 Modo Multijugador Online requiere Pase Creador 24 Horas ($1 USD). ¡Modo Solo en TikTok es 100% gratis!');
+          this.showToast('🔒 Crear salas multijugador requiere Pase Creador 24 Horas ($1 USD). ¡Si un amigo te comparte su sala, juegas gratis!');
           return;
         }
         this.game.isSoloMode = false;
@@ -2112,7 +2126,8 @@ class UIManager {
           if (colorDot) colorDot.style.background = '#38bdf8';
         }
         // Connect to online room
-        this.game.multiplayer.init('lobby', this.game.localPlayer.name, this.game.localPlayer.color);
+        const targetRoom = roomParam || (this.game.multiplayer && this.game.multiplayer.roomId) || 'lobby';
+        this.game.multiplayer.init(targetRoom, this.game.localPlayer.name, this.game.localPlayer.color);
       });
     }
 
@@ -2504,7 +2519,7 @@ class UIManager {
       if (shareRoomCode) shareRoomCode.textContent = currentRoom.toUpperCase();
 
       if (whatsappBtn) {
-        whatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('¡Entra a destruir esta web conmigo en tiempo real! ' + shareUrl)}`;
+        whatsappBtn.href = `https://api.whatsapp.com/send?text=${encodeURIComponent('¡Entra a destruir esta web conmigo GRATIS en tiempo real! ' + shareUrl)}`;
       }
 
       if (shareModal) shareModal.style.display = 'flex';

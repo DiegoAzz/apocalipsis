@@ -121,6 +121,27 @@ app.get('/api/rooms', (req, res) => {
   res.json(list);
 });
 
+// Consultar estado de sala compartida (si tiene anfitrión con pase activo)
+app.get('/api/room-status/:roomId', (req, res) => {
+  const roomId = (req.params.roomId || '').trim().toLowerCase();
+  if (!roomId || !rooms.has(roomId)) {
+    return res.json({ exists: false, hasActiveHost: false });
+  }
+  const r = rooms.get(roomId);
+  const now = Date.now();
+  const hasActiveHost = Boolean(r.hostPassExpires && r.hostPassExpires > now);
+  const remainingSeconds = hasActiveHost ? Math.max(0, Math.round((r.hostPassExpires - now) / 1000)) : 0;
+  res.json({
+    roomId: r.id,
+    exists: true,
+    hasActiveHost,
+    hostName: r.hostName || 'Anfitrión',
+    playerCount: r.players ? r.players.size : 0,
+    preset: r.preset,
+    remainingSeconds
+  });
+});
+
 // ==========================================================================
 // ==========================================================================
 // SISTEMA DE MONETIZACIÓN: PASE CREADOR DE 24 HORAS ($1 USD)
@@ -1682,7 +1703,10 @@ function loadRoomsFromDisk() {
           bots: new Map(),
           chatHistory: rData.chatHistory || [],
           seed: rData.seed || Math.floor(Math.random() * 1000000),
-          createdAt: rData.createdAt || Date.now()
+          createdAt: rData.createdAt || Date.now(),
+          hostName: rData.hostName || null,
+          hostEmail: rData.hostEmail || null,
+          hostPassExpires: rData.hostPassExpires || 0
         });
       }
       console.log(`[ROOMS PERSISTENCE]: Se cargaron ${rooms.size} salas persistentes de disco.`);
@@ -1708,7 +1732,10 @@ function saveRoomsToDisk() {
           craters: r.craters ? r.craters.slice(-2000) : [],
           chatHistory: r.chatHistory ? r.chatHistory.slice(-50) : [],
           seed: r.seed,
-          createdAt: r.createdAt
+          createdAt: r.createdAt,
+          hostName: r.hostName || null,
+          hostEmail: r.hostEmail || null,
+          hostPassExpires: r.hostPassExpires || 0
         };
       }
       const dataDir = path.dirname(ROOMS_DB_PATH);
@@ -1755,25 +1782,40 @@ function getOrCreateRoom(roomId) {
       bots: new Map(),
       chatHistory: [],
       seed: Math.floor(Math.random() * 1000000),
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      hostName: null,
+      hostEmail: null,
+      hostPassExpires: 0
     });
     saveRoomsToDisk();
   }
   return rooms.get(cleanId);
 }
 
-// Clean empty ephemeral rooms periodically (keeping custom and persistent ones)
+// Clean empty ephemeral rooms periodically & monitor host pass expirations
 setInterval(() => {
   const now = Date.now();
   let modified = false;
   for (const [roomId, room] of rooms.entries()) {
+    // Si la sala compartida tenía un anfitrión con pase pero ya venció:
+    if (roomId !== 'lobby' && room.hostPassExpires > 0 && now > room.hostPassExpires) {
+      console.log(`[ROOM EXPIRED] El plan del anfitrión de la sala ${roomId} ha vencido.`);
+      room.hostPassExpires = 0;
+      modified = true;
+      io.to(roomId).emit('room-access-denied', {
+        reason: 'HOST_PLAN_EXPIRED',
+        roomId: roomId,
+        message: 'El plan de 24 horas del anfitrión de esta sala ha finalizado.'
+      });
+    }
+
     if (roomId !== 'lobby' && room.players.size === 0 && now - room.createdAt > 3600000 && !roomImages.has(roomId) && room.preset === 'wikipedia') {
       rooms.delete(roomId);
       modified = true;
     }
   }
   if (modified) saveRoomsToDisk();
-}, 60000);
+}, 30000);
 
 getOrCreateRoom('lobby');
 
@@ -1781,12 +1823,60 @@ io.on('connection', (socket) => {
   let currentRoomId = null;
   let playerId = socket.id;
 
-  socket.on('join-room', ({ room, name, skinColor }) => {
+  socket.on('join-room', ({ room, name, skinColor, hostPassExpires, hostEmail, isVip }) => {
     const targetRoomId = (room || 'lobby').trim().toLowerCase();
     currentRoomId = targetRoomId;
-    socket.join(targetRoomId);
 
     const roomData = getOrCreateRoom(targetRoomId);
+    const now = Date.now();
+
+    // 1. Determinar si el usuario entrante tiene Pase VIP activo
+    let incomingExpires = 0;
+    if (hostEmail) {
+      const passes = getCreatorPasses();
+      const p = passes[String(hostEmail).toLowerCase().trim()];
+      if (p && p.expiresAt && p.expiresAt > now) {
+        incomingExpires = p.expiresAt;
+      }
+    }
+    if (!incomingExpires && hostPassExpires && Number(hostPassExpires) > now) {
+      incomingExpires = Number(hostPassExpires);
+    }
+    if (!incomingExpires && isVip) {
+      incomingExpires = now + (24 * 3600 * 1000);
+    }
+
+    const isLobby = targetRoomId === 'lobby';
+    const hasIncomingPass = incomingExpires > now;
+
+    // 2. Si es anfitrión con pase activo, registra o renueva el plan de la sala
+    if (hasIncomingPass) {
+      roomData.hostPassExpires = Math.max(roomData.hostPassExpires || 0, incomingExpires);
+      if (!roomData.hostName || roomData.hostName === 'Anfitrión') {
+        roomData.hostName = (name && name !== 'Operativo') ? name : (roomData.hostName || 'Anfitrión');
+      }
+      if (hostEmail) roomData.hostEmail = hostEmail;
+      saveRoomsToDisk();
+      console.log(`[ROOM HOST] Sala ${targetRoomId} respaldada por anfitrion ${roomData.hostName} hasta ${new Date(roomData.hostPassExpires).toISOString()}`);
+    }
+
+    // 3. Si es una sala compartida (?room=...) y el usuario es invitado sin pase:
+    const isGuest = !hasIncomingPass;
+    if (!isLobby && isGuest) {
+      const roomValid = roomData.hostPassExpires && roomData.hostPassExpires > now;
+      if (!roomValid) {
+        // La sala no tiene anfitrion con pase vigente o el pase ya expiro
+        socket.emit('room-access-denied', {
+          reason: 'HOST_PLAN_EXPIRED',
+          roomId: targetRoomId,
+          message: 'Esta sala compartida no esta disponible o el plan de 24 horas del anfitrion ya finalizo.'
+        });
+        return;
+      }
+      console.log(`[GUEST ACCESS FREE] Invitado ${name} (${playerId}) se unio GRATIS a la sala ${targetRoomId} de ${roomData.hostName}`);
+    }
+
+    socket.join(targetRoomId);
 
     // Dynamic Futuristic Operative Colors for Multiplayer
     const MULTIPLAYER_COLORS = [
@@ -1840,7 +1930,11 @@ io.on('connection', (socket) => {
       craters: roomData.craters.slice(-500),
       players: Array.from(roomData.players.values()),
       bots: Array.from(roomData.bots.values()),
-      chatHistory: roomData.chatHistory.slice(-20)
+      chatHistory: roomData.chatHistory.slice(-20),
+      isSharedRoom: !isLobby,
+      isGuestAccess: isGuest && !isLobby,
+      hostName: roomData.hostName || 'Anfitrión',
+      hostPassExpires: roomData.hostPassExpires || 0
     });
 
     socket.to(targetRoomId).emit('player-joined', newPlayer);

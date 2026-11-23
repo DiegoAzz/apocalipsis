@@ -144,7 +144,7 @@ class Player {
   }
 
   isWeaponUnlocked(index) {
-    if (this.isVip) return true;
+    if (this.isVip || this.isGuestFreePass) return true;
     return index === 0;
   }
 
