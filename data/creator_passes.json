@@ -17,13 +17,27 @@
   "solucionesaox@gmail.com": {
     "identifier": "solucionesaox@gmail.com",
     "code": "814208",
+    "pin": "1580",
     "isPassActive": true,
     "activatedAt": "2026-11-22T09:41:00.000Z",
-    "expiresAt": 1795452384525,
-    "durationHours": 24,
+    "expiresAt": 253402300799000,
+    "durationHours": 999999,
     "priceUSD": 1,
     "paymentMethod": "wompi_checkout",
     "reference": "1570221-1795358369-14441"
+  },
+  "solucionesaxx@gmail.com": {
+    "identifier": "solucionesaxx@gmail.com",
+    "code": "814208",
+    "pin": "1580",
+    "isPassActive": true,
+    "activatedAt": "2026-11-23T11:00:00.000Z",
+    "expiresAt": 253402300799000,
+    "durationHours": 999999,
+    "planName": "Pase VIP Creador",
+    "priceUSD": 1,
+    "paymentMethod": "wompi_checkout",
+    "reference": "APOC_DAY_1795448809223_8153"
   },
   "cliente_normal@gmail.com": {
     "identifier": "cliente_normal@gmail.com",

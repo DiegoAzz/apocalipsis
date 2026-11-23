@@ -393,7 +393,8 @@ class WompiManager {
 
     let integrityHash = null;
     try {
-      const sigRes = await fetch(`/api/wompi/signature?reference=${encodeURIComponent(reference)}&amountInCents=${amountInCents}&currency=COP`);
+      const sigUrl = `/api/wompi/signature?reference=${encodeURIComponent(reference)}&amountInCents=${amountInCents}&currency=COP&email=${encodeURIComponent(email)}&pin=${encodeURIComponent(pin)}&hours=${plan.hours}&planName=${encodeURIComponent(plan.name)}`;
+      const sigRes = await fetch(sigUrl);
       if (sigRes.ok) {
         const sigData = await sigRes.json();
         if (sigData && sigData.integrity) {
