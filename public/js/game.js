@@ -656,6 +656,18 @@ class Game {
   }
 
   setupInputListeners() {
+    const isModalCurrentlyOpen = () => {
+      const authModal = document.getElementById('auth-code-modal');
+      const shareModal = document.getElementById('share-modal');
+      const helpModal = document.getElementById('help-modal');
+      return !!(
+        document.querySelector('.custom-modal.open') ||
+        (authModal && (authModal.style.display === 'flex' || authModal.classList.contains('open'))) ||
+        (shareModal && (shareModal.style.display === 'flex' || shareModal.classList.contains('open'))) ||
+        (helpModal && (helpModal.style.display === 'flex' || helpModal.classList.contains('open')))
+      );
+    };
+
     window.addEventListener('keydown', (e) => {
       // 1. Ignorar si el usuario está enfocado en CUALQUIER input, textarea o contenido editable
       const activeEl = document.activeElement;
@@ -666,13 +678,13 @@ class Game {
         (e.composedPath && e.composedPath().some(el => el && el.tagName && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')))
       );
 
+      // Prevenir scroll de la página o activación de botones con la barra espaciadora y flechas
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && !isInput) {
+        e.preventDefault();
+      }
+
       // 2. Ignorar si hay algún modal abierto en pantalla (código de acceso, wompi, salas, ayuda)
-      const isModalOpen = !!(
-        document.querySelector('.custom-modal.open') ||
-        (document.getElementById('auth-code-modal') && document.getElementById('auth-code-modal').style.display === 'flex') ||
-        (document.getElementById('share-modal') && document.getElementById('share-modal').style.display === 'flex') ||
-        (document.getElementById('help-modal') && !document.getElementById('help-modal').classList.contains('hidden'))
-      );
+      const isModalOpen = isModalCurrentlyOpen();
 
       if (isInput || isModalOpen) {
         if (e.code === 'Enter' && activeEl === document.getElementById('chat-input')) {
@@ -685,6 +697,8 @@ class Game {
           if (wompiModal && wompiModal.classList.contains('open')) wompiModal.classList.remove('open');
           const shareModal = document.getElementById('share-modal');
           if (shareModal && shareModal.style.display !== 'none') shareModal.style.display = 'none';
+          const helpModal = document.getElementById('help-modal');
+          if (helpModal && helpModal.style.display !== 'none') helpModal.style.display = 'none';
         }
         return;
       }
@@ -707,10 +721,11 @@ class Game {
       if (e.code === 'KeyG' || e.code === 'KeyK') {
         this.input.isRightMouseDown = false;
       }
-      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
-        if (!this.input.keys[e.code]) {
+      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code) || e.key === ' ' || e.key === 'w' || e.key === 'W') {
+        if (!this.input.keys['Space'] && !this.input.keys['KeyW'] && !this.input.keys['ArrowUp']) {
           this.input.justPressedJump = true;
         }
+        this.input.keys['Space'] = true;
       }
 
       this.input.keys[e.code] = true;
@@ -777,12 +792,7 @@ class Game {
         (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) ||
         (targetEl && (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA' || targetEl.isContentEditable))
       );
-      const isModalOpen = !!(
-        document.querySelector('.custom-modal.open') ||
-        (document.getElementById('auth-code-modal') && document.getElementById('auth-code-modal').style.display === 'flex') ||
-        (document.getElementById('share-modal') && document.getElementById('share-modal').style.display === 'flex') ||
-        (document.getElementById('help-modal') && !document.getElementById('help-modal').classList.contains('hidden'))
-      );
+      const isModalOpen = isModalCurrentlyOpen();
       if (isInput || isModalOpen) return;
 
       if (e.code === 'Tab') {
@@ -795,7 +805,10 @@ class Game {
       if (e.code === 'KeyG' || e.code === 'KeyK') {
         this.input.isRightMouseDown = false;
       }
-      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code)) {
+      if (['Space', 'KeyW', 'ArrowUp'].includes(e.code) || e.key === ' ' || e.key === 'w' || e.key === 'W') {
+        this.input.keys['Space'] = false;
+        this.input.keys['KeyW'] = false;
+        this.input.keys['ArrowUp'] = false;
         this.input.justPressedJump = false;
       }
     });
@@ -814,6 +827,11 @@ class Game {
       if (isTargetUI(e.target)) {
         this.input.isMouseDown = false;
         this.input.isRightMouseDown = false;
+      } else {
+        // Al tocar o hacer clic en el juego, quitar el foco de botones/inputs para habilitar el teclado
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
       }
     }, { capture: true });
 

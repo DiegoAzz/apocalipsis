@@ -48,7 +48,16 @@ class GameRecorder {
       this.btnShare.addEventListener('click', async () => {
         if (this.currentBlob && navigator.share) {
           try {
-            const file = new File([this.currentBlob], 'apocalipsis_gameplay.webm', { type: this.currentBlob.type });
+            const ext = (this.currentBlob.type && this.currentBlob.type.includes('mp4')) ? 'mp4' : 'webm';
+            const file = new File([this.currentBlob], `apocalipsis_clip.${ext}`, { type: this.currentBlob.type || 'video/webm' });
+            if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: '¡Mira cómo destruí esta web en Apocalipsis!',
+                text: 'Destruyendo cualquier página web con armas y bombas nucleares en https://apocalipsis.appzplay.online',
+                url: 'https://apocalipsis.appzplay.online'
+              });
+              return;
+            }
             await navigator.share({
               title: '¡Mira cómo destruí esta web en Apocalipsis!',
               text: 'Destruyendo cualquier página web con armas y bombas nucleares en https://apocalipsis.appzplay.online',
@@ -84,8 +93,10 @@ class GameRecorder {
     if (!canvas) return;
 
     try {
-      // 60 FPS stream directly from game canvas
-      const stream = canvas.captureStream ? canvas.captureStream(60) : canvas.mozCaptureStream(60);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 820);
+      const fps = isMobile ? 30 : 60;
+      // Capture stream directly from game canvas (30 FPS en móvil para rendimiento óptimo y peso ligero, 60 FPS en PC)
+      const stream = canvas.captureStream ? canvas.captureStream(fps) : canvas.mozCaptureStream(fps);
       
       // Try to attach Web Audio if available
       if (window.soundManager && window.soundManager.ctx) {
@@ -116,11 +127,15 @@ class GameRecorder {
         }
       }
 
+      // Bitrate optimizado: 2.5 Mbps en móviles (~9 MB cada 30 seg, ideal para WhatsApp/TikTok), 6 Mbps en PC
+      const videoBps = isMobile ? 2500000 : 6000000;
+      const audioBps = isMobile ? 96000 : 128000;
+
       this.recordedChunks = [];
       this.mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
-        videoBitsPerSecond: 25000000, // 25 Mbps ULTRA-HD (Máxima resolución cristalina 60 FPS)
-        audioBitsPerSecond: 192000    // 192 kbps Audio Estéreo de Alta Fidelidad
+        videoBitsPerSecond: videoBps,
+        audioBitsPerSecond: audioBps
       });
 
       this.mediaRecorder.ondataavailable = (e) => {
@@ -133,7 +148,7 @@ class GameRecorder {
         this.processRecording();
       };
 
-      this.mediaRecorder.start(250); // Slice every 250ms
+      this.mediaRecorder.start(1000); // Fragmentos cada 1 segundo (más ligero en CPU y memoria)
       this.isRecording = true;
       this.recordingStartTime = Date.now();
 
@@ -152,7 +167,7 @@ class GameRecorder {
       }, 1000);
 
       if (this.game.ui) {
-        this.game.ui.showToast('🔴 ¡GRABANDO PARTIDA A 60 FPS! Destruye la web...');
+        this.game.ui.showToast(`🔴 ¡GRABANDO PARTIDA A ${fps} FPS! Destruye la web...`);
       }
     } catch (err) {
       console.error('Error starting screen recorder:', err);
@@ -210,12 +225,19 @@ class GameRecorder {
       this.videoPlayer.play().catch(() => {});
     }
 
+    const sizeMB = (finalBlob.size / (1024 * 1024)).toFixed(1);
+
     if (this.btnDownload) {
       const pageDomain = (this.game.level && this.game.level.presetName) || 'web';
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
       const ext = rawMime.includes('mp4') ? 'mp4' : 'webm';
       this.btnDownload.download = `apocalipsis_${pageDomain}_${timestamp}.${ext}`;
       this.btnDownload.href = videoUrl;
+      this.btnDownload.innerHTML = `<span>💾 DESCARGAR VIDEO (${sizeMB} MB)</span>`;
+    }
+
+    if (this.game.ui) {
+      this.game.ui.showToast(`🎬 ¡Video optimizado listo (${sizeMB} MB)!`);
     }
 
     if (this.modal) {

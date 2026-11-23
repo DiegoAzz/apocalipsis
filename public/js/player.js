@@ -80,7 +80,7 @@ class Player {
     this.jetpackFuel = 100;
     this.maxJetpackFuel = 100;
     this.fuelRechargeRate = 45;
-    this.fuelBurnRate = 32;
+    this.fuelBurnRate = 20;
 
     // Health & Score
     this.health = 100;
@@ -305,9 +305,9 @@ class Player {
     // Jetpack thrust - ESTABILIZADOR AVANZADO DE VUELO & HOVER SUAVE
     if (wantsJump && !this.onGround && this.jetpackFuel > 0) {
       this.jetpackActive = true;
-      // Impulso suave y estable hacia velocidad de crucero sin sacudidas
-      const targetAscent = -5.8;
-      this.vy += (targetAscent - this.vy) * 0.22;
+      // Impulso suave y potente hacia velocidad de crucero sin sacudidas
+      const targetAscent = -6.8;
+      this.vy += (targetAscent - this.vy) * 0.28;
 
       // Maniobrabilidad aérea precisa
       if (moveDir !== 0) {
