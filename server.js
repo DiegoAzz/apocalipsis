@@ -147,7 +147,7 @@ function getCreatorPasses() {
       isAdmin: true,
       code: '7914',
       altCode: 'ANDRES10',
-      pin: '1234',
+      pin: '1580',
       activatedAt: new Date().toISOString(),
       expiresAt: LIFETIME_TS,
       durationHours: 999999,
@@ -625,7 +625,7 @@ app.post('/api/pass/redeem-code', (req, res) => {
     let foundEmail = null;
 
     // Super Administrador Códigos Maestros (Sin vencimiento) - SOLO para Diego Zúñiga
-    if (cleanCode === '7914' || cleanCode === 'ANDRES10' || cleanCode === 'DIEGO1') {
+    if (cleanCode === '7914' || cleanCode === 'ANDRES10' || cleanCode === 'DIEGO1' || cleanCode === '1580') {
       return res.json({
         success: true,
         isPassActive: true,
@@ -640,10 +640,11 @@ app.post('/api/pass/redeem-code', (req, res) => {
       });
     }
 
-    // Buscar en pases registrados por code o altCode
+    // Buscar en pases registrados por code, altCode o PIN (como 1580)
     for (const [key, p] of Object.entries(passes)) {
       if (p && ((p.code && p.code.toString().trim().toUpperCase() === cleanCode) ||
-                (p.altCode && p.altCode.toString().trim().toUpperCase() === cleanCode))) {
+                (p.altCode && p.altCode.toString().trim().toUpperCase() === cleanCode) ||
+                (p.pin && p.pin.toString().trim() === cleanCode))) {
         foundPass = p;
         foundEmail = key;
         break;
@@ -686,7 +687,7 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
     if (!inputVal) return res.status(400).json({ error: 'Debes ingresar tu código de acceso o tu correo' });
 
     // Super Administrador Códigos Maestros (Sin vencimiento) - SOLO para Diego Zúñiga
-    if (inputVal === '7914' || inputVal === 'ANDRES10' || inputVal === 'DIEGO1') {
+    if (inputVal === '7914' || inputVal === 'ANDRES10' || inputVal === 'DIEGO1' || inputVal === '1580') {
       return res.json({
         success: true,
         isPassActive: true,
@@ -703,10 +704,11 @@ app.post('/api/wompi/restore-purchase', (req, res) => {
 
     const passes = getCreatorPasses();
 
-    // 1. Buscar coincidencia exacta por código o altCode
+    // 1. Buscar coincidencia exacta por código, altCode o PIN
     for (const [key, p] of Object.entries(passes)) {
       if (p && ((p.code && p.code.toString().trim().toUpperCase() === inputVal) ||
-                (p.altCode && p.altCode.toString().trim().toUpperCase() === inputVal))) {
+                (p.altCode && p.altCode.toString().trim().toUpperCase() === inputVal) ||
+                (p.pin && p.pin.toString().trim() === inputVal))) {
         if (p.expiresAt > Date.now() || p.isAdmin) {
           return res.json({
             success: true,
