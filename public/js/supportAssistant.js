@@ -81,14 +81,14 @@
     },
     {
       id: 'code_and_pin',
-      keywords: ['codigo', 'pin', '1580', 'canjear', 'donde ingreso', 'activar', 'clave', 'multidispositivo', 'celular', 'acceso'],
+      keywords: ['codigo', 'pin', 'canjear', 'donde ingreso', 'activar', 'clave', 'multidispositivo', 'celular', 'acceso'],
       title: '🔑 Códigos de Acceso y PIN Multidispositivo',
       response: `Tu compra de Pase VIP te permite jugar en **computador, celular o tablet** sin pagar doble:
-1. Al pagar, se genera un **Código de 6 dígitos** (ej: 829415) y se asocia tu PIN personal (o el PIN maestro **1580**).
+1. Al pagar, se genera un **Código de 6 dígitos** (ej: 829415) y se asocia tu PIN personal.
 2. Para activarlo en cualquier dispositivo, haz clic en el botón superior **🔑 Código de Pase** (o en Opciones > Canjear / Vincular PIN).
 3. Puedes ingresar cualquiera de estas opciones:
    - Tu **Código de 6 dígitos**.
-   - Tu **PIN de 4 dígitos** (o 1580).
+   - Tu **PIN de 4 dígitos** elegido al pagar.
    - Tu **correo electrónico registrado**.
    - La **referencia de transacción de Wompi**.
 4. Haz clic en **🚀 ACTIVAR EN ESTE NAVEGADOR** y tu pase quedará activo de inmediato.`,
@@ -104,7 +104,7 @@
       response: `Si pagaste a través de Wompi pero no viste el código o cerraste la ventana:
 1. **Revisa tu correo:** El sistema envía automáticamente un correo con tu **Código de 6 dígitos** y un botón directo para jugar con 1 clic. (Revisa también la carpeta de Spam / Correo No Deseado).
 2. **Restaura con tu correo o PIN:** Haz clic en **🔑 Código de Pase**, pulsa "Restaurar ingresando correo electrónico" y escribe el mismo correo que usaste en Wompi.
-3. **Prueba con tu PIN o 1580:** Si ingresaste un PIN al comprar, escríbelo en la casilla de código.
+3. **Prueba con tu PIN:** Si creaste un PIN al comprar, escríbelo en la casilla de código.
 4. **Comunícate con Diego (Soporte Directo):** Si Wompi descontó el dinero pero no se activó, abre la pestaña **📬 Buzón de Soporte** de esta misma ventana, indícanos tu correo y referencia de pago. Diego recibirá la notificación directa en su correo y te activará el pase de inmediato.`,
       quickActions: [
         { label: '🔄 Restaurar Pase con Correo', action: 'open_auth' },
@@ -275,7 +275,7 @@ Selecciona una opción rápida o escribe tu consulta abajo:`, [
             <!-- Chips de Acceso Rápido -->
             <div class="assistant-chips-scroll" id="assistant-quick-chips">
               <button class="assistant-chip" data-query="¿Cómo volar con el Jetpack?">🚀 Volar Jetpack</button>
-              <button class="assistant-chip" data-query="¿Dónde ingreso mi código o PIN 1580?">🔑 Ingresar Código/PIN</button>
+              <button class="assistant-chip" data-query="¿Dónde ingreso mi código de acceso o PIN?">🔑 Ingresar Código/PIN</button>
               <button class="assistant-chip" data-query="Pagué en Wompi y no me cargó el código">⚠️ Problema de Pago</button>
               <button class="assistant-chip" data-query="¿Cuáles son las 11 armas?">💣 Lista de Armas</button>
               <button class="assistant-chip" data-query="¿Cómo subir fotos o memes?">🖼️ Subir Fotos</button>
@@ -329,7 +329,7 @@ Selecciona una opción rápida o escribe tu consulta abajo:`, [
 
               <div class="mailbox-form-group">
                 <label for="mailbox-ref">🔑 Código de Pase o Referencia Wompi (Si la tienes):</label>
-                <input type="text" id="mailbox-ref" placeholder="Ej: 1580, código de 6 dígitos o ref. Nequi/Bancolombia" class="mailbox-input">
+                <input type="text" id="mailbox-ref" placeholder="Ej: Código de 6 dígitos, PIN o ref. Wompi / Nequi" class="mailbox-input">
               </div>
 
               <div class="mailbox-form-group">
