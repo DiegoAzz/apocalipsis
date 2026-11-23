@@ -701,14 +701,22 @@ Selecciona una opción rápida o escribe tu consulta abajo:`, [
         const data = await response.json();
 
         if (response.ok && data.success) {
+          const mailtoSubject = encodeURIComponent(`[Apocalipsis Soporte] Ticket #${data.ticketId}: ${category}`);
+          const mailtoBody = encodeURIComponent(`Hola Diego,\n\nEnvié el ticket #${data.ticketId} desde el juego con los siguientes datos:\n- Correo: ${email}\n- Asunto: ${category}\n- Referencia/Código: ${codeOrRef || 'N/A'}\n- Mensaje: ${message}\n\nQuedo atento a tu respuesta.`);
+          const directMailto = `mailto:diego.zuniga.plazas@gmail.com?subject=${mailtoSubject}&body=${mailtoBody}`;
+
           this.showMailboxStatus('success', `
             <div style="font-size:14px; font-weight:bold; color:#4ade80; margin-bottom:4px;">
-              🎉 ¡Mensaje Enviado con Éxito!
+              🎉 ¡Ticket Registrado con Éxito en el Servidor!
             </div>
-            <div>Ticket: <strong style="color:#facc15; font-family:monospace;">${data.ticketId}</strong></div>
-            <div style="margin-top:4px; color:#cbd5e1; font-size:12px;">
-              Se ha enviado una notificación directa al desarrollador Diego Zúñiga (<strong>diego.zuniga.plazas@gmail.com</strong>).
-              Te responderemos a <strong>${email}</strong> en menos de 24 horas hábiles.
+            <div>Ticket ID: <strong style="color:#facc15; font-family:monospace;">${data.ticketId}</strong></div>
+            <div style="margin-top:6px; color:#cbd5e1; font-size:12px; line-height:1.5;">
+              Tu reporte quedó guardado en el servidor para el desarrollador Diego Zúñiga (<strong>diego.zuniga.plazas@gmail.com</strong>).
+            </div>
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.15); text-align:center;">
+              <a href="${directMailto}" target="_blank" style="display:inline-block; background:#0284c7; color:#ffffff; font-weight:bold; padding:8px 14px; border-radius:8px; text-decoration:none; font-size:12px;">
+                ✉️ Enviar copia directa a Diego desde tu correo
+              </a>
             </div>
           `);
 
