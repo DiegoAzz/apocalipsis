@@ -1044,6 +1044,7 @@ class Game {
   }
 
   loadMapPreset(preset, url = '', notifyServer = true) {
+    if (this.level && notifyServer) this.level.appliedCraters = [];
     const lowerUrl = (url || preset).toLowerCase();
 
     // Comprobar si la URL tiene subcarpetas específicas (ej: /wiki/..., /watch?v=..., /noticias/...)

@@ -67,6 +67,10 @@ class LevelEngine {
 
   // Carve circular crater into terrain with Sprite Fusion Bayer pixel dithering
   carveHole(x, y, radius, weapon = 'bullet') {
+    if (!this.appliedCraters) this.appliedCraters = [];
+    if (this.appliedCraters.length < 2000) {
+      this.appliedCraters.push({ x, y, r: radius, w: weapon });
+    }
     const debris = [];
     const minCol = Math.max(0, Math.floor((x - radius) / this.cellSize));
     const maxCol = Math.min(this.cols - 1, Math.ceil((x + radius) / this.cellSize));
@@ -981,6 +985,12 @@ class LevelEngine {
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.drawImage(img, 0, 0, this.width, this.height);
       this.syncGridFromCanvas();
+      if (this.appliedCraters && this.appliedCraters.length > 0) {
+        const replay = [...this.appliedCraters];
+        for (const c of replay) {
+          this.carveHole(c.x, c.y, c.r, c.w);
+        }
+      }
       if (typeof onDone === 'function') onDone();
     };
 

@@ -611,15 +611,36 @@ class WompiManager {
         }
       }
     } else {
-      if (this.badgeTop) {
-        this.badgeTop.classList.remove('pass-active');
-        this.badgeTop.classList.add('pass-inactive');
-        if (this.badgeLabel) {
-          this.badgeLabel.innerHTML = `⭐ Planes VIP (Desde $1)`;
-        } else {
-          this.badgeTop.innerHTML = `<span>⭐ Planes VIP (Desde $1)</span>`;
+      const isGuestFreePass = Boolean(this.game && this.game.localPlayer && this.game.localPlayer.isGuestFreePass);
+
+      if (isGuestFreePass) {
+        if (this.badgeTop) {
+          this.badgeTop.classList.add('pass-active');
+          this.badgeTop.classList.remove('pass-inactive');
+          this.badgeTop.style.background = 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)';
+          this.badgeTop.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.5)';
+          this.badgeTop.style.border = '1.5px solid #34d399';
+          if (this.badgeLabel) {
+            this.badgeLabel.innerHTML = `🎉 <strong>INVITADO VIP:</strong> PASE GRATIS`;
+          } else {
+            this.badgeTop.innerHTML = `<span>🎉 <strong>INVITADO VIP:</strong> PASE GRATIS</span>`;
+          }
+          this.badgeTop.title = 'Estás jugando gratis en la sala compartida de tu amigo con todas las armas.';
         }
-        this.badgeTop.title = 'Obtén el Pase VIP con Wompi (Desde $1 USD) para fotos y webs.';
+      } else {
+        if (this.badgeTop) {
+          this.badgeTop.classList.remove('pass-active');
+          this.badgeTop.classList.add('pass-inactive');
+          this.badgeTop.style.background = '';
+          this.badgeTop.style.boxShadow = '';
+          this.badgeTop.style.border = '';
+          if (this.badgeLabel) {
+            this.badgeLabel.innerHTML = `⭐ Planes VIP (Desde $1)`;
+          } else {
+            this.badgeTop.innerHTML = `<span>⭐ Planes VIP (Desde $1)</span>`;
+          }
+          this.badgeTop.title = 'Obtén el Pase VIP con Wompi (Desde $1 USD) para fotos y webs.';
+        }
       }
 
       const drawerVipBtn = document.getElementById('btn-creator-pass-drawer');
@@ -635,23 +656,13 @@ class WompiManager {
         drawerVipLabel.innerHTML = `⭐ Planes VIP (Desde $1)`;
       }
 
-      if (this.game && this.game.localPlayer && this.game.localPlayer.isVip) {
+      if (!isGuestFreePass && this.game && this.game.localPlayer && this.game.localPlayer.isVip) {
         this.game.localPlayer.isVip = false;
         this.game.localPlayer.unlockedWeapons = [0];
         if (this.game.ui) {
           this.game.ui.refreshWeaponLocks();
           this.game.ui.showToast('⏳ Tu Pase Creador de 24 Horas ha finalizado. ¡TikTok sigue disponible gratis!');
         }
-      }
-
-      if (this.game && !this.game.isSoloMode) {
-        this.game.isSoloMode = true;
-        const btnMulti = document.getElementById('btn-mode-multi');
-        const btnSolo = document.getElementById('btn-mode-solo');
-        if (btnMulti) btnMulti.classList.remove('active');
-        if (btnSolo) btnSolo.classList.add('active');
-        const chatCont = document.getElementById('chat-container');
-        if (chatCont) chatCont.style.display = 'none';
       }
     }
 
