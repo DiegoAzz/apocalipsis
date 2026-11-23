@@ -10,6 +10,9 @@ class GameRecorder {
 
     this.btnRecord = document.getElementById('btn-screen-record');
     this.recLabel = document.getElementById('rec-label');
+    this.btnDrawerRecord = document.getElementById('btn-screen-record-drawer');
+    this.drawerRecLabel = document.getElementById('drawer-rec-label');
+    this.btnMenuToggle = document.getElementById('btn-menu-toggle');
     this.modal = document.getElementById('video-export-modal');
     this.videoPlayer = document.getElementById('video-preview-player');
     this.btnDownload = document.getElementById('btn-download-video');
@@ -20,14 +23,19 @@ class GameRecorder {
   }
 
   setupListeners() {
+    const toggleAction = () => {
+      if (!this.isRecording) {
+        this.startRecording();
+      } else {
+        this.stopRecording();
+      }
+    };
+
     if (this.btnRecord) {
-      this.btnRecord.addEventListener('click', () => {
-        if (!this.isRecording) {
-          this.startRecording();
-        } else {
-          this.stopRecording();
-        }
-      });
+      this.btnRecord.addEventListener('click', toggleAction);
+    }
+    if (this.btnDrawerRecord) {
+      this.btnDrawerRecord.addEventListener('click', toggleAction);
     }
 
     if (this.btnClose) {
@@ -129,18 +137,18 @@ class GameRecorder {
       this.isRecording = true;
       this.recordingStartTime = Date.now();
 
-      // Update UI button
-      if (this.btnRecord) {
-        this.btnRecord.classList.add('recording');
-      }
+      // Update UI buttons
+      if (this.btnRecord) this.btnRecord.classList.add('recording');
+      if (this.btnDrawerRecord) this.btnDrawerRecord.classList.add('recording');
+      if (this.btnMenuToggle) this.btnMenuToggle.classList.add('is-recording');
 
       this.timerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
         const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
         const secs = String(elapsed % 60).padStart(2, '0');
-        if (this.recLabel) {
-          this.recLabel.textContent = `REC ${mins}:${secs} (DETENER)`;
-        }
+        const timerText = `REC ${mins}:${secs} (DETENER)`;
+        if (this.recLabel) this.recLabel.textContent = timerText;
+        if (this.drawerRecLabel) this.drawerRecLabel.textContent = timerText;
       }, 1000);
 
       if (this.game.ui) {
@@ -161,6 +169,13 @@ class GameRecorder {
     if (this.btnRecord) {
       this.btnRecord.classList.remove('recording');
       if (this.recLabel) this.recLabel.textContent = 'REC (TikTok/Reels)';
+    }
+    if (this.btnDrawerRecord) {
+      this.btnDrawerRecord.classList.remove('recording');
+      if (this.drawerRecLabel) this.drawerRecLabel.textContent = 'REC (TikTok/Reels)';
+    }
+    if (this.btnMenuToggle) {
+      this.btnMenuToggle.classList.remove('is-recording');
     }
 
     if (this.game.ui) {

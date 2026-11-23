@@ -933,16 +933,366 @@ body.touch-active #mobile-controls {
   transform: scale(0.92);
 }
 
-/* Nav Drawer default (Desktop) */
+/* ==========================================================================
+   PANEL ESTRUCTURADO DE OPCIONES Y CONTROL (DRAWER / CONTROL CENTER)
+   ========================================================================== */
 .btn-menu-toggle {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fb923c;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
+.btn-menu-toggle:hover {
+  background: #3f3f46;
+  border-color: #f97316;
+}
+
+.btn-menu-toggle:active {
+  transform: scale(0.97);
+}
+
+.btn-menu-toggle.is-recording {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  animation: pulseRec 1.2s infinite;
+}
+
+@keyframes pulseRec {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.4); }
+}
+
+/* Telón de Fondo Semi-Transparente */
+.nav-drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.nav-drawer-backdrop.open {
+  display: block;
+  opacity: 1;
+}
+
+/* Panel Desplegable Estructurado */
 .nav-drawer {
+  display: none;
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  width: min(460px, 94vw);
+  max-height: calc(88vh - 60px);
+  background: rgba(15, 18, 26, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(249, 115, 22, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 25px rgba(249, 115, 22, 0.2);
+  z-index: 9999;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.nav-drawer.open {
+  display: flex;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Header del Drawer */
+.drawer-header-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(24, 28, 40, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.drawer-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-gear {
+  font-size: 16px;
+}
+
+.drawer-header-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fb923c;
+  text-transform: uppercase;
+}
+
+.drawer-btn-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drawer-btn-close:hover,
+.drawer-btn-close:active {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Cuerpo con Scroll del Drawer */
+.drawer-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Categorías */
+.drawer-category {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+
+.drawer-cat-header .cat-icon {
+  font-size: 13px;
+}
+
+/* Tarjeta de Dinero e Idle */
+.drawer-card {
+  background: rgba(24, 30, 45, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.drawer-money-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.6));
+}
+
+.drawer-money-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.drawer-cash-number {
+  font-size: 16px;
+  font-weight: 900;
+  color: #22c55e;
+  font-family: monospace;
+}
+
+.drawer-rate-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #86efac;
+}
+
+.drawer-money-buttons {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-drawer-boost {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: 1px solid #fbbf24;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-drawer-store {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  border: 1px solid #38bdf8;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Tarjeta VIP y Cuenta */
+.drawer-vip-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(15, 23, 42, 0.6));
+}
+
+.btn-drawer-vip {
+  width: 100%;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  border: 1.5px solid #facc15;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-drawer-auth {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.drawer-player-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.drawer-player-icon {
+  font-size: 14px;
+}
+
+.drawer-player-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.drawer-player-row input {
   flex: 1;
+  background: transparent;
+  border: none;
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+}
+
+/* Grillas de 2 Columnas para Botones */
+.drawer-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-drawer-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 8px;
+  min-height: 40px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-drawer-item:hover,
+.btn-drawer-item:active {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: #f97316;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-drawer-item.active {
+  background: #ea580c !important;
+  border-color: #fdba74 !important;
+  color: #ffffff !important;
+}
+
+.btn-drawer-item.btn-record {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-drawer-item.btn-record.recording {
+  background: #ef4444 !important;
+  border-color: #fca5a5 !important;
+  color: #ffffff !important;
+  animation: pulseRec 1.2s infinite;
+}
+
+.btn-drawer-item.btn-primary {
+  background: linear-gradient(135deg, rgba(234, 88, 12, 0.8), rgba(194, 65, 12, 0.8));
+  border-color: #ea580c;
 }
 
 /* Adaptación Responsive para Móviles y Tablets (<= 900px) */
@@ -950,9 +1300,9 @@ body.touch-active #mobile-controls {
   #top-nav {
     height: 48px;
     padding: 0 8px;
-    gap: 8px;
+    gap: 6px;
   }
-  .brand-title {
+  .brand {
     display: none;
   }
   .url-control-group {
@@ -961,83 +1311,22 @@ body.touch-active #mobile-controls {
     min-width: 0;
   }
   #webpage-url-input {
-    font-size: 11px;
-    padding: 4px 6px;
+    font-size: 12px;
+    padding: 5px 8px;
     min-width: 0;
   }
   #btn-destroy-url {
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 700;
     white-space: nowrap;
   }
   .btn-menu-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #27272a;
-    border: 1px solid #3f3f46;
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .btn-hide-ui {
     padding: 5px 8px;
-    font-size: 11px;
-    color: #fb923c;
-    border-radius: 4px;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .btn-menu-toggle:active {
-    background: #3f3f46;
-  }
-
-  /* Desplegable de Opciones en Móvil */
-  .nav-drawer {
-    display: none;
-    position: absolute;
-    top: 50px;
-    left: 0;
-    width: 100%;
-    background: rgba(18, 18, 22, 0.97);
-    backdrop-filter: blur(14px);
-    border-bottom: 2px solid #ea580c;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9);
-    padding: 12px 14px;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 250;
-    max-height: calc(100vh - 60px);
-    overflow-y: auto;
-  }
-
-  .nav-drawer.open {
-    display: flex;
-    animation: drawerSlide 0.2s ease-out;
-  }
-
-  @keyframes drawerSlide {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .nav-drawer .preset-group {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 100%;
-  }
-
-  .nav-drawer .preset-pill {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-
-  .nav-drawer .status-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .nav-drawer .btn {
-    padding: 6px 10px;
     font-size: 11px;
   }
 
@@ -1072,55 +1361,13 @@ body.touch-active #mobile-controls {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 
-  /* HUD INCREMENTAL / DINERO EN MÓVIL: Cápsula compacta a la izquierda */
+  /* HUD INCREMENTAL Y PÍLDORAS EN MÓVIL: Ocultos de la pantalla de juego para mantener la vista 100% limpia sin botones estorbando */
   #idle-hud-widget {
-    top: 52px;
-    left: 8px;
-    gap: 4px;
-    z-index: 90;
-  }
-  .idle-money-card {
-    padding: 3px 8px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    border-radius: 999px;
-  }
-  .idle-money-main {
-    font-size: 12px;
-    font-weight: 800;
-  }
-  .idle-coin-icon {
-    font-size: 12px;
-    margin-right: 3px;
-  }
-  .idle-rate-sub,
-  .btn-idle-boost {
     display: none !important;
-  }
-  .btn-idle-store {
-    padding: 3px 8px;
-    height: 28px;
-    font-size: 11px;
-    border-radius: 999px;
   }
 
-  /* PÍLDORAS FLOTANTES EN MÓVIL: Limpias, compactas, solo REC y VIP a la derecha */
   .floating-pills-top {
-    top: 52px;
-    right: 8px;
-    gap: 5px;
-    z-index: 90;
-  }
-  .floating-pills-top .pill-room,
-  .floating-pills-top .pill-auth {
     display: none !important;
-  }
-  .floating-pills-top .pill-btn {
-    padding: 3px 8px;
-    height: 28px;
-    font-size: 11px;
-    border-radius: 999px;
   }
 
   /* CONTADOR DE SECRETOS: En móvil se fusiona con la barra de destrucción */
@@ -2121,32 +2368,7 @@ body.ui-hidden #idle-hud-widget {
 
 @media (max-width: 900px) {
   .floating-pills-top {
-    top: 54px;
-    right: 8px;
-    left: 8px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 5px;
-  }
-  .pill-btn {
-    padding: 6px 10px;
-    font-size: 11px;
-    min-height: 32px;
-  }
-}
-
-@media (max-width: 480px) {
-  .floating-pills-top {
-    top: 50px;
-    right: 4px;
-    left: 4px;
-    gap: 4px;
-  }
-  .pill-btn {
-    padding: 5px 8px;
-    font-size: 10px;
-    min-height: 30px;
-    gap: 4px;
+    display: none !important;
   }
 }
 

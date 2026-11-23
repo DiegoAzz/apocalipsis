@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#090d16">
   <title>Destroy Any Website - Destruye cualquier página web</title>
-  <link rel="stylesheet" href="style.css?v=6.1">
+  <link rel="stylesheet" href="style.css?v=6.3">
   <link rel="preload" as="image" href="/assets/tiktok_real.png">
   <!-- Wompi Checkout Widget Oficial -->
   <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
@@ -113,53 +113,158 @@
 
     <!-- Buscador / Input de URL -->
     <div class="url-control-group">
-      <input type="text" id="webpage-url-input" placeholder="TikTok es gratis • Pega cualquier URL..." value="https://www.tiktok.com">
+      <input type="text" id="webpage-url-input" placeholder="Pega cualquier URL o TikTok..." value="https://www.tiktok.com">
       <button class="btn btn-primary" id="btn-destroy-url">
         <span>⚡ DESTRUIR</span>
       </button>
     </div>
 
-    <!-- Botón Menú Móvil / Ajustes -->
+    <!-- Botón Menú / Opciones -->
     <button class="btn btn-menu-toggle" id="btn-menu-toggle" aria-label="Abrir opciones">
-      <span>⚙️</span> <span class="menu-label">Opciones</span>
+      <span class="menu-icon">⚙️</span> <span class="menu-label">Opciones</span>
     </button>
 
     <!-- Botón Ocultar Interfaz / Barra Superior -->
     <button class="btn btn-hide-ui" id="btn-hide-ui" title="Ocultar interfaz y barra superior (o pulsa H)">
       <span>👁️</span> <span class="hide-ui-label">Ocultar</span>
     </button>
+  </header>
 
-    <!-- Contenedor de Opciones (Barra horizontal en Desktop, Menú desplegable en Móvil) -->
-    <div id="nav-drawer" class="nav-drawer">
-      <!-- Subir Imagen Propia (Requiere Pase 24h) -->
-      <div class="preset-group">
-        <input type="file" id="image-upload-input" accept="image/*" style="display: none">
-        <button class="btn btn-sm btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos (Requiere Pase 24h)">🖼️ Subir Imagen 🔒</button>
+  <!-- Telón de Fondo para Menú de Opciones -->
+  <div id="nav-drawer-backdrop" class="nav-drawer-backdrop"></div>
+
+  <!-- Panel Desplegable Estructurado de Control y Opciones -->
+  <div id="nav-drawer" class="nav-drawer">
+    <div class="drawer-header-bar">
+      <div class="drawer-header-left">
+        <span class="drawer-gear">⚙️</span>
+        <span class="drawer-header-title">PANEL DE OPCIONES & CONTROL</span>
+      </div>
+      <button class="drawer-btn-close" id="btn-close-nav-drawer" aria-label="Cerrar panel">✕</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- 1. ECONOMÍA & MEJORAS -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">💰</span> <span>ECONOMÍA & MEJORAS IDLE</span>
+        </div>
+        <div class="drawer-card drawer-money-box">
+          <div class="drawer-money-text">
+            <span class="drawer-cash-number" id="drawer-cash-display">$ 0</span>
+            <span class="drawer-rate-sub" id="drawer-rate-display">+ $0 / seg</span>
+          </div>
+          <div class="drawer-money-buttons">
+            <button class="btn btn-drawer-boost" id="btn-drawer-idle-boost" title="Ganancias 2X con anuncio">
+              <span>⚡ BOOST 2X</span>
+            </button>
+            <button class="btn btn-drawer-store" id="btn-drawer-idle-store" title="Abrir tienda de mejoras incrementales">
+              <span>🛒 MEJORAS</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- Controles de Modo & Jugador -->
-      <div class="status-badges">
-        <!-- Nombrar Jugador -->
-        <div class="player-name-badge" title="Haz clic para cambiar tu nombre de jugador">
-          <span class="name-icon">👤</span>
+      <!-- 2. PASE VIP & CUENTA -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">👑</span> <span>ESTADO VIP & CUENTA</span>
+        </div>
+        <div class="drawer-card drawer-vip-box">
+          <button class="btn btn-drawer-vip" id="btn-creator-pass-drawer" title="Obtener o ver Pase VIP">
+            <span id="drawer-vip-badge-label">⭐ Planes VIP (Desde $1)</span>
+          </button>
+          <button class="btn btn-drawer-auth" id="btn-open-auth-drawer" title="Canjear código o vincular PIN">
+            <span>🔑 Canjear / Vincular PIN</span>
+          </button>
+        </div>
+        <div class="drawer-player-row">
+          <span class="drawer-player-icon">👤</span>
+          <span class="drawer-player-label">Nombre de Jugador:</span>
           <input type="text" id="player-name-input" maxlength="15" value="Operativo" placeholder="Tu Nombre">
         </div>
-        <button class="btn btn-mode active" id="btn-mode-solo" title="Modo Solo Local (Gratis para jugar en TikTok)">👤 Modo Solo</button>
-        <button class="btn btn-mode" id="btn-mode-multi" title="Partida Multijugador Online (Requiere Pase 24h)">🌐 Online 🔒</button>
-        <button class="btn btn-sm btn-live" id="btn-toggle-live" title="Modo Live: ralentiza la acción a cámara lenta (0.35x) para streaming y directos (Requiere Pase 24h)">🔴 Modo Live 🔒</button>
-        <button class="btn btn-sm" id="btn-toggle-fullscreen" title="Pantalla Completa (Ideal para TikTok Live y pantalla completa)">📺 Pantalla Completa</button>
-        <button class="btn btn-sm btn-color" id="btn-color-picker" title="Cambiar color del Operativo (Visor y Luces)"><span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Traje</span></button>
-        <button class="btn btn-sm" id="btn-center-camera" title="Centrar cámara en tu personaje (o pulsa C)">🎯 Centrar</button>
-        <button class="btn btn-sm btn-drawer-room" id="btn-open-rooms-hub-drawer" title="Ver salas e invitar amigos (Requiere Pase 24h)">🏠 Salas 🔒</button>
-        <button class="btn btn-sm btn-drawer-auth" id="btn-open-auth-drawer" title="Iniciar Sesión / VIP">🔐 Mi Cuenta</button>
-        <button class="btn btn-sm" id="btn-share-room" title="Invitar amigos a tu sala privada (Requiere Pase 24h)">🔗 Invitar Amigo 🔒</button>
-        <button class="btn btn-sm" id="btn-add-bot" title="Añadir bot de demolición (Requiere Pase 24h)">+ Añadir Bot 🤖 🔒</button>
-        <button class="btn btn-sm" id="btn-clear-bots">🧹 Limpiar</button>
-        <button class="btn btn-sm" id="btn-toggle-sound">🔊 Sonido</button>
-        <button class="btn btn-sm btn-help" id="btn-help">❓ ¿Cómo jugar?</button>
+      </div>
+
+      <!-- 3. GRABACIÓN & EN VIVO -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">🔴</span> <span>GRABACIÓN & DIRECTOS</span>
+        </div>
+        <div class="drawer-btn-grid">
+          <button class="btn btn-drawer-item btn-record" id="btn-screen-record-drawer" title="Graba la partida a 60 FPS lista para TikTok/Reels">
+            <span class="rec-dot">🔴</span> <span id="drawer-rec-label">REC (TikTok/Reels)</span>
+          </button>
+          <button class="btn btn-drawer-item btn-live" id="btn-toggle-live" title="Cámara lenta cinematográfica (0.35x)">
+            <span>⏳ Modo Live 🔒</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. MODO DE JUEGO & SALAS -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">🌐</span> <span>MODO DE JUEGO & SALAS</span>
+        </div>
+        <div class="drawer-btn-grid">
+          <button class="btn btn-drawer-item btn-mode active" id="btn-mode-solo" title="Modo Solo Local">
+            <span>👤 Modo Solo</span>
+          </button>
+          <button class="btn btn-drawer-item btn-mode" id="btn-mode-multi" title="Partida Multijugador Online">
+            <span>🌐 Online 🔒</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-open-rooms-hub-drawer" title="Explorador de salas multijugador">
+            <span>🏠 Salas 🔒</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-share-room" title="Invitar amigos con enlace directo">
+            <span>🔗 Invitar Amigo 🔒</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. PERSONALIZACIÓN & TERRENO -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">🎨</span> <span>PERSONALIZACIÓN & MAPA</span>
+        </div>
+        <div class="drawer-btn-grid">
+          <input type="file" id="image-upload-input" accept="image/*" style="display: none">
+          <button class="btn btn-drawer-item btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos">
+            <span>🖼️ Subir Imagen 🔒</span>
+          </button>
+          <button class="btn btn-drawer-item btn-color" id="btn-color-picker" title="Cambiar color del traje y visor">
+            <span id="color-dot" class="color-dot" style="background:#f97316;"></span> <span id="color-label">Color Traje</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-add-bot" title="Añadir bot de demolición cinética">
+            <span>🤖 + Añadir Bot 🔒</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-clear-bots" title="Eliminar bots del mapa">
+            <span>🧹 Limpiar Bots</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 6. AJUSTES DE PANTALLA & AYUDA -->
+      <div class="drawer-category">
+        <div class="drawer-cat-header">
+          <span class="cat-icon">⚙️</span> <span>AJUSTES & AYUDA</span>
+        </div>
+        <div class="drawer-btn-grid">
+          <button class="btn btn-drawer-item" id="btn-center-camera" title="Centrar cámara en tu personaje">
+            <span>🎯 Centrar Cámara</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-toggle-fullscreen" title="Pantalla Completa">
+            <span>📺 Pantalla Completa</span>
+          </button>
+          <button class="btn btn-drawer-item" id="btn-toggle-sound" title="Sonido On / Off">
+            <span>🔊 Sonido</span>
+          </button>
+          <button class="btn btn-drawer-item btn-help" id="btn-help" title="Instrucciones y controles">
+            <span>❓ ¿Cómo Jugar?</span>
+          </button>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
   <!-- Botón Flotante para Mostrar Interfaz cuando está oculta -->
   <button id="btn-show-ui" class="btn-show-ui-pill" title="Mostrar interfaz y opciones">
@@ -851,16 +956,16 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=6.1"></script>
-  <script src="js/levelGenerator.js?v=6.1"></script>
-  <script src="js/physics.js?v=6.1"></script>
-  <script src="js/player.js?v=6.1"></script>
-  <script src="js/bot.js?v=6.1"></script>
-  <script src="js/multiplayer.js?v=6.1"></script>
-  <script src="js/idleManager.js?v=6.1"></script>
-  <script src="js/fix-webm-duration.js?v=6.1"></script>
-  <script src="js/videoRecorder.js?v=6.1"></script>
-  <script src="js/wompiManager.js?v=6.1"></script>
-  <script src="js/game.js?v=6.1"></script>
+  <script src="js/audio.js?v=6.3"></script>
+  <script src="js/levelGenerator.js?v=6.3"></script>
+  <script src="js/physics.js?v=6.3"></script>
+  <script src="js/player.js?v=6.3"></script>
+  <script src="js/bot.js?v=6.3"></script>
+  <script src="js/multiplayer.js?v=6.3"></script>
+  <script src="js/idleManager.js?v=6.3"></script>
+  <script src="js/fix-webm-duration.js?v=6.3"></script>
+  <script src="js/videoRecorder.js?v=6.3"></script>
+  <script src="js/wompiManager.js?v=6.3"></script>
+  <script src="js/game.js?v=6.3"></script>
 </body>
 </html>

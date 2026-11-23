@@ -176,7 +176,8 @@ class WompiManager {
     const openBtns = [
       document.getElementById('btn-creator-pass-top'),
       document.getElementById('btn-open-wompi-top'),
-      document.getElementById('btn-vip-hotbar')
+      document.getElementById('btn-vip-hotbar'),
+      document.getElementById('btn-creator-pass-drawer')
     ];
     openBtns.forEach((btn) => {
       if (btn) btn.addEventListener('click', () => this.openModal('Acceso Total al Arsenal & Creación Ilimitada'));
@@ -556,6 +557,25 @@ class WompiManager {
         this.badgeTop.title = isAdmin ? '👑 Super Administrador: Acceso Vitalicio Total y Permanente.' : `Pase VIP Activo (${remaining} restantes). Acceso total a fotos, webs y arsenal.`;
       }
 
+      const drawerVipBtn = document.getElementById('btn-creator-pass-drawer');
+      const drawerVipLabel = document.getElementById('drawer-vip-badge-label');
+      if (drawerVipBtn) {
+        drawerVipBtn.classList.add('pass-active');
+        drawerVipBtn.classList.remove('pass-inactive');
+        if (isAdmin) {
+          drawerVipBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)';
+          drawerVipBtn.style.boxShadow = '0 0 20px rgba(245, 158, 11, 0.7)';
+          drawerVipBtn.style.border = '1.5px solid #facc15';
+        } else {
+          drawerVipBtn.style.background = '';
+          drawerVipBtn.style.boxShadow = '';
+          drawerVipBtn.style.border = '';
+        }
+      }
+      if (drawerVipLabel) {
+        drawerVipLabel.innerHTML = isAdmin ? `👑 <strong>SUPER ADMIN:</strong> ♾️ ACTIVO` : `⭐ <strong>PASE VIP:</strong> ${remaining}`;
+      }
+
       // Actualizar contador del modal si está abierto
       const countdownEl = document.getElementById('wompi-active-countdown');
       if (countdownEl) {
@@ -587,6 +607,19 @@ class WompiManager {
           this.badgeTop.innerHTML = `<span>⭐ Planes VIP (Desde $1)</span>`;
         }
         this.badgeTop.title = 'Obtén el Pase VIP con Wompi (Desde $1 USD) para fotos y webs.';
+      }
+
+      const drawerVipBtn = document.getElementById('btn-creator-pass-drawer');
+      const drawerVipLabel = document.getElementById('drawer-vip-badge-label');
+      if (drawerVipBtn) {
+        drawerVipBtn.classList.remove('pass-active');
+        drawerVipBtn.classList.add('pass-inactive');
+        drawerVipBtn.style.background = '';
+        drawerVipBtn.style.boxShadow = '';
+        drawerVipBtn.style.border = '';
+      }
+      if (drawerVipLabel) {
+        drawerVipLabel.innerHTML = `⭐ Planes VIP (Desde $1)`;
       }
 
       if (this.game && this.game.localPlayer && this.game.localPlayer.isVip) {

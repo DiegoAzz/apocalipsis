@@ -450,6 +450,18 @@ class IdleManager {
       btnBoost.addEventListener('click', () => this.triggerAdBoost());
     }
 
+    const btnDrawerBoost = document.getElementById('btn-drawer-idle-boost');
+    if (btnDrawerBoost) {
+      btnDrawerBoost.addEventListener('click', () => this.triggerAdBoost());
+    }
+
+    const btnDrawerStore = document.getElementById('btn-drawer-idle-store');
+    if (btnDrawerStore && storeDrawer) {
+      btnDrawerStore.addEventListener('click', () => {
+        storeDrawer.classList.toggle('open');
+      });
+    }
+
     if (btnPrestige) {
       btnPrestige.addEventListener('click', () => this.triggerPrestige());
     }
@@ -508,16 +520,35 @@ class IdleManager {
       cashEl.textContent = `$ ${Math.floor(this.cash).toLocaleString()}`;
     }
 
+    const drawerCashEl = document.getElementById('drawer-cash-display');
+    if (drawerCashEl) {
+      drawerCashEl.textContent = `$ ${Math.floor(this.cash).toLocaleString()}`;
+    }
+
     const boostBtn = document.getElementById('btn-idle-boost');
-    if (boostBtn) {
+    const drawerBoostBtn = document.getElementById('btn-drawer-idle-boost');
+    if (boostBtn || drawerBoostBtn) {
       if (this.boostActive) {
-        boostBtn.classList.add('active');
         const mins = Math.floor(this.boostTimer / 60);
         const secs = Math.floor(this.boostTimer % 60);
-        boostBtn.innerHTML = `<span>⚡ 2X ACTIVO (${mins}:${secs < 10 ? '0' : ''}${secs})</span>`;
+        const text = `<span>⚡ 2X ACTIVO (${mins}:${secs < 10 ? '0' : ''}${secs})</span>`;
+        if (boostBtn) {
+          boostBtn.classList.add('active');
+          boostBtn.innerHTML = text;
+        }
+        if (drawerBoostBtn) {
+          drawerBoostBtn.classList.add('active');
+          drawerBoostBtn.innerHTML = text;
+        }
       } else {
-        boostBtn.classList.remove('active');
-        boostBtn.innerHTML = `<span>⚡ BOOST 2X (ANUNCIO)</span>`;
+        if (boostBtn) {
+          boostBtn.classList.remove('active');
+          boostBtn.innerHTML = `<span>⚡ BOOST 2X (ANUNCIO)</span>`;
+        }
+        if (drawerBoostBtn) {
+          drawerBoostBtn.classList.remove('active');
+          drawerBoostBtn.innerHTML = `<span>⚡ BOOST 2X</span>`;
+        }
       }
     }
 
@@ -543,8 +574,13 @@ class IdleManager {
 
   updateRateDisplay() {
     const rateEl = document.getElementById('idle-rate-display');
+    const rateText = `+ $${Math.round(this.cashPerSecond).toLocaleString()} / seg`;
     if (rateEl) {
-      rateEl.textContent = `+ $${Math.round(this.cashPerSecond).toLocaleString()} / seg`;
+      rateEl.textContent = rateText;
+    }
+    const drawerRateEl = document.getElementById('drawer-rate-display');
+    if (drawerRateEl) {
+      drawerRateEl.textContent = rateText;
     }
   }
 

@@ -1973,22 +1973,51 @@ class UIManager {
     this.setupRoomsHub();
     this.setupAuthModal();
 
-    // Mobile Navigation Drawer Toggle
+    // Structured Navigation & Options Drawer Toggle
     const menuToggle = document.getElementById('btn-menu-toggle');
     const navDrawer = document.getElementById('nav-drawer');
-    if (menuToggle && navDrawer) {
+    const navBackdrop = document.getElementById('nav-drawer-backdrop');
+    const btnCloseDrawer = document.getElementById('btn-close-nav-drawer');
+
+    const openDrawer = () => {
+      if (navDrawer) navDrawer.classList.add('open');
+      if (navBackdrop) navBackdrop.classList.add('open');
+    };
+    const closeDrawer = () => {
+      if (navDrawer) navDrawer.classList.remove('open');
+      if (navBackdrop) navBackdrop.classList.remove('open');
+    };
+
+    if (menuToggle) {
       menuToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        navDrawer.classList.toggle('open');
-      });
-      navDrawer.addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-          navDrawer.classList.remove('open');
+        if (navDrawer && navDrawer.classList.contains('open')) {
+          closeDrawer();
+        } else {
+          openDrawer();
         }
       });
-      document.addEventListener('click', (e) => {
-        if (!menuToggle.contains(e.target) && !navDrawer.contains(e.target)) {
-          navDrawer.classList.remove('open');
+    }
+
+    if (btnCloseDrawer) {
+      btnCloseDrawer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeDrawer();
+      });
+    }
+
+    if (navBackdrop) {
+      navBackdrop.addEventListener('click', () => closeDrawer());
+    }
+
+    if (navDrawer) {
+      navDrawer.addEventListener('click', (e) => {
+        const btn = e.target.tagName === 'BUTTON' ? e.target : e.target.closest('button');
+        if (btn) {
+          const keepOpenIds = ['btn-color-picker', 'btn-toggle-sound', 'btn-toggle-fullscreen', 'btn-center-camera', 'btn-drawer-idle-boost'];
+          if (!keepOpenIds.includes(btn.id)) {
+            closeDrawer();
+          }
         }
       });
     }

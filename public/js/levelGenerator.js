@@ -961,23 +961,23 @@ class LevelEngine {
     this.pageUrl = 'https://www.tiktok.com';
 
     const render = (img) => {
-      const isMobileScreen = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));
-      let targetW, targetH;
+      const naturalW = img.naturalWidth || 1080;
+      const naturalH = img.naturalHeight || 1920;
+      const aspect = naturalH / naturalW;
 
-      if (isMobileScreen) {
-        const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : (16 / 9);
-        targetW = Math.max(800, window.innerWidth || 800);
-        targetH = Math.round(targetW * screenAspect);
-      } else {
-        const screenW = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth >= 1200) ? window.innerWidth : 1600;
-        const aspect = (img.naturalHeight && img.naturalWidth) ? (img.naturalHeight / img.naturalWidth) : (1800 / 2880);
-        targetW = screenW;
-        targetH = Math.max(Math.round(screenW * aspect), Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) || 900));
-        if (targetH > 3200) targetH = 3200;
+      const isMobileScreen = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));
+      let targetW = isMobileScreen ? Math.max(900, Math.min(naturalW, 1200)) : 1600;
+      let targetH = Math.round(targetW * aspect);
+
+      if (targetH > 3600) {
+        targetH = 3600;
+        targetW = Math.round(targetH / aspect);
       }
 
       this.resize(targetW, targetH);
       const ctx = this.ctx;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.drawImage(img, 0, 0, this.width, this.height);
       this.syncGridFromCanvas();
@@ -1018,30 +1018,40 @@ class LevelEngine {
         img.crossOrigin = 'anonymous';
       }
       img.onload = () => {
-        // Adapt arena dimensions dynamically to match the mobile screen or desktop!
-        const isMobileScreen = (typeof window !== 'undefined') && (window.innerWidth <= 900 || ('ontouchstart' in window));
-        let targetW, targetH;
+        const naturalW = img.naturalWidth || img.width || 1080;
+        const naturalH = img.naturalHeight || img.height || 1920;
+        const aspect = naturalH / naturalW;
 
-        if (isMobileScreen) {
-          // On mobile: take the exact aspect ratio and dimensions of the mobile phone!
-          const screenAspect = (window.innerHeight && window.innerWidth) ? (window.innerHeight / window.innerWidth) : (16 / 9);
-          targetW = Math.max(800, window.innerWidth || 800);
-          targetH = Math.round(targetW * screenAspect);
-        } else {
-          // Desktop / PC: Adapt to fill entire screen width edge-to-edge with 0 black sidebars!
-          const screenW = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth >= 1200) ? window.innerWidth : 1600;
-          const aspect = img.height / img.width;
-          targetW = screenW;
-          targetH = Math.max(Math.round(screenW * aspect), Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) || 900));
-          if (targetH > 3200) targetH = 3200;
+        // Maintain exact aspect ratio to prevent ANY stretching or distortion
+        let targetW = naturalW;
+        let targetH = naturalH;
+
+        // Ensure adequate crisp resolution for destructible pixel physics (min width 900)
+        if (targetW < 900) {
+          targetW = 900;
+          targetH = Math.round(targetW * aspect);
+        }
+
+        // Cap dimensions within mobile/browser canvas memory limits (max width 2048, max height 4096)
+        const MAX_W = 2048;
+        const MAX_H = 4096;
+        if (targetW > MAX_W) {
+          targetW = MAX_W;
+          targetH = Math.round(targetW * aspect);
+        }
+        if (targetH > MAX_H) {
+          targetH = MAX_H;
+          targetW = Math.round(targetH / aspect);
         }
 
         this.resize(targetW, targetH);
 
         const ctx = this.ctx;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.clearRect(0, 0, this.width, this.height);
 
-        // Draw image covering 100% of the level canvas edge-to-edge!
+        // Draw image keeping 100% authentic aspect ratio and zero distortion
         ctx.drawImage(img, 0, 0, this.width, this.height);
 
         // Sync solid collision grid so every pixel of the uploaded image is destructible!
