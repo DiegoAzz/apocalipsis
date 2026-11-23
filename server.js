@@ -347,6 +347,28 @@ app.get('/api/pass/status', (req, res) => {
   }
 });
 
+// Consultar lista de pases o buscar por correo/código para Diego (Admin)
+app.get('/api/pass/admin-list', (req, res) => {
+  const adminKey = req.query.adminKey || req.headers['x-admin-key'];
+  if (adminKey !== '1580' && adminKey !== (process.env.ADMIN_PASSWORD || 'admin')) {
+    return res.status(403).json({ error: 'Acceso no autorizado' });
+  }
+  const passes = getCreatorPasses();
+  const search = (req.query.search || req.query.email || '').trim().toLowerCase();
+
+  if (search) {
+    const results = {};
+    for (const [key, p] of Object.entries(passes)) {
+      if (key.includes(search) || (p.code && p.code.includes(search)) || (p.pin && p.pin.includes(search)) || (p.reference && p.reference.toLowerCase().includes(search))) {
+        results[key] = p;
+      }
+    }
+    return res.json({ success: true, count: Object.keys(results).length, passes: results });
+  }
+
+  res.json({ success: true, count: Object.keys(passes).length, passes });
+});
+
 // ============================================================================
 // API OFICIAL TRM COLOMBIA (DÓLAR EN TIEMPO REAL - SUPERINTENDENCIA FINANCIERA)
 // Fuente oficial: datos.gov.co (dataset 32sa-8pi3) + Fallbacks
