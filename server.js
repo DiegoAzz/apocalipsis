@@ -1752,8 +1752,8 @@ loadRoomsFromDisk();
 function getOrCreateRoom(roomId) {
   const cleanId = (roomId || 'lobby').trim().toLowerCase();
   if (!rooms.has(cleanId)) {
-    let preset = 'wikipedia';
-    let url = 'https://en.wikipedia.org/wiki/Stick_figure';
+    let preset = 'tiktok';
+    let url = 'https://www.tiktok.com';
     let pageUrl = '';
     let pageData = null;
 
@@ -1823,7 +1823,7 @@ io.on('connection', (socket) => {
   let currentRoomId = null;
   let playerId = socket.id;
 
-  socket.on('join-room', ({ room, name, skinColor, hostPassExpires, hostEmail, isVip }) => {
+  socket.on('join-room', ({ room, name, skinColor, hostPassExpires, hostEmail, isVip, currentPreset, currentUrl, pageData }) => {
     const targetRoomId = (room || 'lobby').trim().toLowerCase();
 
     // Si el socket ya estaba en otra sala previamente, salir limpiamente de la sala anterior
@@ -1867,6 +1867,12 @@ io.on('connection', (socket) => {
         roomData.hostName = (name && name !== 'Operativo') ? name : (roomData.hostName || 'Anfitrión');
       }
       if (hostEmail) roomData.hostEmail = hostEmail;
+      if (currentPreset && (!roomData.craters || roomData.craters.length === 0)) {
+        roomData.preset = currentPreset;
+        roomData.url = currentUrl || '';
+        roomData.pageUrl = currentUrl || '';
+        if (pageData) roomData.pageData = pageData;
+      }
       saveRoomsToDisk();
       console.log(`[ROOM HOST] Sala ${targetRoomId} respaldada por anfitrion ${roomData.hostName} hasta ${new Date(roomData.hostPassExpires).toISOString()}`);
     }

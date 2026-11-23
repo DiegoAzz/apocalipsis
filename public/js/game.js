@@ -105,12 +105,13 @@ class Game {
       this.camera.x = Math.max(halfW, Math.min(this.level.width - halfW, this.camera.x));
     }
 
-    // Vertical bounds: center if it fits on screen, otherwise clamp within level bounds
+    // Vertical bounds: permitir a la cámara ver arriba si el jugador está en la zona alta
     if (this.level.height <= halfH * 2) {
       this.camera.y = this.level.height / 2;
       this.camera.targetY = this.camera.y;
     } else {
-      this.camera.y = Math.max(halfH, Math.min(this.level.height - halfH, this.camera.y));
+      const targetMinY = this.localPlayer ? Math.max(halfH * 0.45, Math.min(halfH, this.localPlayer.y)) : halfH;
+      this.camera.y = Math.max(targetMinY, Math.min(this.level.height - halfH, this.camera.y));
     }
   }
 
@@ -1736,18 +1737,19 @@ class Game {
 
   renderMinimap(ctx) {
     // Hide minimap completely on mobile, tablets or narrow screens (< 860px) so it doesn't obstruct gameplay
-    if (this.canvas.width < 860 || window.innerWidth < 860 || document.body.classList.contains('touch-active')) {
+    if (window.innerWidth < 860 || document.body.classList.contains('touch-active')) {
       return;
     }
 
-    const mw = 160;
+    const mw = 150;
     const mh = Math.floor(mw * (this.level.height / this.level.width));
-    const mx = this.canvas.width - mw - 20;
-    const my = 80;
+    const mx = window.innerWidth - mw - 16;
+    const my = 58;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(24, 24, 27, 0.85)';
-    ctx.strokeStyle = '#52525b';
+    ctx.scale(this.dpr, this.dpr);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 1.5;
     ctx.fillRect(mx, my, mw, mh);
     ctx.strokeRect(mx, my, mw, mh);
@@ -1756,8 +1758,8 @@ class Game {
 
     const scaleX = mw / this.level.width;
     const scaleY = mh / this.level.height;
-    const camW = (this.canvas.width / this.camera.zoom) * scaleX;
-    const camH = (this.canvas.height / this.camera.zoom) * scaleY;
+    const camW = (window.innerWidth / this.camera.zoom) * scaleX;
+    const camH = (window.innerHeight / this.camera.zoom) * scaleY;
     const camX = mx + (this.camera.x * scaleX) - camW / 2;
     const camY = my + (this.camera.y * scaleY) - camH / 2;
 
@@ -1768,7 +1770,7 @@ class Game {
     // Local Player dot
     ctx.fillStyle = '#22c55e';
     ctx.beginPath();
-    ctx.arc(mx + this.localPlayer.x * scaleX, my + this.localPlayer.y * scaleY, 3.5, 0, Math.PI * 2);
+    ctx.arc(mx + this.localPlayer.x * scaleX, my + this.localPlayer.y * scaleY, 4, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();

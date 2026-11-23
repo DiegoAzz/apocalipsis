@@ -686,12 +686,29 @@ class Player {
   respawn(level) {
     this.isDead = false;
     this.health = this.maxHealth;
-    this.x = Math.round(level.width / 2);
-    this.y = Math.min(220, Math.round(level.height * 0.25));
     this.vx = 0;
     this.vy = 0;
     this.jetpackFuel = this.maxJetpackFuel;
     this.spawnBeaconTimer = 5.0;
+
+    const centerX = Math.round(level.width / 2);
+    this.x = centerX;
+
+    // Buscar una posición Y segura en aire visible (entre y = 140 y y = 600)
+    let foundAir = false;
+    for (let y = 140; y < Math.min(800, level.height - 100); y += 16) {
+      if (!level.isSolid(centerX, y) && !level.isSolid(centerX, y + 24)) {
+        this.y = y;
+        foundAir = true;
+        break;
+      }
+    }
+    if (!foundAir) {
+      this.y = 200;
+      if (level && typeof level.carveHole === 'function') {
+        level.carveHole(centerX, 200, 50, 'respawn_clear');
+      }
+    }
   }
 
   // RENDER FUTURISTIC OPERATIVE SPRITE

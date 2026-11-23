@@ -29,13 +29,20 @@ class MultiplayerManager {
 
     console.log(`[MULTIPLAYER] Uniendo a sala "${this.roomId}" (isVip: ${isVip}, passExpires: ${passExpires})`);
 
+    const currentPreset = (this.game && this.game.level && this.game.level.preset) || 'tiktok';
+    const currentUrl = (this.game && this.game.level && this.game.level.pageUrl) || 'https://www.tiktok.com';
+    const pageData = (this.game && this.game.level && this.game.level.pageData) || null;
+
     this.socket.emit('join-room', {
       room: this.roomId,
       name: playerName,
       skinColor,
       hostPassExpires: passExpires,
       hostEmail: hostEmail,
-      isVip: isVip
+      isVip: isVip,
+      currentPreset: isVip ? currentPreset : null,
+      currentUrl: isVip ? currentUrl : null,
+      pageData: isVip ? pageData : null
     });
 
     if (this.game && this.game.ui) {
