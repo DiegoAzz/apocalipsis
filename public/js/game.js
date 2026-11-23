@@ -660,8 +660,10 @@ class Game {
       const authModal = document.getElementById('auth-code-modal');
       const shareModal = document.getElementById('share-modal');
       const helpModal = document.getElementById('help-modal');
+      const assistantModal = document.getElementById('assistant-modal');
       return !!(
         document.querySelector('.custom-modal.open') ||
+        (assistantModal && (assistantModal.style.display === 'flex' || assistantModal.classList.contains('open'))) ||
         (authModal && (authModal.style.display === 'flex' || authModal.classList.contains('open'))) ||
         (shareModal && (shareModal.style.display === 'flex' || shareModal.classList.contains('open'))) ||
         (helpModal && (helpModal.style.display === 'flex' || helpModal.classList.contains('open')))
@@ -699,6 +701,11 @@ class Game {
           if (shareModal && shareModal.style.display !== 'none') shareModal.style.display = 'none';
           const helpModal = document.getElementById('help-modal');
           if (helpModal && helpModal.style.display !== 'none') helpModal.style.display = 'none';
+          const assistantModal = document.getElementById('assistant-modal');
+          if (assistantModal && (assistantModal.classList.contains('open') || assistantModal.style.display !== 'none')) {
+            assistantModal.classList.remove('open');
+            assistantModal.style.display = 'none';
+          }
         }
         return;
       }

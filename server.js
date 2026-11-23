@@ -1092,6 +1092,179 @@ app.post('/api/auth/verify-code', (req, res) => {
   }
 });
 
+// ==========================================================================
+// BUZÓN DE SOPORTE & ASISTENTE ESPECIALIZADO (Tickets a diego.zuniga.plazas@gmail.com)
+// ==========================================================================
+const SUPPORT_TICKETS_PATH = path.join(__dirname, 'data', 'support_tickets.json');
+const SUPPORT_RECEIVER_EMAIL = process.env.SUPPORT_EMAIL || process.env.ADMIN_EMAIL || 'diego.zuniga.plazas@gmail.com';
+
+function getSupportTickets() {
+  try {
+    if (fs.existsSync(SUPPORT_TICKETS_PATH)) {
+      const raw = fs.readFileSync(SUPPORT_TICKETS_PATH, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error('[SUPPORT TICKETS READ ERROR]:', err);
+  }
+  return [];
+}
+
+function saveSupportTicket(ticket) {
+  try {
+    const list = getSupportTickets();
+    list.unshift(ticket);
+    const dataDir = path.dirname(SUPPORT_TICKETS_PATH);
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(SUPPORT_TICKETS_PATH, JSON.stringify(list, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('[SUPPORT TICKETS SAVE ERROR]:', err);
+    return false;
+  }
+}
+
+// Crear ticket y notificar a Diego por correo
+app.post('/api/support/ticket', async (req, res) => {
+  try {
+    const { email, name, category, codeOrRef, message } = req.body;
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'Por favor ingresa un correo electrónico válido para poder responderte.' });
+    }
+    if (!message || typeof message !== 'string' || message.trim().length < 5) {
+      return res.status(400).json({ error: 'Por favor detalla tu mensaje (mínimo 5 caracteres).' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = (name && typeof name === 'string' ? name.trim() : '') || 'Jugador de Apocalipsis';
+    const cleanCategory = (category && typeof category === 'string' ? category.trim() : 'Consulta General');
+    const cleanRef = (codeOrRef && typeof codeOrRef === 'string' ? codeOrRef.trim() : '');
+    const cleanMessage = message.trim();
+    const ticketId = `TICK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const timestamp = new Date().toISOString();
+    const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+
+    const ticket = {
+      id: ticketId,
+      email: cleanEmail,
+      name: cleanName,
+      category: cleanCategory,
+      codeOrRef: cleanRef,
+      message: cleanMessage,
+      ip: clientIp,
+      userAgent: req.headers['user-agent'] || '',
+      createdAt: timestamp,
+      status: 'pending'
+    };
+
+    saveSupportTicket(ticket);
+    console.log(`[SUPPORT TICKET CREATED] Ticket ${ticketId} de ${cleanEmail} [${cleanCategory}]`);
+
+    // Notificar al correo de Diego (y acuse de recibo al usuario)
+    let emailSentToAdmin = false;
+    let emailError = null;
+    try {
+      const transporter = getEmailTransporter();
+      if (transporter) {
+        const sender = process.env.SMTP_FROM || `"Apocalipsis Soporte" <${process.env.SMTP_USER || process.env.GMAIL_USER || 'no-reply@appzplay.online'}>`;
+        
+        // 1. Notificación a Diego
+        await transporter.sendMail({
+          from: sender,
+          to: SUPPORT_RECEIVER_EMAIL,
+          replyTo: cleanEmail,
+          subject: `🚨 [Apocalipsis Soporte] Ticket #${ticketId}: ${cleanCategory.toUpperCase()} (${cleanEmail})`,
+          html: `
+            <div style="background:#0f172a; color:#f8fafc; padding:28px; border-radius:12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:600px; margin:auto; border:1px solid #334155;">
+              <h2 style="color:#f59e0b; margin-top:0; font-size:22px;">⚡ NUEVO MENSAJE EN EL BUZÓN DE APOCALIPSIS</h2>
+              <p style="font-size:14px; color:#cbd5e1; margin-bottom:16px;">Has recibido una solicitud directa de un usuario en el juego:</p>
+              
+              <div style="background:#1e293b; border-left:4px solid #38bdf8; padding:16px; border-radius:6px; margin:16px 0;">
+                <p style="margin:4px 0;"><strong>Ticket ID:</strong> <span style="color:#facc15; font-family:monospace; font-weight:bold;">${ticketId}</span></p>
+                <p style="margin:4px 0;"><strong>Usuario:</strong> ${cleanName}</p>
+                <p style="margin:4px 0;"><strong>Correo:</strong> <a href="mailto:${cleanEmail}" style="color:#38bdf8; text-decoration:none;">${cleanEmail}</a></p>
+                <p style="margin:4px 0;"><strong>Categoría:</strong> <span style="background:#334155; padding:2px 8px; border-radius:4px; font-weight:bold; color:#f8fafc;">${cleanCategory}</span></p>
+                ${cleanRef ? `<p style="margin:4px 0;"><strong>Código / Referencia Wompi:</strong> <span style="color:#4ade80; font-family:monospace; font-weight:bold;">${cleanRef}</span></p>` : ''}
+                <p style="margin:4px 0;"><strong>Fecha:</strong> ${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</p>
+                <p style="margin:4px 0; font-size:12px; color:#94a3b8;"><strong>IP:</strong> ${clientIp}</p>
+              </div>
+
+              <div style="background:#020617; border:1px solid #1e293b; padding:18px; border-radius:8px; margin:20px 0;">
+                <div style="font-size:11px; font-weight:bold; color:#94a3b8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Mensaje del Usuario:</div>
+                <div style="white-space:pre-wrap; font-size:14px; color:#f8fafc; line-height:1.6;">${cleanMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+              </div>
+
+              <div style="text-align:center; margin-top:24px;">
+                <a href="mailto:${cleanEmail}?subject=Re:%20[Apocalipsis%20Soporte]%20Ticket%20${ticketId}" style="background:#0284c7; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px;">✉️ Responder a ${cleanEmail}</a>
+              </div>
+            </div>
+          `
+        });
+        emailSentToAdmin = true;
+        console.log(`[SUPPORT EMAIL DISPATCH SUCCESS] Notificado a ${SUPPORT_RECEIVER_EMAIL}`);
+
+        // 2. Acuse de recibo al usuario
+        try {
+          await transporter.sendMail({
+            from: sender,
+            to: cleanEmail,
+            subject: `🤖 Hemos recibido tu solicitud de soporte #${ticketId} - Apocalipsis VI`,
+            html: `
+              <div style="background:#0f172a; color:#f8fafc; padding:26px; border-radius:12px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; max-width:520px; margin:auto; border:1px solid #334155;">
+                <h2 style="color:#38bdf8; margin-top:0; font-size:22px; text-align:center;">⚡ APOCALIPSIS VI</h2>
+                <h4 style="color:#22c55e; text-align:center; margin-top:4px;">¡Solicitud Recibida con Éxito!</h4>
+                <p style="font-size:14px; color:#cbd5e1; line-height:1.6;">Hola <strong>${cleanName}</strong>, hemos recibido tu consulta en nuestro buzón de soporte.</p>
+                
+                <div style="background:#1e293b; border:1px dashed #38bdf8; padding:14px; border-radius:10px; margin:16px 0; text-align:center;">
+                  <div style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Número de Ticket:</div>
+                  <div style="font-size:24px; font-weight:bold; color:#facc15; font-family:monospace; margin-top:4px;">${ticketId}</div>
+                </div>
+
+                <p style="font-size:13px; color:#94a3b8; line-height:1.6;">
+                  Nuestro equipo revisará los detalles y te responderá a este correo en la mayor brevedad posible (menos de 24 horas hábiles).
+                </p>
+                <div style="background:#020617; padding:12px; border-radius:8px; margin:14px 0; font-size:12px; color:#94a3b8; border:1px solid #1e293b;">
+                  <strong>Resumen de tu mensaje:</strong><br>
+                  <span style="color:#cbd5e1;">"${cleanMessage.substring(0, 160)}${cleanMessage.length > 160 ? '...' : ''}"</span>
+                </div>
+                <hr style="border:none; border-top:1px solid #334155; margin:16px 0;">
+                <p style="font-size:11px; color:#64748b; text-align:center;">
+                  Apocalipsis Web Obliteration • <a href="https://apocalipsis.appzplay.online" style="color:#38bdf8; text-decoration:none;">apocalipsis.appzplay.online</a>
+                </p>
+              </div>
+            `
+          });
+        } catch (ackErr) {
+          console.warn('[SUPPORT USER ACK ERROR]:', ackErr.message);
+        }
+      }
+    } catch (errEmail) {
+      emailError = errEmail.message;
+      console.error('[SUPPORT EMAIL DISPATCH FAILED]:', errEmail.message);
+    }
+
+    res.json({
+      success: true,
+      ticketId,
+      emailSent: emailSentToAdmin,
+      message: `¡Tu mensaje ha sido enviado al equipo de soporte con el ticket #${ticketId}! Te responderemos a ${cleanEmail} lo más pronto posible.`
+    });
+  } catch (err) {
+    console.error('[SUPPORT TICKET API ERROR]:', err);
+    res.status(500).json({ error: 'Error interno procesando el ticket.' });
+  }
+});
+
+// Consultar tickets (Admin / Seguridad)
+app.get('/api/support/tickets', (req, res) => {
+  const adminKey = req.query.adminKey || req.headers['x-admin-key'];
+  if (adminKey !== '1580' && adminKey !== (process.env.ADMIN_PASSWORD || 'admin')) {
+    return res.status(403).json({ error: 'Acceso no autorizado' });
+  }
+  const tickets = getSupportTickets();
+  res.json({ success: true, count: tickets.length, tickets });
+});
+
 // Serve room custom image (From Memory or Disk)
 app.get('/api/room-image/:roomId', (req, res) => {
   const targetRoomId = (req.params.roomId || 'lobby').trim().toLowerCase();
