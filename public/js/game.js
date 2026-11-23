@@ -9,6 +9,9 @@ class Game {
 
     const savedName = (typeof localStorage !== 'undefined' && localStorage.getItem('destroy_player_name')) || 'Operativo';
     this.localPlayer = new Player('local', savedName, '#f97316', true);
+    if (window.CharacterManager) {
+      window.CharacterManager.applyInitialSelection();
+    }
     this.bots = [];
     this.multiplayer = new MultiplayerManager(this);
 
@@ -705,6 +708,9 @@ class Game {
           if (assistantModal && (assistantModal.classList.contains('open') || assistantModal.style.display !== 'none')) {
             assistantModal.classList.remove('open');
             assistantModal.style.display = 'none';
+          }
+          if (window.CharacterManager) {
+            window.CharacterManager.close();
           }
         }
         return;

@@ -88,6 +88,11 @@ class Player {
     this.kills = 0;
     this.deaths = 0;
     this.damageDealt = 0;
+
+    // Character Customization
+    this.characterId = 'operative_orange';
+    this.characterConfig = null;
+    this.characterScale = 1.0;
     this.score = 0;
     this.isDead = false;
     this.respawnTimer = 0;
@@ -236,6 +241,19 @@ class Player {
       '#06b6d4': 175   // Teal
     };
     return colorMap[this.color] || 0;
+  }
+
+  setCharacter(charOrId) {
+    if (!charOrId) return;
+    const char = typeof charOrId === 'string'
+      ? (window.CharacterManager && window.CharacterManager.getCharacter(charOrId))
+      : charOrId;
+    if (!char) return;
+
+    this.characterId = char.id;
+    this.characterConfig = char;
+    this.characterScale = char.scale || 1.0;
+    if (char.color) this.color = char.color;
   }
 
   update(dt, input, level, physics, onShoot, onGrenade) {
@@ -769,17 +787,49 @@ class Player {
     const offY = 24 - targetH; // Anchor feet to bottom of hitbox (y = 24)
     const offX = -targetW / 2;
 
-    // Apply Multiplayer Color Shift (Changes Visor & Armor Lights)
-    const hueDeg = this.getHueShift();
-    if (hueDeg !== 0) {
-      ctx.filter = `hue-rotate(${hueDeg}deg) saturate(1.2)`;
+    // Character Aura Glow
+    if (this.characterConfig && this.characterConfig.auraColor) {
+      ctx.save();
+      const auraPulse = 0.88 + Math.sin(this.animTimer * 4.5) * 0.12;
+      ctx.fillStyle = this.characterConfig.auraColor;
+      ctx.beginPath();
+      ctx.arc(0, -6, 28 * auraPulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Apply Character Scale
+    if (this.characterScale && this.characterScale !== 1.0) {
+      ctx.scale(this.characterScale, this.characterScale);
+    }
+
+    // Apply Character Style Filter or Hue Shift
+    if (this.characterConfig && this.characterConfig.customFilter) {
+      ctx.filter = this.characterConfig.customFilter;
+    } else if (this.characterConfig && (this.characterConfig.hueShift !== undefined || this.characterConfig.saturation)) {
+      ctx.filter = `hue-rotate(${this.characterConfig.hueShift || 0}deg) saturate(${this.characterConfig.saturation || 1.2})`;
+    } else {
+      const hueDeg = this.getHueShift();
+      if (hueDeg !== 0) ctx.filter = `hue-rotate(${hueDeg}deg) saturate(1.2)`;
     }
 
     // Facing direction
     ctx.scale(this.facing, 1);
 
-    // Draw Hero Body Sprite from Spritesheet with full helmet and head
-    if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0) {
+    // Draw Hero Body (Stickman, Custom Sprite or Spritesheet)
+    if (this.characterConfig && this.characterConfig.renderType === 'stickman') {
+      this.renderFallbackStickman(ctx);
+    } else if (this.characterConfig && this.characterConfig.customSpriteUrl) {
+      if (!this.characterConfig._img) {
+        this.characterConfig._img = new Image();
+        this.characterConfig._img.src = this.characterConfig.customSpriteUrl;
+      }
+      if (this.characterConfig._img.complete && this.characterConfig._img.naturalWidth > 0) {
+        ctx.drawImage(this.characterConfig._img, offX, offY, targetW, targetH);
+      } else {
+        this.renderFallbackStickman(ctx);
+      }
+    } else if (spriteSheetImg.complete && spriteSheetImg.naturalWidth > 0) {
       ctx.drawImage(
         spriteSheetImg,
         heroSprite.x, heroSprite.y, heroSprite.w, heroSprite.h,
