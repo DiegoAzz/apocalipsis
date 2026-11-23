@@ -1825,7 +1825,18 @@ io.on('connection', (socket) => {
 
   socket.on('join-room', ({ room, name, skinColor, hostPassExpires, hostEmail, isVip }) => {
     const targetRoomId = (room || 'lobby').trim().toLowerCase();
+
+    // Si el socket ya estaba en otra sala previamente, salir limpiamente de la sala anterior
+    if (currentRoomId && currentRoomId !== targetRoomId && rooms.has(currentRoomId)) {
+      socket.leave(currentRoomId);
+      const oldRoom = rooms.get(currentRoomId);
+      if (oldRoom && oldRoom.players) {
+        oldRoom.players.delete(playerId);
+        socket.to(currentRoomId).emit('player-left', playerId);
+      }
+    }
     currentRoomId = targetRoomId;
+    socket.join(targetRoomId);
 
     const roomData = getOrCreateRoom(targetRoomId);
     const now = Date.now();
@@ -1864,7 +1875,8 @@ io.on('connection', (socket) => {
     const isGuest = !hasIncomingPass;
     if (!isLobby && isGuest) {
       const roomValid = roomData.hostPassExpires && roomData.hostPassExpires > now;
-      if (!roomValid) {
+      const isRecentlyCreated = roomData.createdAt && (now - roomData.createdAt < 300000); // 5 min de gracia
+      if (!roomValid && !isRecentlyCreated) {
         // La sala no tiene anfitrion con pase vigente o el pase ya expiro
         socket.emit('room-access-denied', {
           reason: 'HOST_PLAN_EXPIRED',
@@ -1873,10 +1885,8 @@ io.on('connection', (socket) => {
         });
         return;
       }
-      console.log(`[GUEST ACCESS FREE] Invitado ${name} (${playerId}) se unio GRATIS a la sala ${targetRoomId} de ${roomData.hostName}`);
+      console.log(`[GUEST ACCESS FREE] Invitado ${name} (${playerId}) se unio GRATIS a la sala ${targetRoomId} de ${roomData.hostName || 'Anfitrión'}`);
     }
-
-    socket.join(targetRoomId);
 
     // Dynamic Futuristic Operative Colors for Multiplayer
     const MULTIPLAYER_COLORS = [

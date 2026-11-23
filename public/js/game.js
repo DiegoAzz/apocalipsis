@@ -430,7 +430,7 @@ class Game {
 
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = (urlParams.get('room') || '').trim();
-    const isFriendInvite = roomParam && roomParam !== 'lobby';
+    const isFriendInvite = roomParam && roomParam !== 'lobby' && roomParam !== 'solo';
 
     const presetMap = {
       tiktok: 'https://www.tiktok.com',
@@ -657,6 +657,13 @@ class Game {
         e.stopPropagation();
         startGame('https://www.tiktok.com', 'tiktok');
       });
+    }
+
+    // Si el usuario llega por enlace de invitación (?room=...), entrar directamente a la batalla:
+    if (isFriendInvite) {
+      setTimeout(() => {
+        startGame(null, null);
+      }, 50);
     }
   }
 
@@ -1859,27 +1866,26 @@ class UIManager {
           reader.onerror = rej;
           reader.readAsDataURL(blob);
         });
+        this.game.lastCapturedDataUrl = dataUrl;
         await this.game.loadUserImage(dataUrl);
         this.game.level.pageUrl = targetUrl;
         this.setPresetDisplay(fallbackPreset, targetUrl);
 
         // Sincronizar captura a la sala multijugador para que todos jueguen sobre la misma web
-        if (!this.game.isSoloMode) {
-          const roomId = this.game.multiplayer.roomId || 'lobby';
-          try {
-            await fetch('/api/upload-room-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                roomId,
-                imageBase64: dataUrl,
-                pageUrl: targetUrl,
-                preset: 'image'
-              })
-            });
-          } catch (syncErr) {
-            console.warn('[SYNC ROOM IMAGE ERR]:', syncErr);
-          }
+        const roomId = (this.game.multiplayer && this.game.multiplayer.roomId) || 'lobby';
+        try {
+          fetch('/api/upload-room-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roomId,
+              imageBase64: dataUrl,
+              pageUrl: targetUrl,
+              preset: 'image'
+            })
+          });
+        } catch (syncErr) {
+          console.warn('[SYNC ROOM IMAGE ERR]:', syncErr);
         }
       } catch (err) {
         console.warn('[SCREENSHOT FALLBACK]:', err.message);
@@ -1978,6 +1984,7 @@ class UIManager {
           const reader = new FileReader();
           reader.onload = (ev) => {
             const dataUrl = ev.target.result;
+            this.game.lastCapturedDataUrl = dataUrl;
             this.game.triggerDestructionCountdown(`Imagen: ${file.name}`, async () => {
               await this.game.loadUserImage(dataUrl);
 
@@ -2507,14 +2514,40 @@ class UIManager {
         this.showToast('🔒 Crear o unirte a Salas Multijugador requiere Pase Creador 24 Horas ($1 USD)');
         return;
       }
-      let currentRoom = this.game.multiplayer.roomId || 'lobby';
-      if (this.game.isSoloMode || !currentRoom || currentRoom === 'solo') {
+      let currentRoom = (this.game.multiplayer.roomId || '').toLowerCase();
+      if (!currentRoom || currentRoom === 'lobby' || currentRoom === 'solo' || this.game.isSoloMode) {
         currentRoom = 'sala_' + Math.random().toString(36).substring(2, 7);
-        this.game.isSoloMode = false;
-        this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+      }
+      this.game.isSoloMode = false;
+      this.game.multiplayer.init(currentRoom, this.game.localPlayer.name, this.game.localPlayer.color);
+
+      // Sincronizar mapa o imagen actual a la sala compartida
+      if (this.game.lastCapturedDataUrl) {
+        try {
+          fetch('/api/upload-room-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roomId: currentRoom,
+              imageBase64: this.game.lastCapturedDataUrl,
+              pageUrl: (this.game.level && this.game.level.pageUrl) || '',
+              preset: 'image'
+            })
+          });
+        } catch (e) {}
+      } else if (this.game.level) {
+        if (this.game.level.pageData) {
+          this.game.multiplayer.emitChangeMap('custom', this.game.level.pageUrl, this.game.level.pageData);
+        } else if (this.game.level.preset && this.game.level.preset !== 'wikipedia') {
+          this.game.multiplayer.emitChangeMap(this.game.level.preset, this.game.level.pageUrl || '');
+        }
       }
 
       const shareUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoom}`;
+      try {
+        window.history.replaceState({ room: currentRoom }, '', shareUrl);
+      } catch (e) {}
+
       if (shareRoomInput) shareRoomInput.value = shareUrl;
       if (shareRoomCode) shareRoomCode.textContent = currentRoom.toUpperCase();
 

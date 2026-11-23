@@ -12,50 +12,85 @@ class MultiplayerManager {
     setInterval(() => this.flushTerrainDamage(), 40);
   }
 
+  sendJoinRoom() {
+    if (!this.socket) return;
+    let passExpires = 0;
+    let hostEmail = '';
+    let isVip = false;
+    try {
+      passExpires = parseInt(localStorage.getItem('apocalipsis_creator_pass_expires') || '0', 10);
+      const authUser = JSON.parse(localStorage.getItem('apocalipsis_auth_user') || '{}');
+      if (authUser.email) hostEmail = authUser.email;
+      if (authUser.isVip || (passExpires > Date.now())) isVip = true;
+    } catch (e) {}
+
+    const playerName = (this.game && this.game.localPlayer && this.game.localPlayer.name) || this.localPlayerName || 'Operativo';
+    const skinColor = (this.game && this.game.localPlayer && this.game.localPlayer.color) || this.localPlayerColor || '#f97316';
+
+    console.log(`[MULTIPLAYER] Uniendo a sala "${this.roomId}" (isVip: ${isVip}, passExpires: ${passExpires})`);
+
+    this.socket.emit('join-room', {
+      room: this.roomId,
+      name: playerName,
+      skinColor,
+      hostPassExpires: passExpires,
+      hostEmail: hostEmail,
+      isVip: isVip
+    });
+
+    if (this.game && this.game.ui) {
+      this.game.ui.setConnectionStatus(true, this.roomId);
+    }
+
+    // Si el usuario es anfitrión con pase activo y ya tiene un mapa cargado, sincronizar mapa a la nueva sala:
+    if (this.game && this.game.level && isVip) {
+      setTimeout(() => {
+        if (this.game.level.pageData) {
+          this.emitChangeMap('custom', this.game.level.pageUrl, this.game.level.pageData);
+        } else if (this.game.level.preset && this.game.level.preset !== 'wikipedia') {
+          this.emitChangeMap(this.game.level.preset, this.game.level.pageUrl || '');
+        }
+      }, 150);
+    }
+  }
+
   init(roomId = 'lobby', playerName = 'Operative', skinColor = '#f97316') {
-    this.roomId = roomId;
+    this.roomId = (roomId || 'lobby').trim().toLowerCase();
+    this.localPlayerName = playerName;
+    this.localPlayerColor = skinColor;
 
     if (typeof io === 'undefined') {
       console.warn('Socket.io library not loaded, running in offline mode.');
       return;
     }
 
-    this.socket = io({
-      reconnectionAttempts: 5,
-      timeout: 10000
-    });
+    if (this.socket) {
+      if (this.socket.connected) {
+        this.sendJoinRoom();
+        return;
+      }
+    } else {
+      this.socket = io({
+        reconnectionAttempts: 10,
+        timeout: 10000
+      });
+      this.setupSocketListeners();
+    }
+  }
 
+  setupSocketListeners() {
     this.socket.on('connect', () => {
       this.connected = true;
       this.selfId = this.socket.id;
       if (this.game.localPlayer) {
         this.game.localPlayer.id = this.selfId;
       }
-
-      let passExpires = 0;
-      let hostEmail = '';
-      let isVip = false;
-      try {
-        passExpires = parseInt(localStorage.getItem('apocalipsis_creator_pass_expires') || '0', 10);
-        const authUser = JSON.parse(localStorage.getItem('apocalipsis_auth_user') || '{}');
-        if (authUser.email) hostEmail = authUser.email;
-        if (authUser.isVip || (passExpires > Date.now())) isVip = true;
-      } catch (e) {}
-
-      this.socket.emit('join-room', {
-        room: this.roomId,
-        name: playerName,
-        skinColor,
-        hostPassExpires: passExpires,
-        hostEmail: hostEmail,
-        isVip: isVip
-      });
-      this.game.ui.setConnectionStatus(true, this.roomId);
+      this.sendJoinRoom();
     });
 
     this.socket.on('disconnect', () => {
       this.connected = false;
-      this.game.ui.setConnectionStatus(false, this.roomId);
+      if (this.game && this.game.ui) this.game.ui.setConnectionStatus(false, this.roomId);
     });
 
     this.socket.on('room-access-denied', (err) => {
@@ -119,6 +154,12 @@ class MultiplayerManager {
       } else {
         this.game.loadMapPreset(data.preset || 'wikipedia', data.url, false);
       }
+
+      this.game.isGameStarted = true;
+      setTimeout(() => {
+        this.game.snapCameraToPlayer();
+        this.game.adaptZoomForCurrentMap();
+      }, 100);
 
       // Replay recent craters
       if (data.craters && data.craters.length) {
