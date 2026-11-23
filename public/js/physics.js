@@ -591,7 +591,6 @@ class PhysicsEngine {
           const bx2 = p.x + Math.cos(beamAngle) * 360;
           const by2 = p.y + Math.sin(beamAngle) * 360;
           this.level.carveLine(p.x, p.y, bx2, by2, 14);
-          if (onTerrainDamage) onTerrainDamage(p.x, p.y, 16, 'neutron');
 
           // Plasma sparks along beam
           if (Math.random() < 0.4) {

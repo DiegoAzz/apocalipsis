@@ -1225,7 +1225,9 @@ class Game {
   }
 
   spawnRemoteShot(data) {
-    const w = this.localPlayer.weapons[data.weaponIndex] || this.localPlayer.weapons[0];
+    const w = this.localPlayer.weapons[data.weaponIndex] || 
+              (data.weapon ? this.localPlayer.weapons.find(wp => wp.name === data.weapon) : null) || 
+              this.localPlayer.weapons[0];
     const angle = data.aimAngle;
     const originX = data.originX;
     const originY = data.originY;
@@ -1325,6 +1327,77 @@ class Game {
         damage: w.damage,
         radius: w.radius,
         life: 0.45
+      });
+    } else if (w.name === 'Too Much') {
+      window.soundManager.playRocketLaunch();
+      this.physics.addProjectile({
+        type: 'too_much',
+        weapon: 'too_much',
+        ownerId: data.playerId,
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * 6,
+        vy: Math.sin(angle) * 6 - 2,
+        timer: 1.5,
+        radius: 40,
+        damage: 55,
+        life: 5.0
+      });
+    } else if (w.name === 'The Magic Wand') {
+      window.soundManager.playMagicWand();
+      const targetX = data.aimX !== undefined ? data.aimX : (originX + Math.cos(angle) * 350);
+      const targetY = data.aimY !== undefined ? data.aimY : (originY + Math.sin(angle) * 350);
+      this.physics.addProjectile({
+        type: 'magic_wand',
+        weapon: 'wand',
+        ownerId: data.playerId,
+        targetX,
+        targetY,
+        life: 0.1
+      });
+    } else if (w.name === 'PSR B0531+21') {
+      window.soundManager.playNeutron();
+      const targetX = data.aimX !== undefined ? data.aimX : (originX + Math.cos(angle) * 350);
+      const targetY = data.aimY !== undefined ? data.aimY : (originY + Math.sin(angle) * 350);
+      this.physics.addProjectile({
+        type: 'neutron',
+        weapon: 'neutron',
+        ownerId: data.playerId,
+        x: targetX,
+        y: targetY,
+        timer: 2.0,
+        rotation: 0,
+        life: 2.0
+      });
+    } else if (w.name === 'Tsar Bomba') {
+      window.soundManager.playNukeSiren();
+      this.physics.addProjectile({
+        type: 'nuke',
+        weapon: 'nuke',
+        ownerId: data.playerId,
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * 9,
+        vy: Math.sin(angle) * 9,
+        radius: w.radius,
+        damage: w.damage,
+        life: 6.0
+      });
+    } else if (w.name === 'Grenade Launcher') {
+      window.soundManager.playRocketLaunch();
+      const throwSpeed = 14;
+      this.physics.addProjectile({
+        type: 'grenade',
+        weapon: 'grenade',
+        ownerId: data.playerId,
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * throwSpeed,
+        vy: Math.sin(angle) * throwSpeed - 2.5,
+        timer: 1.8,
+        radius: 55,
+        damage: 85,
+        life: 5.0
       });
     }
   }
