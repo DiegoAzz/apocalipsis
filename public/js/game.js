@@ -1125,6 +1125,11 @@ class Game {
   }
 
   async loadUserImage(imageSource) {
+    this.lastCapturedDataUrl = imageSource;
+    if (this.level) {
+      this.level.appliedCraters = [];
+      this.level.destroyedCount = 0;
+    }
     await this.level.loadImageAsLevel(imageSource);
     this.localPlayer.respawn(this.level);
     this.adaptZoomForCurrentMap();
@@ -1139,6 +1144,47 @@ class Game {
     if (this.ui) this.ui.victoryShown = false;
     this.ui.updateDestructionBar(0);
     this.ui.setPresetDisplay('image', 'Imagen Personalizada');
+  }
+
+  resetCurrentMap() {
+    if (!this.level) return;
+    this.level.appliedCraters = [];
+    this.level.destroyedCount = 0;
+
+    if (this.localPlayer) {
+      this.localPlayer.health = 100;
+      this.localPlayer.isDead = false;
+    }
+
+    if (!this.isSoloMode && this.multiplayer && this.multiplayer.connected) {
+      if (this.level.presetName === 'image' && this.lastCapturedDataUrl) {
+        fetch('/api/upload-room-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roomId: this.multiplayer.roomId,
+            imageBase64: this.lastCapturedDataUrl,
+            pageUrl: this.level.pageUrl || 'Imagen Personalizada',
+            preset: 'image'
+          })
+        }).catch(() => {});
+      } else {
+        this.multiplayer.emitChangeMap(this.level.presetName || 'tiktok', this.level.pageUrl || '');
+      }
+    }
+
+    if (this.level.presetName === 'image' && this.lastCapturedDataUrl) {
+      this.loadUserImage(this.lastCapturedDataUrl, false);
+    } else if (this.level.pageData) {
+      this.loadParsedWebpage(this.level.pageData, false);
+    } else {
+      this.loadMapPreset(this.level.presetName || 'tiktok', this.level.pageUrl || '', false);
+    }
+
+    if (this.ui) {
+      this.ui.updateDestructionBar(0);
+      this.ui.showToast('🔄 ¡Imagen / Mapa reparado y limpio al 100%!');
+    }
   }
 
   // Draw Pixel-Art Icons on bottom weapon slots using uploaded Futuristic Spritesheet
@@ -2040,6 +2086,22 @@ class UIManager {
     if (this.urlInput) {
       this.urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') handleUrlSubmit();
+      });
+    }
+
+    // Botones de Reiniciar / Reparar Mapa (Barra superior y Cajón de Opciones)
+    const restartBtn = document.getElementById('btn-restart-current-map');
+    if (restartBtn) {
+      restartBtn.addEventListener('click', () => this.game.resetCurrentMap());
+    }
+    const drawerRestartBtn = document.getElementById('btn-drawer-restart-map');
+    if (drawerRestartBtn) {
+      drawerRestartBtn.addEventListener('click', () => {
+        this.game.resetCurrentMap();
+        const drawer = document.getElementById('nav-drawer');
+        const backdrop = document.getElementById('nav-drawer-backdrop');
+        if (drawer) drawer.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
       });
     }
 

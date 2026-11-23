@@ -117,6 +117,9 @@
       <button class="btn btn-primary" id="btn-destroy-url">
         <span>⚡ DESTRUIR</span>
       </button>
+      <button class="btn btn-restart-map" id="btn-restart-current-map" title="Reiniciar / Restaurar imagen o página intacta">
+        <span>🔄 REINICIAR</span>
+      </button>
     </div>
 
     <!-- Botón Menú / Opciones -->
@@ -230,6 +233,9 @@
           <input type="file" id="image-upload-input" accept="image/*" style="display: none">
           <button class="btn btn-drawer-item btn-primary" id="btn-upload-image" title="Sube fotos o memes para destruirlos">
             <span>🖼️ Subir Imagen 🔒</span>
+          </button>
+          <button class="btn btn-drawer-item btn-restart-item" id="btn-drawer-restart-map" title="Reparar y reiniciar mapa o foto al 100%">
+            <span>🔄 Reparar / Reiniciar</span>
           </button>
           <button class="btn btn-drawer-item btn-char" id="btn-open-character-modal" onclick="if(window.CharacterManager) window.CharacterManager.open();" title="Elige con qué personaje o avatar destruir">
             <span>👤 Elegir Personaje</span>
@@ -969,18 +975,18 @@
 
   <!-- Scripts -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/audio.js?v=7.5"></script>
-  <script src="js/levelGenerator.js?v=7.5"></script>
-  <script src="js/physics.js?v=7.5"></script>
-  <script src="js/player.js?v=7.5"></script>
-  <script src="js/bot.js?v=7.5"></script>
-  <script src="js/multiplayer.js?v=7.5"></script>
-  <script src="js/idleManager.js?v=7.5"></script>
-  <script src="js/fix-webm-duration.js?v=7.5"></script>
-  <script src="js/videoRecorder.js?v=7.5"></script>
-  <script src="js/wompiManager.js?v=7.5"></script>
-  <script src="js/supportAssistant.js?v=7.5"></script>
-  <script src="js/characterManager.js?v=7.5"></script>
-  <script src="js/game.js?v=7.5"></script>
+  <script src="js/audio.js?v=7.6"></script>
+  <script src="js/levelGenerator.js?v=7.6"></script>
+  <script src="js/physics.js?v=7.6"></script>
+  <script src="js/player.js?v=7.6"></script>
+  <script src="js/bot.js?v=7.6"></script>
+  <script src="js/multiplayer.js?v=7.6"></script>
+  <script src="js/idleManager.js?v=7.6"></script>
+  <script src="js/fix-webm-duration.js?v=7.6"></script>
+  <script src="js/videoRecorder.js?v=7.6"></script>
+  <script src="js/wompiManager.js?v=7.6"></script>
+  <script src="js/supportAssistant.js?v=7.6"></script>
+  <script src="js/characterManager.js?v=7.6"></script>
+  <script src="js/game.js?v=7.6"></script>
 </body>
 </html>
